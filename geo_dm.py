@@ -86,6 +86,7 @@ class GeoDM:
         self.contracts_view = 'dm.contracts_view'
         self.reports = 'dm.reports'
         self.reports_view = 'dm.reports_view'
+        self.projects = 'dm.projects'
 
         self.seismic_lines_processed_2d = 'dm.seismic_lines_processed_2d'
         self.seismic_pols_processed_3d = 'dm.seismic_pols_processed_3d'
@@ -191,13 +192,13 @@ class GeoDM:
 
         icon_path = ':/plugins/geo_dm/icon.png'
         self.add_action(
-            icon_path,
+            ':/plugins/geo_dm/procseis.png',
             text=self.tr(u'Manage Processed Seismic'),
             callback=self.run_mps,
             parent=self.iface.mainWindow())
 
         self.add_action(
-            icon_path,
+            ':/plugins/geo_dm/fieldseis.png',
             text=self.tr(u'Manage Field Seismic'),
             callback=self.run_mfs,
             parent=self.iface.mainWindow())
@@ -267,8 +268,8 @@ class GeoDM:
                                                     level=Qgis.Success, duration=3)
                 # [self.iface.messageBar().popWidget(x) for x in self.iface.messageBar().items()]
         except:
-            self.iface.messgeBar().pushMessage('Запрос не выполнен', self.sql,
-                                                level=Qgis.Error, duration=5)
+            self.iface.messageBar().pushMessage('Запрос не выполнен', self.sql,
+                                                level=Qgis.Critical, duration=5)
 
 
     def update_proc_for_selected_features(self):
@@ -323,75 +324,147 @@ class GeoDM:
         self.selectedProcFeaturesList = self.selectedProcLayer.selectedFeatures()
 
 
+    def add_project(self):
+        self.addprojdlg = AddProjDialog()
+        new_proj_name_ru = self.addprojdlg.projNameRuInput.text()
+        new_proj_name_en = self.addprojdlg.projNameEnInput.text()
+
+        def generate_sql():
+            new_proj_name_ru = self.addprojdlg.projNameRuInput.text()
+            new_proj_name_en = self.addprojdlg.projNameEnInput.text()
+            if new_proj_name_ru and new_proj_name_en:
+                fields_to_update = 'name_ru, name_en'
+                values_to_insert = f"'{new_proj_name_ru}', '{new_proj_name_en}'"
+                self.sql = f"insert into {self.projects}({fields_to_update}) values({values_to_insert})"
+                self.iface.messageBar().pushMessage('sql:', self.sql, level=Qgis.Success, duration=5)
+
+        def insert_new_proj():
+            new_proj_name_ru = self.addprojdlg.projNameRuInput.text()
+            new_proj_name_en = self.addprojdlg.projNameEnInput.text()
+            if new_proj_name_ru and new_proj_name_en:
+                mwidget = self.iface.messageBar().createMessage(f"Добавить в базу новый проект {new_proj_name_ru}?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=3)
+                self.addprojdlg.accept()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Укажите название нового проекта на всех языках', level=Qgis.Warning,
+                                                    duration=3)
+
+        generate_sql()
+        self.addprojdlg.projNameRuInput.editingFinished.connect(generate_sql)
+        self.addprojdlg.projNameEnInput.editingFinished.connect(generate_sql)
+
+        self.addprojdlg.insertProjButton.clicked.connect(insert_new_proj)
+
+        self.addprojdlg.show()
+
+
     def add_proc(self):
         self.addprocdlg = AddProcDialog()
+        self.addprocdlg.refreshProjButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.addprocdlg.refreshAuthorsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.addprocdlg.refreshContractsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.addprocdlg.refreshReportsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
 
         try:
-            with self.pgconn.cursor() as cur:
-                sql = f"select * from {self.processing_types} order by id"
-                cur.execute(sql)
-                proc_types = list(cur.fetchall())
-                self.addprocdlg.procTypeInput.addItems([row[2] for row in proc_types])
-                sql = f"select * from {self.projects}"
-                cur.execute(sql)
-                projects = list(cur.fetchall())
-                self.addprocdlg.projectInput.addItems([row[1] for row in projects])
-                sql = f"select * from {self.companies} order by name"
-                cur.execute(sql)
-                companies = list(cur.fetchall())
-                self.addprocdlg.procAuthorInput.addItem('')
-                self.addprocdlg.procAuthorInput.addItems([row[1] for row in companies])
-                sql = f"select * from {self.contracts_view} order by date DESC"
-                cur.execute(sql)
-                contracts = cur.fetchall()
-                self.addprocdlg.procContractInput.addItem('')
-                self.addprocdlg.procContractInput.addItems([row[2] + ' от ' + str(row[3]) + ' ' + row[7] + '-' + row[10] for row in contracts])
-                sql = f"select * from {self.reports_view} order by shortname DESC"
-                cur.execute(sql)
-                reports = cur.fetchall()
-                self.addprocdlg.procReportInput.addItem('')
-                self.addprocdlg.procReportInput.addItems([row[3] for row in reports])
+            def reload_proc_data():
+                self.addprocdlg.procTypeInput.clear()
+                self.addprocdlg.projectInput.clear()
+                self.addprocdlg.procAuthorInput.clear()
+                self.addprocdlg.procContractInput.clear()
+                self.addprocdlg.procReportInput.clear()
+                with self.pgconn.cursor() as cur:
+                    sql = f"select * from {self.processing_types} order by id"
+                    cur.execute(sql)
+                    self.addprocdlg.proc_types = list(cur.fetchall())
+                    self.addprocdlg.procTypeInput.addItems([row[2] for row in self.addprocdlg.proc_types])
+                    sql = f"select * from {self.projects}"
+                    cur.execute(sql)
+                    self.addprocdlg.projects = list(cur.fetchall())
+                    self.addprocdlg.projectInput.addItems([row[1] for row in self.addprocdlg.projects])
+                    sql = f"select * from {self.companies} order by name"
+                    cur.execute(sql)
+                    self.addprocdlg.companies = list(cur.fetchall())
+                    self.addprocdlg.procAuthorInput.addItem('')
+                    self.addprocdlg.procAuthorInput.addItems([row[1] for row in self.addprocdlg.companies])
+                    sql = f"select * from {self.contracts_view} order by date DESC"
+                    cur.execute(sql)
+                    self.addprocdlg.contracts = cur.fetchall()
+                    self.addprocdlg.procContractInput.addItem('')
+                    self.addprocdlg.procContractInput.addItems([row[2] + ' от ' + str(row[3]) + ' ' + row[7] + '-' + row[10] for row in self.addprocdlg.contracts])
+                    sql = f"select * from {self.reports_view} order by shortname DESC"
+                    cur.execute(sql)
+                    self.addprocdlg.reports = cur.fetchall()
+                    self.addprocdlg.procReportInput.addItem('')
+                    self.addprocdlg.procReportInput.addItems([row[3] for row in self.addprocdlg.reports])
+
+            reload_proc_data()
+
+            def generate_sql():
+                new_proc_name = self.addprocdlg.procNameInput.text()
+                new_proc_year = str(self.addprocdlg.procYearInput.value())
+                selected_proc_type_index = self.addprocdlg.procTypeInput.currentIndex()
+                selected_proc_type_id = self.addprocdlg.proc_types[selected_proc_type_index][1]
+                selected_project_index = self.addprocdlg.projectInput.currentIndex()
+                selected_project_id = self.addprocdlg.projects[selected_project_index][0]
+                selected_author_index = self.addprocdlg.procAuthorInput.currentIndex() - 1
+                selected_contract_index = self.addprocdlg.procContractInput.currentIndex() - 1
+                selected_report_index = self.addprocdlg.procReportInput.currentIndex() - 1
+                fields_to_update = 'name, proc_type_id, year, project_id'
+                values_to_insert = f"'{new_proc_name}', {str(selected_proc_type_id)}, {str(new_proc_year)}, {str(selected_project_id)}"
+                if selected_author_index >= 0:
+                    fields_to_update += ', author_id'
+                    selected_author_id = self.addprocdlg.companies[selected_author_index][0]
+                    values_to_insert += f", {str(selected_author_id)}"
+                if selected_contract_index >= 0:
+                    fields_to_update += ', contract_id'
+                    selected_contract_id = self.addprocdlg.contracts[selected_contract_index][1]
+                    values_to_insert += f", {str(selected_contract_id)}"
+                if selected_report_index >= 0:
+                    fields_to_update += ', report_id'
+                    selected_report_id = self.addprocdlg.reports[selected_report_index][1]
+                    values_to_insert += f", {str(selected_report_id)}"
+                self.sql = f"insert into {self.processings}({fields_to_update}) values({values_to_insert})"
+                # self.iface.messageBar().pushMessage('sql:', self.sql, level=Qgis.Success, duration=5)
 
 
-                def generate_sql():
-                    new_proc_name = self.addprocdlg.procNameInput.text()
-                    new_proc_year = str(self.addprocdlg.procYearInput.value())
-                    selected_proc_type_index = self.addprocdlg.procTypeInput.currentIndex()
-                    selected_proc_type_id = proc_types[selected_proc_type_index][1]
-                    selected_project_index = self.addprocdlg.projectInput.currentIndex()
-                    selected_project_id = projects[selected_project_index][0]
-                    selected_author_index = self.addprocdlg.procAuthorInput.currentIndex() - 1
-                    selected_contract_index = self.addprocdlg.procContractInput.currentIndex() - 1
-                    selected_report_index = self.addprocdlg.procReportInput.currentIndex() - 1
-                    fields_to_update = 'name, proc_type_id, year, project_id'
-                    values_to_insert = f"'{new_proc_name}', {str(selected_proc_type_id)}, {str(new_proc_year)}, {str(selected_project_id)}"
-                    if selected_author_index >= 0:
-                        fields_to_update += ', author_id'
-                        selected_author_id = companies[selected_author_index][0]
-                        values_to_insert += f", {str(selected_author_id)}"
-                    if selected_contract_index >= 0:
-                        fields_to_update += ', contract_id'
-                        selected_contract_id = contracts[selected_contract_index][1]
-                        values_to_insert += f", {str(selected_contract_id)}"
-                    if selected_report_index >= 0:
-                        fields_to_update += ', report_id'
-                        selected_report_id = reports[selected_report_index][1]
-                        values_to_insert += f", {str(selected_report_id)}"
-                    sql = f"insert into {self.processings}({fields_to_update}) values({values_to_insert})"
-                    self.iface.messageBar().pushMessage('sql:', sql, level=Qgis.Success, duration=5)
+            def insert_new_proc():
+                new_proc_name = self.addprocdlg.procNameInput.text()
+                if new_proc_name.strip() != '':
+                    mwidget = self.iface.messageBar().createMessage(f"Добавить в базу новую обработку {new_proc_name}?")
+                    mbutton = QPushButton(mwidget)
+                    mbutton.setText('Подтвердить')
+                    mbutton.pressed.connect(self.execute_sql)
+                    mwidget.layout().addWidget(mbutton)
+                    self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=3)
+                    self.addprocdlg.accept()
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Укажите название новой обработки', level=Qgis.Warning, duration=3)
 
+            generate_sql()
+            self.addprocdlg.procNameInput.editingFinished.connect(generate_sql)
+            self.addprocdlg.procTypeInput.activated.connect(generate_sql)
+            self.addprocdlg.projectInput.activated.connect(generate_sql)
+            self.addprocdlg.procYearInput.valueChanged.connect(generate_sql)
+            self.addprocdlg.procYearInput.textChanged.connect(generate_sql)
+            self.addprocdlg.procAuthorInput.activated.connect(generate_sql)
+            self.addprocdlg.procContractInput.activated.connect(generate_sql)
+            self.addprocdlg.procReportInput.activated.connect(generate_sql)
+            self.addprocdlg.addProjectButton.clicked.connect(self.add_project)
+            self.addprocdlg.refreshProjButton.clicked.connect(reload_proc_data)
+            self.addprocdlg.refreshAuthorsButton.clicked.connect(reload_proc_data)
+            self.addprocdlg.refreshContractsButton.clicked.connect(reload_proc_data)
+            self.addprocdlg.refreshReportsButton.clicked.connect(reload_proc_data)
 
-                generate_sql()
-                self.addprocdlg.procNameInput.editingFinished.connect(generate_sql)
-                self.addprocdlg.procTypeInput.activated.connect(generate_sql)
-                self.addprocdlg.projectInput.activated.connect(generate_sql)
-                self.addprocdlg.procYearInput.valueChanged.connect(generate_sql)
-                self.addprocdlg.procYearInput.textChanged.connect(generate_sql)
-                self.addprocdlg.procAuthorInput.activated.connect(generate_sql)
-                self.addprocdlg.procContractInput.activated.connect(generate_sql)
-                self.addprocdlg.procReportInput.activated.connect(generate_sql)
+            # self.addprocdlg.insertProcButton.clicked.connect(self.addprocdlg.done())
+            self.addprocdlg.insertProcButton.clicked.connect(insert_new_proc)
+
         except:
-            pass
+            self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить данные', level=Qgis.Warning, duration=3)
+
         self.addprocdlg.show()
 
 

@@ -13,22 +13,6 @@
   <property name="windowTitle">
    <string>Добавить обработку</string>
   </property>
-  <widget class="QDialogButtonBox" name="buttonBox">
-   <property name="geometry">
-    <rect>
-     <x>230</x>
-     <y>230</y>
-     <width>341</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Horizontal</enum>
-   </property>
-   <property name="standardButtons">
-    <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-   </property>
-  </widget>
   <widget class="QLabel" name="procNameLabel">
    <property name="geometry">
     <rect>
@@ -51,9 +35,9 @@
   <widget class="QLineEdit" name="procNameInput">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>120</x>
      <y>10</y>
-     <width>431</width>
+     <width>451</width>
      <height>25</height>
     </rect>
    </property>
@@ -85,9 +69,9 @@
   <widget class="QComboBox" name="procTypeInput">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>120</x>
      <y>40</y>
-     <width>431</width>
+     <width>451</width>
      <height>25</height>
     </rect>
    </property>
@@ -126,7 +110,7 @@
   <widget class="QComboBox" name="procAuthorInput">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>120</x>
      <y>130</y>
      <width>281</width>
      <height>25</height>
@@ -154,7 +138,7 @@
   <widget class="QComboBox" name="procContractInput">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>120</x>
      <y>160</y>
      <width>281</width>
      <height>25</height>
@@ -169,9 +153,9 @@
   <widget class="QPushButton" name="addCompanyButton">
    <property name="geometry">
     <rect>
-     <x>430</x>
+     <x>440</x>
      <y>130</y>
-     <width>141</width>
+     <width>131</width>
      <height>27</height>
     </rect>
    </property>
@@ -187,9 +171,9 @@
   <widget class="QPushButton" name="addContractButton">
    <property name="geometry">
     <rect>
-     <x>430</x>
+     <x>440</x>
      <y>160</y>
-     <width>141</width>
+     <width>131</width>
      <height>27</height>
     </rect>
    </property>
@@ -218,7 +202,7 @@
   <widget class="QComboBox" name="procReportInput">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>120</x>
      <y>190</y>
      <width>281</width>
      <height>25</height>
@@ -233,9 +217,9 @@
   <widget class="QPushButton" name="addReportButton">
    <property name="geometry">
     <rect>
-     <x>430</x>
+     <x>440</x>
      <y>190</y>
-     <width>141</width>
+     <width>131</width>
      <height>27</height>
     </rect>
    </property>
@@ -270,7 +254,7 @@
   <widget class="QComboBox" name="projectInput">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>120</x>
      <y>70</y>
      <width>281</width>
      <height>25</height>
@@ -285,9 +269,9 @@
   <widget class="QPushButton" name="addProjectButton">
    <property name="geometry">
     <rect>
-     <x>430</x>
+     <x>440</x>
      <y>70</y>
-     <width>141</width>
+     <width>131</width>
      <height>27</height>
     </rect>
    </property>
@@ -303,7 +287,7 @@
   <widget class="QSpinBox" name="procYearInput">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>120</x>
      <y>100</y>
      <width>281</width>
      <height>25</height>
@@ -324,40 +308,72 @@
     <number>2023</number>
    </property>
   </widget>
+  <widget class="QPushButton" name="insertProcButton">
+   <property name="geometry">
+    <rect>
+     <x>120</x>
+     <y>220</y>
+     <width>451</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Добавить обработку</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="refreshProjButton">
+   <property name="geometry">
+    <rect>
+     <x>410</x>
+     <y>70</y>
+     <width>31</width>
+     <height>27</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="refreshAuthorsButton">
+   <property name="geometry">
+    <rect>
+     <x>410</x>
+     <y>130</y>
+     <width>31</width>
+     <height>27</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="refreshContractsButton">
+   <property name="geometry">
+    <rect>
+     <x>410</x>
+     <y>160</y>
+     <width>31</width>
+     <height>27</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="refreshReportsButton">
+   <property name="geometry">
+    <rect>
+     <x>410</x>
+     <y>190</y>
+     <width>31</width>
+     <height>27</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
  </widget>
  <resources/>
- <connections>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>accepted()</signal>
-   <receiver>AddProcDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>rejected()</signal>
-   <receiver>AddProcDialog</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>286</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>
