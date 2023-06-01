@@ -27,10 +27,10 @@ import os
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
 
+
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'geo_dm_dialog_base.ui'))
-
 
 class GeoDMDialog(QtWidgets.QDialog, FORM_CLASS):
     def __init__(self, parent=None):
@@ -80,11 +80,26 @@ class GeoDMDialogField(QtWidgets.QDialog, FORM_CLASS_FIELD):
 FORM_CLASS_DOCK_PROC, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'geo_dm_dockwidget_seis_proc.ui'))
 
-
 class GeoDMDockWidgetProc(QtWidgets.QDockWidget, FORM_CLASS_DOCK_PROC):
     def __init__(self, parent=None):
         """Constructor."""
         super(GeoDMDockWidgetProc, self).__init__(parent)
+        # Set up the user interface from Designer through FORM_CLASS.
+        # After self.setupUi() you can access any designer object by doing
+        # self.<objectname>, and you can use autoconnect slots - see
+        # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
+        # #widgets-and-dialogs-with-auto-connect
+        self.setupUi(self)
+
+
+# This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
+FORM_CLASS_ADD_PROC, _ = uic.loadUiType(os.path.join(
+    os.path.dirname(__file__), 'geo_dm_add_proc_dialog.ui'))
+
+class AddProcDialog(QtWidgets.QDialog, FORM_CLASS_ADD_PROC):
+    def __init__(self, parent=None):
+        """Constructor."""
+        super(AddProcDialog, self).__init__(parent)
         # Set up the user interface from Designer through FORM_CLASS.
         # After self.setupUi() you can access any designer object by doing
         # self.<objectname>, and you can use autoconnect slots - see

@@ -77,7 +77,16 @@ class GeoDM:
 
         self.proc_list = []
 
+        self.processings = 'dm.processings'
         self.processings_view = 'dm.processings_view'
+        self.processing_types = 'dm.processing_types'
+        self.projects = 'dm.projects'
+        self.companies = 'dm.companies'
+        self.contracts = 'dm.contracts'
+        self.contracts_view = 'dm.contracts_view'
+        self.reports = 'dm.reports'
+        self.reports_view = 'dm.reports_view'
+
         self.seismic_lines_processed_2d = 'dm.seismic_lines_processed_2d'
         self.seismic_pols_processed_3d = 'dm.seismic_pols_processed_3d'
 
@@ -227,25 +236,25 @@ class GeoDM:
 
 
     def refresh_processings(self):
-        self.dlg.procTableWidget.clear()
-        self.dlg.procTableWidget.setRowCount(0)
-        self.dlg.procTableWidget.setColumnCount(3)
-        self.dlg.procTableWidget.setHorizontalHeaderLabels(['Название', 'Автор', 'Год'])
+        self.dockwind.procTableWidget.clear()
+        self.dockwind.procTableWidget.setRowCount(0)
+        self.dockwind.procTableWidget.setColumnCount(3)
+        self.dockwind.procTableWidget.setHorizontalHeaderLabels(['Название', 'Автор', 'Год'])
         # processings = self.get_proc_from_postgres()
         if self.get_proc_from_postgres():
         # if processings[0]:
         #     for i, proc_row in enumerate(processings[1]):
             for i, proc_row in enumerate(self.proc_list):
-                self.dlg.procTableWidget.insertRow(i)
+                self.dockwind.procTableWidget.insertRow(i)
                 citem = QTableWidgetItem(proc_row[2])
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                self.dlg.procTableWidget.setItem(i, 0, citem)
+                self.dockwind.procTableWidget.setItem(i, 0, citem)
                 citem = QTableWidgetItem(proc_row[9])
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                self.dlg.procTableWidget.setItem(i, 1, citem)
+                self.dockwind.procTableWidget.setItem(i, 1, citem)
                 citem = QTableWidgetItem(str(proc_row[6]))
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                self.dlg.procTableWidget.setItem(i, 2, citem)
+                self.dockwind.procTableWidget.setItem(i, 2, citem)
 
 
     def execute_sql(self):
@@ -263,7 +272,7 @@ class GeoDM:
 
 
     def update_proc_for_selected_features(self):
-        selected_cells = self.dlg.procTableWidget.selectedItems()
+        selected_cells = self.dockwind.procTableWidget.selectedItems()
         selected_rows = list(set([x.row() for x in selected_cells]))
         if len(selected_rows) != 1:
             self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один проект по обработке', level=Qgis.Warning, duration=3)
@@ -300,18 +309,91 @@ class GeoDM:
 
 
     def display_selected_geometry_count(self):
-        self.dlg.selectedGeometryLabel.setText(f"Выбрано {len(self.selectedProcFeaturesList)} объектов")
+        self.dockwind.selectedGeometryLabel.setText(f"Выбрано {len(self.selectedProcFeaturesList)} объектов")
 
 
     def set_selected_proc_features_list(self):
         ltreenode = QgsProject.instance().layerTreeRoot().children()
         layers = list(filter(lambda x: x.type() == QgsMapLayerType.VectorLayer and x.isSpatial(),
                              QgsLayerTreeUtils().collectMapLayersRecursive(ltreenode)))
-        selectedLayerIndex = self.dlg.layersComboBox.currentIndex()
+        selectedLayerIndex = self.dockwind.layersComboBox.currentIndex()
         # selectedLayer = layers[selectedLayerIndex]
         self.selectedProcLayer = layers[selectedLayerIndex]
         # self.selectedProcFeaturesList = selectedLayer.selectedFeatures()
         self.selectedProcFeaturesList = self.selectedProcLayer.selectedFeatures()
+
+
+    def add_proc(self):
+        self.addprocdlg = AddProcDialog()
+
+        try:
+            with self.pgconn.cursor() as cur:
+                sql = f"select * from {self.processing_types} order by id"
+                cur.execute(sql)
+                proc_types = list(cur.fetchall())
+                self.addprocdlg.procTypeInput.addItems([row[2] for row in proc_types])
+                sql = f"select * from {self.projects}"
+                cur.execute(sql)
+                projects = list(cur.fetchall())
+                self.addprocdlg.projectInput.addItems([row[1] for row in projects])
+                sql = f"select * from {self.companies} order by name"
+                cur.execute(sql)
+                companies = list(cur.fetchall())
+                self.addprocdlg.procAuthorInput.addItem('')
+                self.addprocdlg.procAuthorInput.addItems([row[1] for row in companies])
+                sql = f"select * from {self.contracts_view} order by date DESC"
+                cur.execute(sql)
+                contracts = cur.fetchall()
+                self.addprocdlg.procContractInput.addItem('')
+                self.addprocdlg.procContractInput.addItems([row[2] + ' от ' + str(row[3]) + ' ' + row[7] + '-' + row[10] for row in contracts])
+                sql = f"select * from {self.reports_view} order by shortname DESC"
+                cur.execute(sql)
+                reports = cur.fetchall()
+                self.addprocdlg.procReportInput.addItem('')
+                self.addprocdlg.procReportInput.addItems([row[3] for row in reports])
+
+
+                def generate_sql():
+                    new_proc_name = self.addprocdlg.procNameInput.text()
+                    new_proc_year = str(self.addprocdlg.procYearInput.value())
+                    selected_proc_type_index = self.addprocdlg.procTypeInput.currentIndex()
+                    selected_proc_type_id = proc_types[selected_proc_type_index][1]
+                    selected_project_index = self.addprocdlg.projectInput.currentIndex()
+                    selected_project_id = projects[selected_project_index][0]
+                    selected_author_index = self.addprocdlg.procAuthorInput.currentIndex() - 1
+                    selected_contract_index = self.addprocdlg.procContractInput.currentIndex() - 1
+                    selected_report_index = self.addprocdlg.procReportInput.currentIndex() - 1
+                    fields_to_update = 'name, proc_type_id, year, project_id'
+                    values_to_insert = f"'{new_proc_name}', {str(selected_proc_type_id)}, {str(new_proc_year)}, {str(selected_project_id)}"
+                    if selected_author_index >= 0:
+                        fields_to_update += ', author_id'
+                        selected_author_id = companies[selected_author_index][0]
+                        values_to_insert += f", {str(selected_author_id)}"
+                    if selected_contract_index >= 0:
+                        fields_to_update += ', contract_id'
+                        selected_contract_id = contracts[selected_contract_index][1]
+                        values_to_insert += f", {str(selected_contract_id)}"
+                    if selected_report_index >= 0:
+                        fields_to_update += ', report_id'
+                        selected_report_id = reports[selected_report_index][1]
+                        values_to_insert += f", {str(selected_report_id)}"
+                    sql = f"insert into {self.processings}({fields_to_update}) values({values_to_insert})"
+                    self.iface.messageBar().pushMessage('sql:', sql, level=Qgis.Success, duration=5)
+
+
+                generate_sql()
+                self.addprocdlg.procNameInput.editingFinished.connect(generate_sql)
+                self.addprocdlg.procTypeInput.activated.connect(generate_sql)
+                self.addprocdlg.projectInput.activated.connect(generate_sql)
+                self.addprocdlg.procYearInput.valueChanged.connect(generate_sql)
+                self.addprocdlg.procYearInput.textChanged.connect(generate_sql)
+                self.addprocdlg.procAuthorInput.activated.connect(generate_sql)
+                self.addprocdlg.procContractInput.activated.connect(generate_sql)
+                self.addprocdlg.procReportInput.activated.connect(generate_sql)
+        except:
+            pass
+        self.addprocdlg.show()
+
 
     def run_mps(self):
         """Run method that performs all the real work"""
@@ -321,28 +403,29 @@ class GeoDM:
         if self.first_start == True:
             self.first_start = False
             # self.dlg = GeoDMDialogProc()
-            self.dlg = GeoDMDockWidgetProc()
+            self.dockwind = GeoDMDockWidgetProc()
         else:
             # self.dlg = GeoDMDialogProc()
-            self.dlg = GeoDMDockWidgetProc()
+            self.dockwind = GeoDMDockWidgetProc()
 
         ltreenode = QgsProject.instance().layerTreeRoot().children()
         layers = list(filter(lambda x: x.type() == QgsMapLayerType.VectorLayer and x.isSpatial(), QgsLayerTreeUtils().collectMapLayersRecursive(ltreenode)))
 
-        self.dlg.layersComboBox.clear()
-        self.dlg.layersComboBox.addItems([layer.name() for layer in layers])
-        self.dlg.layersComboBox.activated.connect(self.set_selected_proc_features_list)
-        self.dlg.layersComboBox.activated.connect(self.display_selected_geometry_count)
+        self.dockwind.layersComboBox.clear()
+        self.dockwind.layersComboBox.addItems([layer.name() for layer in layers])
+        self.dockwind.layersComboBox.activated.connect(self.set_selected_proc_features_list)
+        self.dockwind.layersComboBox.activated.connect(self.display_selected_geometry_count)
         self.iface.mapCanvas().selectionChanged.connect(self.set_selected_proc_features_list)
         self.iface.mapCanvas().selectionChanged.connect(self.display_selected_geometry_count)
 
         self.refresh_processings()
-        self.dlg.refreshProcButton.clicked.connect(self.refresh_processings)
-        self.dlg.changeProcPushButton.clicked.connect(self.update_proc_for_selected_features)
+        self.dockwind.refreshProcButton.clicked.connect(self.refresh_processings)
+        self.dockwind.addProcPushButton.clicked.connect(self.add_proc)
+        self.dockwind.changeProcPushButton.clicked.connect(self.update_proc_for_selected_features)
 
-        self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dlg)
-        self.dlg.adjustSize()
-        selectedLayerIndex = self.dlg.layersComboBox.currentIndex()
+        self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwind)
+        self.dockwind.adjustSize()
+        selectedLayerIndex = self.dockwind.layersComboBox.currentIndex()
 
         selectedLayer = layers[selectedLayerIndex]
 
@@ -355,14 +438,14 @@ class GeoDM:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-            self.dlg = GeoDMDialogField()
+            self.dockwind = GeoDMDialogField()
         else:
-            self.dlg = GeoDMDialogField()
+            self.dockwind = GeoDMDialogField()
 
         # show the dialog
-        self.dlg.show()
+        self.dockwind.show()
         # Run the dialog event loop
-        result = self.dlg.exec_()
+        result = self.dockwind.exec_()
         # See if OK was pressed
         if result:
             # Do something useful here - delete the line containing pass and
