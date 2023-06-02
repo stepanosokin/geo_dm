@@ -26,7 +26,8 @@ from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QTableWidgetItem, QTableWidget, QPushButton
 from qgis.core import Qgis, QgsProject, QgsLayerTreeUtils, QgsVectorLayerSelectedFeatureSource, QgsMapLayer, QgsMapLayerType
-import os, sys, psycopg2, subprocess
+import psycopg2
+from datetime import datetime
 
 
 # Initialize Qt resources from file resources.py
@@ -87,6 +88,8 @@ class GeoDM:
         self.reports = 'dm.reports'
         self.reports_view = 'dm.reports_view'
         self.projects = 'dm.projects'
+        self.companies = 'dm.companies'
+        self.contract_types = 'dm.contract_types'
 
         self.seismic_lines_processed_2d = 'dm.seismic_lines_processed_2d'
         self.seismic_pols_processed_3d = 'dm.seismic_pols_processed_3d'
@@ -306,9 +309,6 @@ class GeoDM:
                 self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать слой и объекты в нем", level=Qgis.Warning, duration=5)
 
 
-
-
-
     def display_selected_geometry_count(self):
         self.dockwind.selectedGeometryLabel.setText(f"Выбрано {len(self.selectedProcFeaturesList)} объектов")
 
@@ -324,6 +324,42 @@ class GeoDM:
         self.selectedProcFeaturesList = self.selectedProcLayer.selectedFeatures()
 
 
+    def add_company(self):
+        self.addcompdlg = AddCompDialog()
+
+        def generate_sql():
+            new_comp_name_full = self.addcompdlg.companyFullNameInput.text()
+            new_comp_name_short = self.addcompdlg.companyShortNameInput.text()
+            if len(new_comp_name_full.strip()) > 0 and len(new_comp_name_short.strip()) > 0:
+                fields_to_update = 'name, shortname'
+                values_to_insert = f"'{new_comp_name_full}', '{new_comp_name_short}'"
+                self.sql = f"insert into {self.companies}({fields_to_update}) values({values_to_insert})"
+
+        def insert_new_comp():
+            new_comp_name_full = self.addcompdlg.companyFullNameInput.text()
+            new_comp_name_short = self.addcompdlg.companyShortNameInput.text()
+            if len(new_comp_name_full.strip()) > 0 and len(new_comp_name_short.strip()) > 0:
+                mwidget = self.iface.messageBar().createMessage(f"Добавить в базу новую организацию {new_comp_name_full}?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=3)
+                self.addcompdlg.accept()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Укажите название и короткое название новой организации!',
+                                                    level=Qgis.Warning,
+                                                    duration=3)
+
+        generate_sql()
+        self.addcompdlg.companyFullNameInput.editingFinished.connect(generate_sql)
+        self.addcompdlg.companyShortNameInput.editingFinished.connect(generate_sql)
+
+        self.addcompdlg.insertCompanyButton.clicked.connect(insert_new_comp)
+
+        self.addcompdlg.show()
+
+
     def add_project(self):
         self.addprojdlg = AddProjDialog()
         new_proj_name_ru = self.addprojdlg.projNameRuInput.text()
@@ -336,7 +372,7 @@ class GeoDM:
                 fields_to_update = 'name_ru, name_en'
                 values_to_insert = f"'{new_proj_name_ru}', '{new_proj_name_en}'"
                 self.sql = f"insert into {self.projects}({fields_to_update}) values({values_to_insert})"
-                self.iface.messageBar().pushMessage('sql:', self.sql, level=Qgis.Success, duration=5)
+                # self.iface.messageBar().pushMessage('sql:', self.sql, level=Qgis.Success, duration=5)
 
         def insert_new_proj():
             new_proj_name_ru = self.addprojdlg.projNameRuInput.text()
@@ -360,6 +396,110 @@ class GeoDM:
         self.addprojdlg.insertProjButton.clicked.connect(insert_new_proj)
 
         self.addprojdlg.show()
+
+
+    def add_contract(self):
+        self.addcontractdlg = AddContractDialog()
+        self.addcontractdlg.contractCustomerRefreshButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.addcontractdlg.contractContractorRefreshButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+
+        def reload_contract_data():
+            # self.addcontractdlg.contractNumberInput.clear()
+            # self.addcontractdlg.contractNameInput.clear()
+            self.addcontractdlg.contractTypeInput.clear()
+            self.addcontractdlg.contractCustomerInput.clear()
+            self.addcontractdlg.contractContractorInput.clear()
+            self.addcontractdlg.contractParentContractInput.clear()
+            with self.pgconn.cursor() as cur:
+                sql = f"select * from {self.contract_types}"
+                cur.execute(sql)
+                self.addcontractdlg.contract_types = list(cur.fetchall())
+                self.addcontractdlg.contractTypeInput.addItems([row[2] for row in self.addcontractdlg.contract_types])
+                sql = f"select * from {self.companies} order by name"
+                cur.execute(sql)
+                self.addcontractdlg.companies = list(cur.fetchall())
+                self.addcontractdlg.contractCustomerInput.addItem('')
+                self.addcontractdlg.contractCustomerInput.addItems([row[1] for row in self.addcontractdlg.companies])
+                self.addcontractdlg.contractContractorInput.addItem('')
+                self.addcontractdlg.contractContractorInput.addItems([row[1] for row in self.addcontractdlg.companies])
+                sql = f"select * from {self.contracts_view} order by date DESC"
+                cur.execute(sql)
+                self.addcontractdlg.contracts = list(cur.fetchall())
+                self.addcontractdlg.contractParentContractInput.addItem('')
+                self.addcontractdlg.contractParentContractInput.addItems([row[2] + ' от ' + str(row[3]) for row in self.addcontractdlg.contracts])
+
+        reload_contract_data()
+
+        def generate_sql():
+            new_contract_number = self.addcontractdlg.contractNumberInput.text()
+            new_contract_name = self.addcontractdlg.contractNameInput.text()
+            selected_contract_type_index = self.addcontractdlg.contractTypeInput.currentIndex()
+            selected_contract_type_id = self.addcontractdlg.contract_types[selected_contract_type_index][1]
+            selected_contract_date = self.addcontractdlg.contractDateInput.dateTime()
+            selected_customer_index = self.addcontractdlg.contractCustomerInput.currentIndex() - 1
+            selected_contractor_index = self.addcontractdlg.contractContractorInput.currentIndex() - 1
+            new_contract_link = self.addcontractdlg.contractLinkInput.text()
+            selected_parent_contract_index = self.addcontractdlg.contractParentContractInput.currentIndex() - 1
+            fields_to_update = 'number, name, contract_type_id, date'
+            values_to_insert = f"'{new_contract_number}', '{new_contract_name}', '{selected_contract_type_id}', '{selected_contract_date.toString('yyyy-MM-dd')}'"
+            if selected_customer_index >= 0:
+                fields_to_update += ', customer_id'
+                selected_customer_id = self.addcontractdlg.companies[selected_customer_index][0]
+                values_to_insert += f", {str(selected_customer_id)}"
+            if selected_contractor_index >= 0:
+                fields_to_update += ', contractor_id'
+                selected_contractor_id = self.addcontractdlg.companies[selected_contractor_index][0]
+                values_to_insert += f", {str(selected_contractor_id)}"
+            if len(new_contract_link) > 0:
+                fields_to_update += ', link'
+                values_to_insert += f", '{new_contract_link}'"
+            if selected_parent_contract_index >= 0:
+                fields_to_update += ', parent_contract_id'
+                selected_parent_contract_id = self.addcontractdlg.contracts[selected_parent_contract_index][1]
+                values_to_insert += f", {str(selected_parent_contract_id)}"
+            self.sql = f"insert into {self.contracts}({fields_to_update}) values({values_to_insert})"
+            # self.iface.messageBar().pushMessage('sql', self.sql, level=Qgis.Success, duration=5)
+
+        def insert_new_contract():
+            new_contract_number = self.addcontractdlg.contractNumberInput.text()
+            new_contract_name = self.addcontractdlg.contractNameInput.text()
+            selected_contract_type_index = self.addcontractdlg.contractTypeInput.currentIndex()
+            selected_contract_type_id = self.addcontractdlg.contract_types[selected_contract_type_index][1]
+            selected_contract_date = self.addcontractdlg.contractDateInput.dateTime()
+            if all([
+                len(new_contract_number.strip()) > 0,
+                len(new_contract_name.strip()) > 0,
+                selected_contract_type_id >= 0,
+                selected_contract_date
+            ]):
+                mwidget = self.iface.messageBar().createMessage(f"Добавить в базу новый договор {new_contract_number}?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=3)
+                self.addcontractdlg.accept()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Укажите номер, название, тип и дату нового договора',
+                                                    level=Qgis.Warning, duration=3)
+
+        generate_sql()
+        self.addcontractdlg.contractNumberInput.editingFinished.connect(generate_sql)
+        self.addcontractdlg.contractNameInput.editingFinished.connect(generate_sql)
+        self.addcontractdlg.contractTypeInput.activated.connect(generate_sql)
+        self.addcontractdlg.contractDateInput.dateTimeChanged.connect(generate_sql)
+        self.addcontractdlg.contractCustomerInput.activated.connect(generate_sql)
+        self.addcontractdlg.contractCustomerRefreshButton.clicked.connect(reload_contract_data)
+        self.addcontractdlg.contractCustomerAddCompanyButton.clicked.connect(self.add_company)
+        self.addcontractdlg.contractContractorInput.activated.connect(generate_sql)
+        self.addcontractdlg.contractContractorRefreshButton.clicked.connect(reload_contract_data)
+        self.addcontractdlg.contractContractorAddCompanyButton.clicked.connect(self.add_company)
+        self.addcontractdlg.contractLinkInput.editingFinished.connect(generate_sql)
+        self.addcontractdlg.contractParentContractInput.activated.connect(generate_sql)
+
+        self.addcontractdlg.insertContractButton.clicked.connect(insert_new_contract)
+
+        self.addcontractdlg.show()
 
 
     def add_proc(self):
@@ -430,7 +570,6 @@ class GeoDM:
                 self.sql = f"insert into {self.processings}({fields_to_update}) values({values_to_insert})"
                 # self.iface.messageBar().pushMessage('sql:', self.sql, level=Qgis.Success, duration=5)
 
-
             def insert_new_proc():
                 new_proc_name = self.addprocdlg.procNameInput.text()
                 if new_proc_name.strip() != '':
@@ -454,10 +593,12 @@ class GeoDM:
             self.addprocdlg.procContractInput.activated.connect(generate_sql)
             self.addprocdlg.procReportInput.activated.connect(generate_sql)
             self.addprocdlg.addProjectButton.clicked.connect(self.add_project)
+            self.addprocdlg.addCompanyButton.clicked.connect(self.add_company)
             self.addprocdlg.refreshProjButton.clicked.connect(reload_proc_data)
             self.addprocdlg.refreshAuthorsButton.clicked.connect(reload_proc_data)
             self.addprocdlg.refreshContractsButton.clicked.connect(reload_proc_data)
             self.addprocdlg.refreshReportsButton.clicked.connect(reload_proc_data)
+            self.addprocdlg.addContractButton.clicked.connect(self.add_contract)
 
             # self.addprocdlg.insertProcButton.clicked.connect(self.addprocdlg.done())
             self.addprocdlg.insertProcButton.clicked.connect(insert_new_proc)
