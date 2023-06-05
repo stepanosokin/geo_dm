@@ -26,6 +26,7 @@ import os
 
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
+# from PyQt5.QtWebEngineWidgets import QWebEngineView
 
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
@@ -111,4 +112,14 @@ class AddContractDialog(QtWidgets.QDialog, FORM_CLASS_ADD_CONTRACT):
     def __init__(self, parent=None):
         """Constructor."""
         super(AddContractDialog, self).__init__(parent)
+        self.setupUi(self)
+
+
+FORM_CLASS_ADD_REPORT, _ = uic.loadUiType(os.path.join(
+    os.path.dirname(__file__), 'geo_dm_add_report_dialog.ui'))
+
+class AddReportDialog(QtWidgets.QDialog, FORM_CLASS_ADD_REPORT):
+    def __init__(self, parent=None):
+        """Constructor."""
+        super(AddReportDialog, self).__init__(parent)
         self.setupUi(self)
