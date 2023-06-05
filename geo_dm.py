@@ -258,6 +258,7 @@ class GeoDM:
         if self.get_proc_from_postgres():
         # if processings[0]:
         #     for i, proc_row in enumerate(processings[1]):
+        #     self.iface.messageBar().pushMessage('Список обработок', ' '.join([str(x) for x in self.proc_list[0]]), level=Qgis.Success, duration=5)
             for i, proc_row in enumerate(self.proc_list):
                 self.dockwind.procTableWidget.insertRow(i)
                 citem = QTableWidgetItem(proc_row[2])
@@ -1090,8 +1091,10 @@ class GeoDM:
         else:
             self.dockwind = GeoDMDialogField()
 
+        # self.iface.setAttribute(Qt.AA_Use96Dpi)
         # show the dialog
         self.dockwind.show()
+        # self.dockwind.adjustSize()
         # Run the dialog event loop
         result = self.dockwind.exec_()
         # See if OK was pressed
