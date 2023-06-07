@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>534</width>
-    <height>500</height>
+    <width>538</width>
+    <height>677</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -36,8 +36,8 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>0</y>
-      <width>271</width>
+      <y>10</y>
+      <width>341</width>
       <height>16</height>
      </rect>
     </property>
@@ -47,27 +47,14 @@
      </font>
     </property>
     <property name="text">
-     <string>Слой с геометрией обработанной сейсмики:</string>
-    </property>
-   </widget>
-   <widget class="QComboBox" name="layersComboBox">
-    <property name="enabled">
-     <bool>true</bool>
-    </property>
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>20</y>
-      <width>251</width>
-      <height>22</height>
-     </rect>
+     <string>Выбранный слой с геометрией обработанной сейсмики:</string>
     </property>
    </widget>
    <widget class="QPushButton" name="changeProcPushButton">
     <property name="geometry">
      <rect>
       <x>390</x>
-      <y>110</y>
+      <y>120</y>
       <width>141</width>
       <height>41</height>
      </rect>
@@ -87,7 +74,7 @@
     <property name="geometry">
      <rect>
       <x>390</x>
-      <y>150</y>
+      <y>160</y>
       <width>141</width>
       <height>41</height>
      </rect>
@@ -101,7 +88,7 @@
     <property name="geometry">
      <rect>
       <x>390</x>
-      <y>230</y>
+      <y>240</y>
       <width>141</width>
       <height>41</height>
      </rect>
@@ -115,7 +102,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>70</y>
+      <y>80</y>
       <width>371</width>
       <height>201</height>
      </rect>
@@ -125,51 +112,65 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>50</y>
-      <width>291</width>
+      <y>60</y>
+      <width>181</width>
       <height>16</height>
      </rect>
     </property>
     <property name="font">
      <font>
       <pointsize>10</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
      </font>
     </property>
     <property name="text">
-     <string>Список проектов по обработке сейсмики:</string>
+     <string>Проекты по обработке:</string>
     </property>
    </widget>
    <widget class="QPushButton" name="refreshProcButton">
     <property name="geometry">
      <rect>
-      <x>310</x>
-      <y>50</y>
-      <width>71</width>
+      <x>360</x>
+      <y>60</y>
+      <width>21</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
-     <string>Обновить</string>
+     <string/>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>16</width>
+      <height>16</height>
+     </size>
     </property>
    </widget>
    <widget class="QLabel" name="selectedGeometryLabel">
     <property name="geometry">
      <rect>
       <x>280</x>
-      <y>20</y>
-      <width>221</width>
+      <y>30</y>
+      <width>231</width>
       <height>21</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
     <property name="text">
-     <string>Нужно выбрать объекты в выбранном слое</string>
+     <string>Нужно выбрать объекты!</string>
     </property>
    </widget>
    <widget class="QPushButton" name="updateProcPushButton">
     <property name="geometry">
      <rect>
       <x>390</x>
-      <y>190</y>
+      <y>200</y>
       <width>141</width>
       <height>41</height>
      </rect>
@@ -183,13 +184,38 @@
     <property name="geometry">
      <rect>
       <x>390</x>
-      <y>70</y>
+      <y>80</y>
       <width>71</width>
       <height>41</height>
      </rect>
     </property>
     <property name="toolTip">
-     <string>Выбрать все обработки для выделенной геометрии</string>
+     <string>Показать только обработки для выделенной геометрии</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>32</width>
+      <height>32</height>
+     </size>
+    </property>
+    <property name="flat">
+     <bool>false</bool>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="selectGeometryForSelectedProcButton">
+    <property name="geometry">
+     <rect>
+      <x>460</x>
+      <y>80</y>
+      <width>71</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>Выделить и приблизить карту к геометрии для выбранных обработок</string>
     </property>
     <property name="text">
      <string/>
@@ -201,20 +227,250 @@
      </size>
     </property>
    </widget>
-   <widget class="QPushButton" name="selectGeometryForSelectedProcButton">
+   <widget class="QLabel" name="selectedLayerLabel">
     <property name="geometry">
      <rect>
-      <x>460</x>
-      <y>70</y>
+      <x>10</x>
+      <y>30</y>
+      <width>261</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>Нужно выбрать слой!</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>300</y>
+      <width>171</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>Полевые съемки:</string>
+    </property>
+   </widget>
+   <widget class="QTableWidget" name="surveyTableWidget">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>320</y>
+      <width>371</width>
+      <height>141</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="selectSurveyForSelectedGeometryButton">
+    <property name="geometry">
+     <rect>
+      <x>390</x>
+      <y>320</y>
       <width>71</width>
-      <height>41</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="toolTip">
-     <string>Выделить геометрию для выбранных обработок</string>
+     <string>Показать только съемки, связанные с выбранной геометрией</string>
     </property>
     <property name="text">
      <string/>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>32</width>
+      <height>32</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="refreshSurveyButton">
+    <property name="geometry">
+     <rect>
+      <x>360</x>
+      <y>300</y>
+      <width>21</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>Обновить список съемок</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="selectGeometryForSelectedSurveyButton">
+    <property name="geometry">
+     <rect>
+      <x>460</x>
+      <y>320</y>
+      <width>71</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>Выбрать геометрию, связанную с выбранными съемками</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>32</width>
+      <height>32</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="linkSurveyToGeometryButton">
+    <property name="geometry">
+     <rect>
+      <x>390</x>
+      <y>350</y>
+      <width>71</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>Связать выбранные съемки с выбранной геометрией</string>
+    </property>
+    <property name="text">
+     <string>Связать с
+геометрией</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="unlinkSurveyFromGeometryButton">
+    <property name="geometry">
+     <rect>
+      <x>460</x>
+      <y>350</y>
+      <width>71</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>Отвязать выбранные съемки от выбранной геометрии</string>
+    </property>
+    <property name="text">
+     <string>Отвязать от
+геометрии</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="addSurveyPushButton">
+    <property name="geometry">
+     <rect>
+      <x>390</x>
+      <y>380</y>
+      <width>71</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>Добавить новую съемку в базу</string>
+    </property>
+    <property name="text">
+     <string>Добавить
+съемку</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="deleteSurveyPushButton">
+    <property name="geometry">
+     <rect>
+      <x>390</x>
+      <y>410</y>
+      <width>71</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>Удалить выбранные съемки из базы</string>
+    </property>
+    <property name="text">
+     <string>Удалить
+съемки</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="updateSurveyPushButton">
+    <property name="geometry">
+     <rect>
+      <x>460</x>
+      <y>380</y>
+      <width>71</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>Изменить выбранную съемку</string>
+    </property>
+    <property name="text">
+     <string>Изменить
+съемку</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="procFilterLineEdit">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>60</y>
+      <width>121</width>
+      <height>20</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>190</x>
+      <y>60</y>
+      <width>47</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>фильтр</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="surveyFilterLineEdit">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>300</y>
+      <width>121</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_3">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>300</y>
+      <width>47</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>фильтр</string>
     </property>
    </widget>
   </widget>

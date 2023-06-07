@@ -123,3 +123,13 @@ class AddReportDialog(QtWidgets.QDialog, FORM_CLASS_ADD_REPORT):
         """Constructor."""
         super(AddReportDialog, self).__init__(parent)
         self.setupUi(self)
+
+
+FORM_CLASS_ADD_SURVEY, _ = uic.loadUiType(os.path.join(
+    os.path.dirname(__file__), 'geo_dm_add_survey_dialog.ui'))
+
+class AddSurveyDialog(QtWidgets.QDialog, FORM_CLASS_ADD_SURVEY):
+    def __init__(self, parent=None):
+        """Constructor."""
+        super(AddSurveyDialog, self).__init__(parent)
+        self.setupUi(self)
