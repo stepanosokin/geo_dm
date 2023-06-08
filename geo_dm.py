@@ -28,6 +28,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QTableWidgetItem, QTableWidget, QPushButton, QAbstractItemView
 from qgis.core import Qgis, QgsProject, QgsLayerTreeUtils, QgsVectorLayerSelectedFeatureSource, QgsMapLayer, QgsMapLayerType
 import psycopg2
+from psycopg2.extras import *
 from datetime import datetime
 
 
@@ -98,7 +99,13 @@ class GeoDM:
         self.seismic_lines_processed_2d = 'dm.seismic_lines_processed_2d'
         self.seismic_pols_processed_3d = 'dm.seismic_pols_processed_3d'
         self.surveys_view = 'dm.surveys_view'
+        self.surveys = 'dm.surveys'
+        self.survey_id_seq = 'dm.surveys_survey_id_seq'
         self.proc_geom_to_surveys = 'dm.proc_geom_to_surveys'
+        self.survey_types = 'dm.survey_types'
+        self.location_types = 'dm.location_types'
+        self.reports_to_surveys = 'dm.reports_to_surveys'
+
         self.survey_id_filter = None
         self.proc_id_filter = None
 
@@ -243,7 +250,7 @@ class GeoDM:
             sql += f" survey_id in ({', '.join([str(x) for x in self.survey_id_filter])})"
         sql += ' order by name'
         try:
-            with psycopg2.connect(self.dsn) as pgconn:
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
                 if pgconn:
                     with pgconn.cursor() as cur:
                         cur.execute(sql)
@@ -277,19 +284,19 @@ class GeoDM:
         if self.get_surveys_from_postgres():
             for i, survey_row in enumerate(self.surveys_list):
                 self.dockwind.surveyTableWidget.insertRow(i)
-                citem = QTableWidgetItem(survey_row[2])
-                citem.setToolTip(str(survey_row[2]))
+                citem = QTableWidgetItem(survey_row['name'])
+                citem.setToolTip(str(survey_row['name']))
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                 self.dockwind.surveyTableWidget.setItem(i, 0, citem)
-                citem = QTableWidgetItem(survey_row[4])
-                citem.setToolTip(str(survey_row[4]))
+                citem = QTableWidgetItem(survey_row['survey_type'])
+                citem.setToolTip(str(survey_row['survey_type']))
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                 self.dockwind.surveyTableWidget.setItem(i, 1, citem)
-                citem = QTableWidgetItem(survey_row[8])
-                citem.setToolTip(str(survey_row[7]))
+                citem = QTableWidgetItem(survey_row['acquisition_company_shortname'])
+                citem.setToolTip(str(survey_row['acquisition_company']))
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                 self.dockwind.surveyTableWidget.setItem(i, 2, citem)
-                citem = QTableWidgetItem(str(survey_row[5]))
+                citem = QTableWidgetItem(str(survey_row['year']))
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                 self.dockwind.surveyTableWidget.setItem(i, 3, citem)
 
@@ -303,7 +310,7 @@ class GeoDM:
                     selected_features_ids_list = list(set([f.attribute('line_id') for f in self.selectedProcFeaturesList]))
                 else:
                     selected_features_ids_list = []
-                with psycopg2.connect(self.dsn) as pgconn:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
                     pass
                 selected_features_survey_ids = [y[1] for y in self.proc_geom_to_surveys_list if y[0] in selected_features_ids_list]
                 # selected_survey_indexes = [x[0] for x in enumerate(self.surveys_list) if x[1][1] in selected_features_survey_ids]
@@ -331,7 +338,7 @@ class GeoDM:
     def select_geometry_by_surveys(self):
         selected_survey_rows = list(set([x.row() for x in self.dockwind.surveyTableWidget.selectedItems()]))
         # self.iface.messageBar().pushMessage('selected_survey_rows', ', '.join([str(x) for x in selected_survey_rows]), level=Qgis.Success, duration=5)
-        selected_survey_ids = [self.surveys_list[i][1] for i in selected_survey_rows]
+        selected_survey_ids = [self.surveys_list[i]['survey_id'] for i in selected_survey_rows]
         # self.iface.messageBar().pushMessage('selected_survey_ids', ', '.join([str(x) for x in selected_survey_ids]), level=Qgis.Success, duration=5)
         if len(selected_survey_ids) > 0 and self.selectedProcLayer != None and \
                 any(['line_id' in [f.name() for f in self.selectedProcLayer.fields()],
@@ -359,7 +366,7 @@ class GeoDM:
         if len(selected_rows) < 1:
             self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одну или несколько съемок', level=Qgis.Warning, duration=3)
         else:
-            survey_ids = [self.surveys_list[i][1] for i in selected_rows]
+            survey_ids = [self.surveys_list[i]['survey_id'] for i in selected_rows]
             if self.selectedProcLayer != None and len(self.selectedProcFeaturesList) > 0 and \
                     any(['line_id' in [f.name() for f in self.selectedProcLayer.fields()],
                          'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]]):
@@ -393,7 +400,7 @@ class GeoDM:
         if len(selected_rows) < 1:
             self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одну или несколько съемок', level=Qgis.Warning, duration=3)
         else:
-            survey_ids = [self.surveys_list[i][1] for i in selected_rows]
+            survey_ids = [self.surveys_list[i]['survey_id'] for i in selected_rows]
             if self.selectedProcLayer != None and len(self.selectedProcFeaturesList) > 0 and \
                     any(['line_id' in [f.name() for f in self.selectedProcLayer.fields()],
                          'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]]):
@@ -437,7 +444,7 @@ class GeoDM:
                     sql += ' where'
                 sql += f" proc_id in ({', '.join([str(x) for x in self.proc_id_filter])})"
             sql += ' order by name'
-            with psycopg2.connect(self.dsn) as pgconn:
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
                 if pgconn:
                     # with self.pgconn.cursor() as cur:
                     with pgconn.cursor() as cur:
@@ -476,16 +483,16 @@ class GeoDM:
         #     self.iface.messageBar().pushMessage('Список обработок', ' '.join([str(x) for x in self.proc_list[0]]), level=Qgis.Success, duration=5)
             for i, proc_row in enumerate(self.proc_list):
                 self.dockwind.procTableWidget.insertRow(i)
-                citem = QTableWidgetItem(proc_row[2])
-                citem.setToolTip(str(proc_row[2]))
+                citem = QTableWidgetItem(proc_row['name'])
+                citem.setToolTip(str(proc_row['name']))
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
 
                 self.dockwind.procTableWidget.setItem(i, 0, citem)
-                citem = QTableWidgetItem(proc_row[9])
-                citem.setToolTip(str(proc_row[8]))
+                citem = QTableWidgetItem(proc_row['company_shortname'])
+                citem.setToolTip(str(proc_row['company_name']))
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                 self.dockwind.procTableWidget.setItem(i, 1, citem)
-                citem = QTableWidgetItem(str(proc_row[6]))
+                citem = QTableWidgetItem(str(proc_row['year']))
                 # citem.setToolTip(str(proc_row[6]))
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                 self.dockwind.procTableWidget.setItem(i, 2, citem)
@@ -496,20 +503,22 @@ class GeoDM:
 
             # with open('.pgdsn', encoding='utf-8') as dsnf:
             #     dsn = dsnf.read().replace('\n', '')
-            pgconn = psycopg2.connect(self.dsn)
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
 
-            # with self.pgconn.cursor() as cur:
-            with pgconn.cursor() as cur:
-                cur.execute(self.sql)
-                # self.pgconn.commit()
-                pgconn.commit()
-                [self.iface.messageBar().popWidget(x) for x in self.iface.messageBar().items()]
-                self.iface.messageBar().pushMessage('Запрос выполнен', self.sql,
-                                                    level=Qgis.Success, duration=3)
-                # [self.iface.messageBar().popWidget(x) for x in self.iface.messageBar().items()]
+                # with self.pgconn.cursor() as cur:
+                with pgconn.cursor() as cur:
+                    cur.execute(self.sql)
+                    # self.pgconn.commit()
+                    pgconn.commit()
+                    [self.iface.messageBar().popWidget(x) for x in self.iface.messageBar().items()]
+                    self.iface.messageBar().pushMessage('Запрос выполнен', self.sql,
+                                                        level=Qgis.Success, duration=3)
+                    # [self.iface.messageBar().popWidget(x) for x in self.iface.messageBar().items()]
         except:
-            self.iface.messageBar().pushMessage('Запрос не выполнен', self.sql,
+            self.iface.messageBar().pushMessage('Запрос', f"{self.sql} не выполнен",
                                                 level=Qgis.Critical, duration=5)
+
+        self.sql = ''
 
 
     def update_proc_for_selected_features(self):
@@ -518,7 +527,7 @@ class GeoDM:
         if len(selected_rows) != 1:
             self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один проект по обработке', level=Qgis.Warning, duration=3)
         else:
-            proc_id = self.proc_list[selected_rows[0]][1]
+            proc_id = self.proc_list[selected_rows[0]]['proc_id']
             # self.iface.messageBar().pushMessage('Информация', f"Выбрана обработка {str(proc_id)}", level=Qgis.Success, duration=5)
             if self.selectedProcLayer != None and len(self.selectedProcFeaturesList) > 0:
                 if 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
@@ -684,29 +693,29 @@ class GeoDM:
 
             with open('.pgdsn', encoding='utf-8') as dsnf:
                 dsn = dsnf.read().replace('\n', '')
-            pgconn = psycopg2.connect(self.dsn)
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
 
-            # with self.pgconn.cursor() as cur:
-            with pgconn.cursor() as cur:
-                sql = f"select * from {self.report_types}"
-                cur.execute(sql)
-                self.addreportdlg.report_types = list(cur.fetchall())
-                self.addreportdlg.reportTypeInput.addItems([row[2] for row in self.addreportdlg.report_types])
-                sql = f"select * from {self.companies} order by name"
-                cur.execute(sql)
-                self.addreportdlg.companies = list(cur.fetchall())
-                self.addreportdlg.reportAuthorInput.addItem('')
-                self.addreportdlg.reportAuthorInput.addItems([row[1] for row in self.addreportdlg.companies])
-                sql = f"select * from {self.contracts_view} order by name"
-                cur.execute(sql)
-                self.addreportdlg.contracts = list(cur.fetchall())
-                self.addreportdlg.reportContractInput.addItem('')
-                self.addreportdlg.reportContractInput.addItems([row[2] + ' от ' + str(row[3]) for row in self.addreportdlg.contracts])
-                sql = f"select * from {self.conf}"
-                cur.execute(sql)
-                self.addreportdlg.conf = list(cur.fetchall())
-                self.addreportdlg.reportConfInput.addItem('')
-                self.addreportdlg.reportConfInput.addItems([row[2] for row in self.addreportdlg.conf])
+                # with self.pgconn.cursor() as cur:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.report_types}"
+                    cur.execute(sql)
+                    self.addreportdlg.report_types = list(cur.fetchall())
+                    self.addreportdlg.reportTypeInput.addItems([row['name'] for row in self.addreportdlg.report_types])
+                    sql = f"select * from {self.companies} order by name"
+                    cur.execute(sql)
+                    self.addreportdlg.companies = list(cur.fetchall())
+                    self.addreportdlg.reportAuthorInput.addItem('')
+                    self.addreportdlg.reportAuthorInput.addItems([row['name'] for row in self.addreportdlg.companies])
+                    sql = f"select * from {self.contracts_view} order by name"
+                    cur.execute(sql)
+                    self.addreportdlg.contracts = list(cur.fetchall())
+                    self.addreportdlg.reportContractInput.addItem('')
+                    self.addreportdlg.reportContractInput.addItems([row['number'] + ' от ' + str(row['date']) for row in self.addreportdlg.contracts])
+                    sql = f"select * from {self.conf}"
+                    cur.execute(sql)
+                    self.addreportdlg.conf = list(cur.fetchall())
+                    self.addreportdlg.reportConfInput.addItem('')
+                    self.addreportdlg.reportConfInput.addItems([row['conf_name'] for row in self.addreportdlg.conf])
 
         reload_report_data()
 
@@ -795,26 +804,26 @@ class GeoDM:
 
             # with open('.pgdsn', encoding='utf-8') as dsnf:
             #     dsn = dsnf.read().replace('\n', '')
-            pgconn = psycopg2.connect(self.dsn)
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
 
-            # with self.pgconn.cursor() as cur:
-            with pgconn.cursor() as cur:
-                sql = f"select * from {self.contract_types}"
-                cur.execute(sql)
-                self.addcontractdlg.contract_types = list(cur.fetchall())
-                self.addcontractdlg.contractTypeInput.addItems([row[2] for row in self.addcontractdlg.contract_types])
-                sql = f"select * from {self.companies} order by name"
-                cur.execute(sql)
-                self.addcontractdlg.companies = list(cur.fetchall())
-                self.addcontractdlg.contractCustomerInput.addItem('')
-                self.addcontractdlg.contractCustomerInput.addItems([row[1] for row in self.addcontractdlg.companies])
-                self.addcontractdlg.contractContractorInput.addItem('')
-                self.addcontractdlg.contractContractorInput.addItems([row[1] for row in self.addcontractdlg.companies])
-                sql = f"select * from {self.contracts_view} order by date DESC"
-                cur.execute(sql)
-                self.addcontractdlg.contracts = list(cur.fetchall())
-                self.addcontractdlg.contractParentContractInput.addItem('')
-                self.addcontractdlg.contractParentContractInput.addItems([row[2] + ' от ' + str(row[3]) for row in self.addcontractdlg.contracts])
+                # with self.pgconn.cursor() as cur:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.contract_types}"
+                    cur.execute(sql)
+                    self.addcontractdlg.contract_types = list(cur.fetchall())
+                    self.addcontractdlg.contractTypeInput.addItems([row['name'] for row in self.addcontractdlg.contract_types])
+                    sql = f"select * from {self.companies} order by name"
+                    cur.execute(sql)
+                    self.addcontractdlg.companies = list(cur.fetchall())
+                    self.addcontractdlg.contractCustomerInput.addItem('')
+                    self.addcontractdlg.contractCustomerInput.addItems([row['name'] for row in self.addcontractdlg.companies])
+                    self.addcontractdlg.contractContractorInput.addItem('')
+                    self.addcontractdlg.contractContractorInput.addItems([row['name'] for row in self.addcontractdlg.companies])
+                    sql = f"select * from {self.contracts_view} order by date DESC"
+                    cur.execute(sql)
+                    self.addcontractdlg.contracts = list(cur.fetchall())
+                    self.addcontractdlg.contractParentContractInput.addItem('')
+                    self.addcontractdlg.contractParentContractInput.addItems([row['number'] + ' от ' + str(row['date']) for row in self.addcontractdlg.contracts])
 
         reload_contract_data()
 
@@ -832,18 +841,18 @@ class GeoDM:
             values_to_insert = f"'{new_contract_number}', '{new_contract_name}', '{selected_contract_type_id}', '{selected_contract_date.toString('yyyy-MM-dd')}'"
             if selected_customer_index >= 0:
                 fields_to_update += ', customer_id'
-                selected_customer_id = self.addcontractdlg.companies[selected_customer_index][0]
+                selected_customer_id = self.addcontractdlg.companies[selected_customer_index]['company_id']
                 values_to_insert += f", {str(selected_customer_id)}"
             if selected_contractor_index >= 0:
                 fields_to_update += ', contractor_id'
-                selected_contractor_id = self.addcontractdlg.companies[selected_contractor_index][0]
+                selected_contractor_id = self.addcontractdlg.companies[selected_contractor_index]['company_id']
                 values_to_insert += f", {str(selected_contractor_id)}"
             if len(new_contract_link) > 0:
                 fields_to_update += ', link'
                 values_to_insert += f", '{new_contract_link}'"
             if selected_parent_contract_index >= 0:
                 fields_to_update += ', parent_contract_id'
-                selected_parent_contract_id = self.addcontractdlg.contracts[selected_parent_contract_index][1]
+                selected_parent_contract_id = self.addcontractdlg.contracts[selected_parent_contract_index]['contract_id']
                 values_to_insert += f", {str(selected_parent_contract_id)}"
             self.sql = f"insert into {self.contracts}({fields_to_update}) values({values_to_insert})"
             # self.iface.messageBar().pushMessage('sql', self.sql, level=Qgis.Success, duration=5)
@@ -907,33 +916,33 @@ class GeoDM:
 
                 # with open('.pgdsn', encoding='utf-8') as dsnf:
                 #     dsn = dsnf.read().replace('\n', '')
-                pgconn = psycopg2.connect(self.dsn)
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
 
-                # with self.pgconn.cursor() as cur:
-                with pgconn.cursor() as cur:
-                    sql = f"select * from {self.processing_types} order by id"
-                    cur.execute(sql)
-                    self.addprocdlg.proc_types = list(cur.fetchall())
-                    self.addprocdlg.procTypeInput.addItems([row[2] for row in self.addprocdlg.proc_types])
-                    sql = f"select * from {self.projects}"
-                    cur.execute(sql)
-                    self.addprocdlg.projects = list(cur.fetchall())
-                    self.addprocdlg.projectInput.addItems([row[1] for row in self.addprocdlg.projects])
-                    sql = f"select * from {self.companies} order by name"
-                    cur.execute(sql)
-                    self.addprocdlg.companies = list(cur.fetchall())
-                    self.addprocdlg.procAuthorInput.addItem('')
-                    self.addprocdlg.procAuthorInput.addItems([row[1] for row in self.addprocdlg.companies])
-                    sql = f"select * from {self.contracts_view} order by date DESC"
-                    cur.execute(sql)
-                    self.addprocdlg.contracts = cur.fetchall()
-                    self.addprocdlg.procContractInput.addItem('')
-                    self.addprocdlg.procContractInput.addItems([row[2] + ' от ' + str(row[3]) + ' ' + row[7] + '-' + row[10] for row in self.addprocdlg.contracts])
-                    sql = f"select * from {self.reports_view} order by shortname DESC"
-                    cur.execute(sql)
-                    self.addprocdlg.reports = cur.fetchall()
-                    self.addprocdlg.procReportInput.addItem('')
-                    self.addprocdlg.procReportInput.addItems([row[3] for row in self.addprocdlg.reports])
+                    # with self.pgconn.cursor() as cur:
+                    with pgconn.cursor() as cur:
+                        sql = f"select * from {self.processing_types} order by id"
+                        cur.execute(sql)
+                        self.addprocdlg.proc_types = list(cur.fetchall())
+                        self.addprocdlg.procTypeInput.addItems([row['name'] for row in self.addprocdlg.proc_types])
+                        sql = f"select * from {self.projects}"
+                        cur.execute(sql)
+                        self.addprocdlg.projects = list(cur.fetchall())
+                        self.addprocdlg.projectInput.addItems([row['name_ru'] for row in self.addprocdlg.projects])
+                        sql = f"select * from {self.companies} order by name"
+                        cur.execute(sql)
+                        self.addprocdlg.companies = list(cur.fetchall())
+                        self.addprocdlg.procAuthorInput.addItem('')
+                        self.addprocdlg.procAuthorInput.addItems([row['name'] for row in self.addprocdlg.companies])
+                        sql = f"select * from {self.contracts_view} order by date DESC"
+                        cur.execute(sql)
+                        self.addprocdlg.contracts = cur.fetchall()
+                        self.addprocdlg.procContractInput.addItem('')
+                        self.addprocdlg.procContractInput.addItems([row['number'] + ' от ' + str(row['date']) + ' ' + row['customer_short'] + '-' + row['contractor_short'] for row in self.addprocdlg.contracts])
+                        sql = f"select * from {self.reports_view} order by shortname DESC"
+                        cur.execute(sql)
+                        self.addprocdlg.reports = cur.fetchall()
+                        self.addprocdlg.procReportInput.addItem('')
+                        self.addprocdlg.procReportInput.addItems([row['shortname'] for row in self.addprocdlg.reports])
 
             reload_proc_data()
 
@@ -941,9 +950,9 @@ class GeoDM:
                 new_proc_name = self.addprocdlg.procNameInput.text()
                 new_proc_year = str(self.addprocdlg.procYearInput.value())
                 selected_proc_type_index = self.addprocdlg.procTypeInput.currentIndex()
-                selected_proc_type_id = self.addprocdlg.proc_types[selected_proc_type_index][1]
+                selected_proc_type_id = self.addprocdlg.proc_types[selected_proc_type_index]['proc_type_id']
                 selected_project_index = self.addprocdlg.projectInput.currentIndex()
-                selected_project_id = self.addprocdlg.projects[selected_project_index][0]
+                selected_project_id = self.addprocdlg.projects[selected_project_index]['id']
                 selected_author_index = self.addprocdlg.procAuthorInput.currentIndex() - 1
                 selected_contract_index = self.addprocdlg.procContractInput.currentIndex() - 1
                 selected_report_index = self.addprocdlg.procReportInput.currentIndex() - 1
@@ -951,15 +960,15 @@ class GeoDM:
                 values_to_insert = f"'{new_proc_name}', {str(selected_proc_type_id)}, {str(new_proc_year)}, {str(selected_project_id)}"
                 if selected_author_index >= 0:
                     fields_to_update += ', author_id'
-                    selected_author_id = self.addprocdlg.companies[selected_author_index][0]
+                    selected_author_id = self.addprocdlg.companies[selected_author_index]['company_id']
                     values_to_insert += f", {str(selected_author_id)}"
                 if selected_contract_index >= 0:
                     fields_to_update += ', contract_id'
-                    selected_contract_id = self.addprocdlg.contracts[selected_contract_index][1]
+                    selected_contract_id = self.addprocdlg.contracts[selected_contract_index]['contract_id']
                     values_to_insert += f", {str(selected_contract_id)}"
                 if selected_report_index >= 0:
                     fields_to_update += ', report_id'
-                    selected_report_id = self.addprocdlg.reports[selected_report_index][1]
+                    selected_report_id = self.addprocdlg.reports[selected_report_index]['report_id']
                     values_to_insert += f", {str(selected_report_id)}"
                 self.sql = f"insert into {self.processings}({fields_to_update}) values({values_to_insert})"
                 # self.iface.messageBar().pushMessage('sql:', self.sql, level=Qgis.Success, duration=5)
@@ -1009,11 +1018,11 @@ class GeoDM:
         selected_cells = self.dockwind.procTableWidget.selectedItems()
         selected_rows = list(set([x.row() for x in selected_cells]))
         if len(selected_rows) > 0:
-            selected_proc_ids_list = [self.proc_list[i][1] for i in selected_rows]
+            selected_proc_ids_list = [self.proc_list[i]['proc_id'] for i in selected_rows]
             self.sql = f"delete from {self.processings} where proc_id in ({', '.join([str(x) for x in selected_proc_ids_list])}); " \
                        f"update {self.seismic_lines_processed_2d} set proc_id = NULL where proc_id in ({', '.join([str(x) for x in selected_proc_ids_list])}); " \
                        f"update {self.seismic_pols_processed_3d} set proc_id = NULL where proc_id in ({', '.join([str(x) for x in selected_proc_ids_list])});"
-            mwidget = self.iface.messageBar().createMessage(f"Удалить из базы обработки [{'], ['.join([self.proc_list[i][2] for i in selected_rows])}]? "
+            mwidget = self.iface.messageBar().createMessage(f"Удалить из базы обработки [{'], ['.join([self.proc_list[i]['name'] for i in selected_rows])}]? "
                                                             f"Это приведет к удалению ссылки на эту обработку "
                                                             f"из всех линий профилей 2D и полигонов площадок 3D")
             mbutton = QPushButton(mwidget)
@@ -1036,76 +1045,76 @@ class GeoDM:
 
         def reload_proc_types():
             self.updateprocdlg.procTypeInput.clear()
-            pgconn = psycopg2.connect(self.dsn)
-            with pgconn.cursor() as cur:
-                sql = f"select * from {self.processing_types} order by id"
-                cur.execute(sql)
-                self.updateprocdlg.proc_types = list(cur.fetchall())
-                self.updateprocdlg.procTypeInput.addItems([row[2] for row in self.updateprocdlg.proc_types])
-            selected_proc_type = self.proc_list[self.updateprocdlg.selected_proc_row][4]
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.processing_types} order by id"
+                    cur.execute(sql)
+                    self.updateprocdlg.proc_types = list(cur.fetchall())
+                    self.updateprocdlg.procTypeInput.addItems([row[2] for row in self.updateprocdlg.proc_types])
+                selected_proc_type = self.proc_list[self.updateprocdlg.selected_proc_row]['proc_type']
             if selected_proc_type:
                 self.updateprocdlg.procTypeInput.setCurrentText(selected_proc_type)
 
 
         def reload_projects():
             self.updateprocdlg.projectInput.clear()
-            pgconn = psycopg2.connect(self.dsn)
-            with pgconn.cursor() as cur:
-                sql = f"select * from {self.projects}"
-                cur.execute(sql)
-                self.updateprocdlg.projects = list(cur.fetchall())
-                self.updateprocdlg.projectInput.addItems([row[1] for row in self.updateprocdlg.projects])
-            selected_project_id = self.proc_list[self.updateprocdlg.selected_proc_row][25]
-            if selected_project_id:
-                selected_project_name = [x for x in self.updateprocdlg.projects if x[0] == selected_project_id][0][1]
-                if selected_project_name:
-                    self.updateprocdlg.projectInput.setCurrentText(selected_project_name)
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.projects}"
+                    cur.execute(sql)
+                    self.updateprocdlg.projects = list(cur.fetchall())
+                    self.updateprocdlg.projectInput.addItems([row[1] for row in self.updateprocdlg.projects])
+                selected_project_id = self.proc_list[self.updateprocdlg.selected_proc_row]['project_id']
+                if selected_project_id:
+                    selected_project_name = [x for x in self.updateprocdlg.projects if x[0] == selected_project_id][0][1]
+                    if selected_project_name:
+                        self.updateprocdlg.projectInput.setCurrentText(selected_project_name)
 
 
         def reload_companies():
             self.updateprocdlg.procAuthorInput.clear()
-            pgconn = psycopg2.connect(self.dsn)
-            sql = f"select * from {self.companies} order by name"
-            with pgconn.cursor() as cur:
-                cur.execute(sql)
-                self.updateprocdlg.companies = list(cur.fetchall())
-                self.updateprocdlg.procAuthorInput.addItem('')
-                self.updateprocdlg.procAuthorInput.addItems([row[1] for row in self.updateprocdlg.companies])
-            selected_author = self.proc_list[self.updateprocdlg.selected_proc_row][8]
-            if selected_author:
-                self.updateprocdlg.procAuthorInput.setCurrentText(selected_author)
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                sql = f"select * from {self.companies} order by name"
+                with pgconn.cursor() as cur:
+                    cur.execute(sql)
+                    self.updateprocdlg.companies = list(cur.fetchall())
+                    self.updateprocdlg.procAuthorInput.addItem('')
+                    self.updateprocdlg.procAuthorInput.addItems([row[1] for row in self.updateprocdlg.companies])
+                selected_author = self.proc_list[self.updateprocdlg.selected_proc_row]['company_name']
+                if selected_author:
+                    self.updateprocdlg.procAuthorInput.setCurrentText(selected_author)
 
 
         def reload_contracts():
             self.updateprocdlg.procContractInput.clear()
-            pgconn = psycopg2.connect(self.dsn)
-            with pgconn.cursor() as cur:
-                sql = f"select * from {self.contracts_view} order by date DESC"
-                cur.execute(sql)
-                self.updateprocdlg.contracts = cur.fetchall()
-                self.updateprocdlg.procContractInput.addItem('')
-                self.updateprocdlg.procContractInput.addItems(
-                    [row[2] + ' от ' + str(row[3]) + ' ' + row[7] + '-' + row[10] for row in
-                     self.updateprocdlg.contracts])
-            selected_contract_id = self.proc_list[self.updateprocdlg.selected_proc_row][10]
-            if selected_contract_id:
-                selected_contract = [x for x in self.updateprocdlg.contracts if x[1] == selected_contract_id][0]
-                self.updateprocdlg.procContractInput.setCurrentText(
-                    f"{selected_contract[2]} от {str(selected_contract[3])} {selected_contract[7]}-{selected_contract[10]}")
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.contracts_view} order by date DESC"
+                    cur.execute(sql)
+                    self.updateprocdlg.contracts = cur.fetchall()
+                    self.updateprocdlg.procContractInput.addItem('')
+                    self.updateprocdlg.procContractInput.addItems(
+                        [row['number'] + ' от ' + str(row['date']) + ' ' + row['customer_short'] + '-' + row['contractor_short'] for row in
+                         self.updateprocdlg.contracts])
+                selected_contract_id = self.proc_list[self.updateprocdlg.selected_proc_row]['contract_id']
+                if selected_contract_id:
+                    selected_contract = [x for x in self.updateprocdlg.contracts if x['contract_id'] == selected_contract_id][0]
+                    self.updateprocdlg.procContractInput.setCurrentText(
+                        f"{selected_contract['number']} от {str(selected_contract['date'])} {selected_contract['customer_short']}-{selected_contract['contractor_short']}")
 
 
         def reload_reports():
             self.updateprocdlg.procReportInput.clear()
-            pgconn = psycopg2.connect(self.dsn)
-            with pgconn.cursor() as cur:
-                sql = f"select * from {self.reports_view} order by shortname DESC"
-                cur.execute(sql)
-                self.updateprocdlg.reports = cur.fetchall()
-                self.updateprocdlg.procReportInput.addItem('')
-                self.updateprocdlg.procReportInput.addItems([row[3] for row in self.updateprocdlg.reports])
-            selected_report = self.proc_list[self.updateprocdlg.selected_proc_row][24]
-            if selected_report:
-                self.updateprocdlg.procReportInput.setCurrentText(selected_report)
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.reports_view} order by shortname DESC"
+                    cur.execute(sql)
+                    self.updateprocdlg.reports = cur.fetchall()
+                    self.updateprocdlg.procReportInput.addItem('')
+                    self.updateprocdlg.procReportInput.addItems([row[3] for row in self.updateprocdlg.reports])
+                selected_report = self.proc_list[self.updateprocdlg.selected_proc_row]['report_shortname']
+                if selected_report:
+                    self.updateprocdlg.procReportInput.setCurrentText(selected_report)
 
 
         def reload_proc_data():
@@ -1117,78 +1126,78 @@ class GeoDM:
 
             # with open('.pgdsn', encoding='utf-8') as dsnf:
             #     dsn = dsnf.read().replace('\n', '')
-            pgconn = psycopg2.connect(self.dsn)
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
 
-            # with self.pgconn.cursor() as cur:
-            with pgconn.cursor() as cur:
-                sql = f"select * from {self.processing_types} order by id"
-                cur.execute(sql)
-                self.updateprocdlg.proc_types = list(cur.fetchall())
-                self.updateprocdlg.procTypeInput.addItems([row[2] for row in self.updateprocdlg.proc_types])
-                sql = f"select * from {self.projects}"
-                cur.execute(sql)
-                self.updateprocdlg.projects = list(cur.fetchall())
-                self.updateprocdlg.projectInput.addItems([row[1] for row in self.updateprocdlg.projects])
-                sql = f"select * from {self.companies} order by name"
-                cur.execute(sql)
-                self.updateprocdlg.companies = list(cur.fetchall())
-                self.updateprocdlg.procAuthorInput.addItem('')
-                self.updateprocdlg.procAuthorInput.addItems([row[1] for row in self.updateprocdlg.companies])
-                sql = f"select * from {self.contracts_view} order by date DESC"
-                cur.execute(sql)
-                self.updateprocdlg.contracts = cur.fetchall()
-                self.updateprocdlg.procContractInput.addItem('')
-                self.updateprocdlg.procContractInput.addItems(
-                    [row[2] + ' от ' + str(row[3]) + ' ' + row[7] + '-' + row[10] for row in self.updateprocdlg.contracts])
-                sql = f"select * from {self.reports_view} order by shortname DESC"
-                cur.execute(sql)
-                self.updateprocdlg.reports = cur.fetchall()
-                self.updateprocdlg.procReportInput.addItem('')
-                self.updateprocdlg.procReportInput.addItems([row[3] for row in self.updateprocdlg.reports])
+                # with self.pgconn.cursor() as cur:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.processing_types} order by id"
+                    cur.execute(sql)
+                    self.updateprocdlg.proc_types = list(cur.fetchall())
+                    self.updateprocdlg.procTypeInput.addItems([row['name'] for row in self.updateprocdlg.proc_types])
+                    sql = f"select * from {self.projects}"
+                    cur.execute(sql)
+                    self.updateprocdlg.projects = list(cur.fetchall())
+                    self.updateprocdlg.projectInput.addItems([row['name_ru'] for row in self.updateprocdlg.projects])
+                    sql = f"select * from {self.companies} order by name"
+                    cur.execute(sql)
+                    self.updateprocdlg.companies = list(cur.fetchall())
+                    self.updateprocdlg.procAuthorInput.addItem('')
+                    self.updateprocdlg.procAuthorInput.addItems([row['name'] for row in self.updateprocdlg.companies])
+                    sql = f"select * from {self.contracts_view} order by date DESC"
+                    cur.execute(sql)
+                    self.updateprocdlg.contracts = cur.fetchall()
+                    self.updateprocdlg.procContractInput.addItem('')
+                    self.updateprocdlg.procContractInput.addItems(
+                        [row['number'] + ' от ' + str(row['date']) + ' ' + row['customer_short'] + '-' + row['contractor_short'] for row in self.updateprocdlg.contracts])
+                    sql = f"select * from {self.reports_view} order by shortname DESC"
+                    cur.execute(sql)
+                    self.updateprocdlg.reports = cur.fetchall()
+                    self.updateprocdlg.procReportInput.addItem('')
+                    self.updateprocdlg.procReportInput.addItems([row['shortname'] for row in self.updateprocdlg.reports])
 
         reload_proc_data()
 
         def fill_with_selected_proc():
-            selected_proc_name = self.proc_list[self.updateprocdlg.selected_proc_row][2]
+            selected_proc_name = self.proc_list[self.updateprocdlg.selected_proc_row]['name']
             if selected_proc_name:
-                self.updateprocdlg.procNameInput.setText(self.proc_list[self.updateprocdlg.selected_proc_row][2])
+                self.updateprocdlg.procNameInput.setText(self.proc_list[self.updateprocdlg.selected_proc_row]['name'])
 
-            selected_proc_type = self.proc_list[self.updateprocdlg.selected_proc_row][4]
+            selected_proc_type = self.proc_list[self.updateprocdlg.selected_proc_row]['proc_type']
             if selected_proc_type:
                 self.updateprocdlg.procTypeInput.setCurrentText(selected_proc_type)
 
-            selected_project_id = self.proc_list[self.updateprocdlg.selected_proc_row][25]
+            selected_project_id = self.proc_list[self.updateprocdlg.selected_proc_row]['project_id']
             if selected_project_id:
-                selected_project_name = [x for x in self.updateprocdlg.projects if x[0] == selected_project_id][0][1]
+                selected_project_name = [x for x in self.updateprocdlg.projects if x['id'] == selected_project_id][0]['name_ru']
                 if selected_project_name:
                     self.updateprocdlg.projectInput.setCurrentText(selected_project_name)
 
-            selected_proc_year = self.proc_list[self.updateprocdlg.selected_proc_row][6]
+            selected_proc_year = self.proc_list[self.updateprocdlg.selected_proc_row]['year']
             if selected_proc_year:
                 self.updateprocdlg.procYearInput.setValue(selected_proc_year)
 
-            selected_author = self.proc_list[self.updateprocdlg.selected_proc_row][8]
+            selected_author = self.proc_list[self.updateprocdlg.selected_proc_row]['company_name']
             if selected_author:
                 self.updateprocdlg.procAuthorInput.setCurrentText(selected_author)
 
-            selected_contract_id =  self.proc_list[self.updateprocdlg.selected_proc_row][10]
+            selected_contract_id =  self.proc_list[self.updateprocdlg.selected_proc_row]['contract_id']
             if selected_contract_id:
-                selected_contract = [x for x in self.updateprocdlg.contracts if x[1] == selected_contract_id][0]
-                self.updateprocdlg.procContractInput.setCurrentText(f"{selected_contract[2]} от {str(selected_contract[3])} {selected_contract[7]}-{selected_contract[10]}")
+                selected_contract = [x for x in self.updateprocdlg.contracts if x['contract_id'] == selected_contract_id][0]
+                self.updateprocdlg.procContractInput.setCurrentText(f"{selected_contract['number']} от {str(selected_contract['date'])} {selected_contract['customer_id']}-{selected_contract['contractor_id']}")
 
-            selected_report = self.proc_list[self.updateprocdlg.selected_proc_row][24]
+            selected_report = self.proc_list[self.updateprocdlg.selected_proc_row]['report_shortname']
             if selected_report:
                 self.updateprocdlg.procReportInput.setCurrentText(selected_report)
 
 
         def generate_sql():
-            selected_proc_id = self.proc_list[self.updateprocdlg.selected_proc_row][1]
+            selected_proc_id = self.proc_list[self.updateprocdlg.selected_proc_row]['proc_id']
             new_proc_name = self.updateprocdlg.procNameInput.text()
             new_proc_year = str(self.updateprocdlg.procYearInput.value())
             selected_proc_type_index = self.updateprocdlg.procTypeInput.currentIndex()
-            selected_proc_type_id = self.updateprocdlg.proc_types[selected_proc_type_index][1]
+            selected_proc_type_id = self.updateprocdlg.proc_types[selected_proc_type_index]['proc_type_id']
             selected_project_index = self.updateprocdlg.projectInput.currentIndex()
-            selected_project_id = self.updateprocdlg.projects[selected_project_index][0]
+            selected_project_id = self.updateprocdlg.projects[selected_project_index]['id']
             selected_author_index = self.updateprocdlg.procAuthorInput.currentIndex() - 1
             selected_contract_index = self.updateprocdlg.procContractInput.currentIndex() - 1
             selected_report_index = self.updateprocdlg.procReportInput.currentIndex() - 1
@@ -1196,17 +1205,17 @@ class GeoDM:
             values_to_update = [f"\'{new_proc_name}\'", str(selected_proc_type_id), str(new_proc_year), str(selected_project_id)]
             dict_to_update = dict(zip(fields_to_update, values_to_update))
             if selected_author_index >= 0:
-                selected_author_id = self.updateprocdlg.companies[selected_author_index][0]
+                selected_author_id = self.updateprocdlg.companies[selected_author_index]['company_id']
                 dict_to_update['author_id'] = str(selected_author_id)
             elif selected_author_index == -1:
                 dict_to_update['author_id'] = self.null_value
             if selected_contract_index >= 0:
-                selected_contract_id = self.updateprocdlg.contracts[selected_contract_index][1]
+                selected_contract_id = self.updateprocdlg.contracts[selected_contract_index]['contract_id']
                 dict_to_update['contract_id'] = str(selected_contract_id)
             elif selected_contract_index == -1:
                 dict_to_update['contract_id'] = self.null_value
             if selected_report_index >= 0:
-                selected_report_id = self.updateprocdlg.reports[selected_report_index][1]
+                selected_report_id = self.updateprocdlg.reports[selected_report_index]['report_id']
                 dict_to_update['report_id'] = str(selected_report_id)
             elif selected_report_index == -1:
                 dict_to_update['report_id'] = self.null_value
@@ -1264,7 +1273,7 @@ class GeoDM:
         if self.selectedProcLayer != None and len(self.selectedProcFeaturesList) > 0:
             if 'proc_id' in [f.name() for f in self.selectedProcLayer.fields()]:
                 selected_features_proc_ids_list = list(set([f.attribute('proc_id') for f in self.selectedProcFeaturesList]))
-                selected_proc_indexes = [x[0] for x in enumerate(self.proc_list) if x[1][1] in selected_features_proc_ids_list]
+                selected_proc_indexes = [x[0] for x in enumerate(self.proc_list) if x[1]['proc_id'] in selected_features_proc_ids_list]
                 [x.setSelected(False) for x in self.dockwind.procTableWidget.selectedItems()]
                 # self.dockwind.procTableWidget.setSelectionMode(QAbstractItemView.MultiSelection)
                 # [self.dockwind.procTableWidget.selectRow(i) for i in selected_proc_indexes]
@@ -1281,7 +1290,7 @@ class GeoDM:
 
     def select_geometry_by_proc(self):
         selected_proc_rows = list(set([x.row() for x in self.dockwind.procTableWidget.selectedItems()]))
-        selected_proc_ids = [str(self.proc_list[i][1]) for i in selected_proc_rows]
+        selected_proc_ids = [str(self.proc_list[i]['proc_id']) for i in selected_proc_rows]
         if len(selected_proc_ids) > 0 and self.selectedProcLayer != None and 'proc_id' in [f.name() for f in self.selectedProcLayer.fields()]:
             proc_ids_string = ', '.join(selected_proc_ids)
             self.selectedProcLayer.removeSelection()
@@ -1296,6 +1305,140 @@ class GeoDM:
 
     def add_survey(self):
         self.addsurveydlg = AddSurveyDialog()
+        self.addsurveydlg.refreshProjButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.addsurveydlg.refreshAuthorsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.addsurveydlg.refreshContractsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.addsurveydlg.refreshReportsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+
+        self.addsurveydlg.reports_to_link = []
+
+        def reload_survey_data():
+            self.addsurveydlg.surveyTypeInput.clear()
+            self.addsurveydlg.projectInput.clear()
+            self.addsurveydlg.surveyAuthorInput.clear()
+            self.addsurveydlg.surveyContractInput.clear()
+            self.addsurveydlg.surveyLocTypeInput.clear()
+            self.addsurveydlg.surveyReportsTableWidget.clear()
+
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.location_types}"
+                    cur.execute(sql)
+                    self.addsurveydlg.location_types_list = cur.fetchall()
+                    self.addsurveydlg.surveyLocTypeInput.addItems([row['name'] for row in self.addsurveydlg.location_types_list])
+
+                    sql = f"select * from {self.survey_types} order by survey_type_id"
+                    cur.execute(sql)
+                    self.addsurveydlg.survey_types_list = list(cur.fetchall())
+                    self.addsurveydlg.surveyTypeInput.addItems([row['name'] for row in self.addsurveydlg.survey_types_list])
+
+                    sql = f"select * from {self.projects}"
+                    cur.execute(sql)
+                    self.addsurveydlg.projects_list = list(cur.fetchall())
+                    self.addsurveydlg.projectInput.addItems([row['name_ru'] for row in self.addsurveydlg.projects_list])
+
+                    sql = f"select * from {self.companies} order by name"
+                    cur.execute(sql)
+                    self.addsurveydlg.companies_list = list(cur.fetchall())
+                    self.addsurveydlg.surveyAuthorInput.addItem('')
+                    self.addsurveydlg.surveyAuthorInput.addItems([row['name'] for row in self.addsurveydlg.companies_list])
+
+                    sql = f"select * from {self.contracts_view} order by date DESC"
+                    cur.execute(sql)
+                    self.addsurveydlg.contracts_list = cur.fetchall()
+                    self.addsurveydlg.surveyContractInput.addItem('')
+                    self.addsurveydlg.surveyContractInput.addItems([row['number'] + ' от ' + str(row['date']) + ' ' + row['customer_short'] + '-' + row['contractor_short'] for row in self.addsurveydlg.contracts_list])
+
+                    sql = f"select * from {self.reports_view} order by shortname DESC"
+                    cur.execute(sql)
+                    self.addsurveydlg.all_reports_list = cur.fetchall()
+                    self.addsurveydlg.surveyReportsInput.addItem('Выберите отчет для привязки')
+                    self.addsurveydlg.surveyReportsInput.addItems([row['shortname'] for row in self.addsurveydlg.all_reports_list])
+                    self.addsurveydlg.surveyReportsTableWidget.clear()
+                    self.addsurveydlg.surveyReportsTableWidget.setRowCount(0)
+                    self.addsurveydlg.surveyReportsTableWidget.setColumnCount(2)
+                    self.addsurveydlg.surveyReportsTableWidget.setHorizontalHeaderLabels(['Тип', 'Название'])
+                    header = self.addsurveydlg.surveyReportsTableWidget.horizontalHeader()
+                    header.resizeSection(0, 100)
+                    header.resizeSection(1, 255)
+
+        reload_survey_data()
+
+        def link_existing_report():
+            selected_report_index = self.addsurveydlg.surveyReportsInput.currentIndex() - 1
+            if selected_report_index >= 0 and self.addsurveydlg.all_reports_list[selected_report_index]['report_id'] not in \
+                    [x['report_id'] for x in self.addsurveydlg.reports_to_link]:
+                self.addsurveydlg.reports_to_link.append(self.addsurveydlg.all_reports_list[selected_report_index])
+                i = self.addsurveydlg.surveyReportsTableWidget.rowCount()
+                self.addsurveydlg.surveyReportsTableWidget.insertRow(i)
+                citem = QTableWidgetItem(self.addsurveydlg.all_reports_list[selected_report_index]['report_type'])
+                citem.setToolTip(self.addsurveydlg.all_reports_list[selected_report_index]['report_type'])
+                citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                self.addsurveydlg.surveyReportsTableWidget.setItem(i, 0, citem)
+                citem = QTableWidgetItem(self.addsurveydlg.all_reports_list[selected_report_index]['shortname'])
+                citem.setToolTip(self.addsurveydlg.all_reports_list[selected_report_index]['name'])
+                citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                self.addsurveydlg.surveyReportsTableWidget.setItem(i, 1, citem)
+            self.addsurveydlg.surveyReportsInput.setCurrentIndex(0)
+
+        def unlink_existing_report():
+            selected_reports_rows = list(set([x.row() for x in self.addsurveydlg.surveyReportsTableWidget.selectedItems()]))
+            if selected_reports_rows:
+                [self.addsurveydlg.reports_to_link.pop(x) for x in selected_reports_rows]
+                [self.addsurveydlg.surveyReportsTableWidget.removeRow(x) for x in selected_reports_rows]
+
+        def generate_and_execute_sql():
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from nextval('{self.survey_id_seq}'::regclass)"
+                    cur.execute(sql)
+                    new_survey_id = cur.fetchall()[0][0]
+
+            new_survey_name = self.addsurveydlg.surveyNameInput.text()
+            selected_loc_type_index = self.addsurveydlg.surveyLocTypeInput.currentIndex()
+            selected_loc_type_id = self.addsurveydlg.location_types_list[selected_loc_type_index]['location_type_id']
+            selected_survey_type_index = self.addsurveydlg.surveyTypeInput.currentIndex()
+            selected_survey_type_id = self.addsurveydlg.survey_types_list[selected_survey_type_index]['survey_type_id']
+            selected_project_index = self.addsurveydlg.projectInput.currentIndex()
+            selected_project_id = self.addsurveydlg.projects_list[selected_project_index]['id']
+            new_survey_year = str(self.addsurveydlg.surveyYearInput.value())
+            selected_author_index = self.addsurveydlg.surveyAuthorInput.currentIndex() - 1
+
+            selected_contract_index = self.addsurveydlg.surveyContractInput.currentIndex() - 1
+
+            fields_to_update = 'survey_id, name, location_type_id, type_id, project_id, year'
+            values_to_insert = f"{str(new_survey_id)}, '{new_survey_name}', {str(selected_loc_type_id)}, {str(selected_survey_type_id)}, {str(selected_project_id)}, {str(new_survey_year)}"
+            if selected_author_index >=0:
+                fields_to_update += ', acquisition_company_id'
+                selected_author_id = self.addsurveydlg.companies_list[selected_author_index]['company_id']
+                values_to_insert += f", {str(selected_author_id)}"
+            if selected_contract_index >= 0:
+                fields_to_update += ', acquisition_contract_id'
+                selected_contract_id = self.addsurveydlg.contracts_list[selected_contract_index]['contract_id']
+                values_to_insert += f", {str(selected_contract_id)}"
+
+            self.sql = f"insert into {self.surveys}({fields_to_update}) values({values_to_insert})"
+            for i, report in enumerate(self.addsurveydlg.reports_to_link):
+                if i == 0:
+                    self.sql += f"; insert into {self.reports_to_surveys}(report_id, survey_id) values({str(report['report_id'])}, {str(new_survey_id)})"
+                elif i > 0:
+                    self.sql += f", ({str(report['report_id'])}, {str(new_survey_id)})"
+            self.sql += ';'
+
+            # self.iface.messageBar().pushMessage('sql', self.sql, level=Qgis.Success, duration=5)
+            mwidget = self.iface.messageBar().createMessage(
+                f"Добавить в базу съемку {str(new_survey_name)}?")
+            mbutton = QPushButton(mwidget)
+            mbutton.setText('Подтвердить')
+            mbutton.pressed.connect(self.execute_sql)
+            mwidget.layout().addWidget(mbutton)
+            self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+
+        self.addsurveydlg.surveyReportsInput.activated.connect(link_existing_report)
+        self.addsurveydlg.unlinkSelectedReportButton.clicked.connect(unlink_existing_report)
+        self.addsurveydlg.insertSurveyButton.clicked.connect(generate_and_execute_sql)
+        self.addsurveydlg.insertSurveyButton.clicked.connect(self.refresh_surveys)
+
         self.addsurveydlg.show()
 
 
