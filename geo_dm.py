@@ -1312,6 +1312,7 @@ class GeoDM:
 
         self.addsurveydlg.reports_to_link = []
 
+
         def reload_survey_data():
             self.addsurveydlg.surveyTypeInput.clear()
             self.addsurveydlg.projectInput.clear()
@@ -1319,6 +1320,7 @@ class GeoDM:
             self.addsurveydlg.surveyContractInput.clear()
             self.addsurveydlg.surveyLocTypeInput.clear()
             self.addsurveydlg.surveyReportsTableWidget.clear()
+            self.addsurveydlg.surveyReportsInput.clear()
 
             with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
                 with pgconn.cursor() as cur:
@@ -1361,6 +1363,78 @@ class GeoDM:
                     header = self.addsurveydlg.surveyReportsTableWidget.horizontalHeader()
                     header.resizeSection(0, 100)
                     header.resizeSection(1, 255)
+
+        def reload_projects():
+            self.addsurveydlg.projectInput.clear()
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.projects}"
+                    cur.execute(sql)
+                    self.addsurveydlg.projects_list = list(cur.fetchall())
+                    self.addsurveydlg.projectInput.addItems([row['name_ru'] for row in self.addsurveydlg.projects_list])
+
+        def reload_companies():
+            filter_string = self.addsurveydlg.authorFilterInput.text().strip().lower()
+            self.addsurveydlg.surveyAuthorInput.clear()
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.companies}"
+                    if filter_string:
+                        sql += f" where LOWER(name) like '%{filter_string}%' " \
+                               f"or LOWER(shortname) like '%{filter_string}%'"
+                    sql += " order by name"
+                    cur.execute(sql)
+                    self.addsurveydlg.companies_list = list(cur.fetchall())
+                    self.addsurveydlg.surveyAuthorInput.addItem('')
+                    self.addsurveydlg.surveyAuthorInput.addItems([row['name'] for row in self.addsurveydlg.companies_list])
+
+        def reload_contracts():
+            filter_string = self.addsurveydlg.contractFilterInput.text().strip().lower()
+            self.addsurveydlg.surveyContractInput.clear()
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.contracts_view}"
+                    # f"or LOWER(name) like '%{filter_string}%' " \
+                    if filter_string:
+                        sql += f" where LOWER(number) like '%{filter_string}%' " \
+                               f"or LOWER(name) like '%{filter_string}%' " \
+                               f"or date::text like '%{filter_string}%' " \
+                               f"or LOWER(customer) like '%{filter_string}%' " \
+                               f"or LOWER(customer_short) like '%{filter_string}%' " \
+                               f"or LOWER(contractor) like '%{filter_string}%' " \
+                               f"or LOWER(contractor_short) like '%{filter_string}%'"
+                    sql += " order by date DESC"
+                    cur.execute(sql)
+                    self.addsurveydlg.contracts_list = cur.fetchall()
+                    self.addsurveydlg.surveyContractInput.addItem('')
+                    self.addsurveydlg.surveyContractInput.addItems([row['number'] + ' от ' + str(row['date']) + ' ' +
+                                                                    row['customer_short'] + '-' + row[
+                                                                        'contractor_short'] for row in
+                                                                    self.addsurveydlg.contracts_list])
+
+        def reload_reports():
+            filter_string = self.addsurveydlg.reportFilterInput.text().strip().lower()
+            self.addsurveydlg.surveyReportsInput.clear()
+            sql = f"select * from {self.reports_view}"
+            if filter_string:
+                sql += f" where LOWER(name) like '%{filter_string}%' " \
+                       f"or LOWER(shortname) like '%{filter_string}%' " \
+                       f"or LOWER(company_name) like '%{filter_string}%' " \
+                       f"or LOWER(company_shortname) like '%{filter_string}%' " \
+                       f"or LOWER(contract_number) like '%{filter_string}%' " \
+                       f"or LOWER(contract_name) like '%{filter_string}%' " \
+                       f"or year::text like '%{filter_string}%' " \
+                       f"or LOWER(conf) like '%{filter_string}%' " \
+                       f"or LOWER(conf_shortname) like '%{filter_string}%' " \
+                       f"or LOWER(conf_limit) like '%{filter_string}%' " \
+                       f"or LOWER(report_type) like '%{filter_string}%'"
+            sql += " order by shortname DESC"
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    cur.execute(sql)
+                    self.addsurveydlg.all_reports_list = cur.fetchall()
+                    self.addsurveydlg.surveyReportsInput.addItem('Выберите отчет для привязки')
+                    self.addsurveydlg.surveyReportsInput.addItems([row['shortname'] for row in self.addsurveydlg.all_reports_list])
 
         reload_survey_data()
 
@@ -1434,6 +1508,17 @@ class GeoDM:
             mwidget.layout().addWidget(mbutton)
             self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
 
+        self.addsurveydlg.addProjectButton.clicked.connect(self.add_project)
+        self.addsurveydlg.refreshProjButton.clicked.connect(reload_projects)
+        self.addsurveydlg.addCompanyButton.clicked.connect(self.add_company)
+        self.addsurveydlg.authorFilterInput.textEdited.connect(reload_companies)
+        self.addsurveydlg.refreshAuthorsButton.clicked.connect(reload_companies)
+        self.addsurveydlg.addContractButton.clicked.connect(self.add_contract)
+        self.addsurveydlg.contractFilterInput.textEdited.connect(reload_contracts)
+        self.addsurveydlg.refreshContractsButton.clicked.connect(reload_contracts)
+        self.addsurveydlg.addReportButton.clicked.connect(self.add_report)
+        self.addsurveydlg.reportFilterInput.textEdited.connect(reload_reports)
+        self.addsurveydlg.refreshReportsButton.clicked.connect(reload_reports)
         self.addsurveydlg.surveyReportsInput.activated.connect(link_existing_report)
         self.addsurveydlg.unlinkSelectedReportButton.clicked.connect(unlink_existing_report)
         self.addsurveydlg.insertSurveyButton.clicked.connect(generate_and_execute_sql)
