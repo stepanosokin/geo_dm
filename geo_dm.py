@@ -105,6 +105,8 @@ class GeoDM:
         self.survey_types = 'dm.survey_types'
         self.location_types = 'dm.location_types'
         self.reports_to_surveys = 'dm.reports_to_surveys'
+        self.seismic_lines_field_2d = 'dm.seismic_lines_field_2d'
+        self.seismic_pols_field_3d = 'dm.seismic_pols_field_3d'
 
         self.survey_id_filter = None
         self.proc_id_filter = None
@@ -254,7 +256,7 @@ class GeoDM:
                 if pgconn:
                     with pgconn.cursor() as cur:
                         cur.execute(sql)
-                        self.surveys_list = list(cur.fetchall())
+                        self.surveys_view_list = list(cur.fetchall())
                         sql = f"select processed_geom_id, survey_id from {self.proc_geom_to_surveys}"
                         cur.execute(sql)
                         self.proc_geom_to_surveys_list = list(cur.fetchall())
@@ -282,7 +284,7 @@ class GeoDM:
         # if index_list == None:
         #     index_list = []
         if self.get_surveys_from_postgres():
-            for i, survey_row in enumerate(self.surveys_list):
+            for i, survey_row in enumerate(self.surveys_view_list):
                 self.dockwind.surveyTableWidget.insertRow(i)
                 citem = QTableWidgetItem(survey_row['name'])
                 citem.setToolTip(str(survey_row['name']))
@@ -338,7 +340,7 @@ class GeoDM:
     def select_geometry_by_surveys(self):
         selected_survey_rows = list(set([x.row() for x in self.dockwind.surveyTableWidget.selectedItems()]))
         # self.iface.messageBar().pushMessage('selected_survey_rows', ', '.join([str(x) for x in selected_survey_rows]), level=Qgis.Success, duration=5)
-        selected_survey_ids = [self.surveys_list[i]['survey_id'] for i in selected_survey_rows]
+        selected_survey_ids = [self.surveys_view_list[i]['survey_id'] for i in selected_survey_rows]
         # self.iface.messageBar().pushMessage('selected_survey_ids', ', '.join([str(x) for x in selected_survey_ids]), level=Qgis.Success, duration=5)
         if len(selected_survey_ids) > 0 and self.selectedProcLayer != None and \
                 any(['line_id' in [f.name() for f in self.selectedProcLayer.fields()],
@@ -366,7 +368,7 @@ class GeoDM:
         if len(selected_rows) < 1:
             self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одну или несколько съемок', level=Qgis.Warning, duration=3)
         else:
-            survey_ids = [self.surveys_list[i]['survey_id'] for i in selected_rows]
+            survey_ids = [self.surveys_view_list[i]['survey_id'] for i in selected_rows]
             if self.selectedProcLayer != None and len(self.selectedProcFeaturesList) > 0 and \
                     any(['line_id' in [f.name() for f in self.selectedProcLayer.fields()],
                          'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]]):
@@ -400,7 +402,7 @@ class GeoDM:
         if len(selected_rows) < 1:
             self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одну или несколько съемок', level=Qgis.Warning, duration=3)
         else:
-            survey_ids = [self.surveys_list[i]['survey_id'] for i in selected_rows]
+            survey_ids = [self.surveys_view_list[i]['survey_id'] for i in selected_rows]
             if self.selectedProcLayer != None and len(self.selectedProcFeaturesList) > 0 and \
                     any(['line_id' in [f.name() for f in self.selectedProcLayer.fields()],
                          'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]]):
@@ -609,8 +611,8 @@ class GeoDM:
         self.addcompdlg = AddCompDialog()
 
         def generate_sql():
-            new_comp_name_full = self.addcompdlg.companyFullNameInput.text()
-            new_comp_name_short = self.addcompdlg.companyShortNameInput.text()
+            new_comp_name_full = self.addcompdlg.companyFullNameInput.text().replace("'", "''")
+            new_comp_name_short = self.addcompdlg.companyShortNameInput.text().replace("'", "''")
             if len(new_comp_name_full.strip()) > 0 and len(new_comp_name_short.strip()) > 0:
                 fields_to_update = 'name, shortname'
                 values_to_insert = f"'{new_comp_name_full}', '{new_comp_name_short}'"
@@ -648,8 +650,8 @@ class GeoDM:
         new_proj_name_en = self.addprojdlg.projNameEnInput.text()
 
         def generate_sql():
-            new_proj_name_ru = self.addprojdlg.projNameRuInput.text()
-            new_proj_name_en = self.addprojdlg.projNameEnInput.text()
+            new_proj_name_ru = self.addprojdlg.projNameRuInput.text().replace("'", "''")
+            new_proj_name_en = self.addprojdlg.projNameEnInput.text().replace("'", "''")
             if new_proj_name_ru and new_proj_name_en:
                 fields_to_update = 'name_ru, name_en'
                 values_to_insert = f"'{new_proj_name_ru}', '{new_proj_name_en}'"
@@ -720,16 +722,16 @@ class GeoDM:
         reload_report_data()
 
         def generate_sql():
-            new_report_name = self.addreportdlg.reportNameInput.text()
-            new_report_shortname = self.addreportdlg.reportShortNameInput.text()
+            new_report_name = self.addreportdlg.reportNameInput.text().replace("'", "''")
+            new_report_shortname = self.addreportdlg.reportShortNameInput.text().replace("'", "''")
             selected_report_type_index = self.addreportdlg.reportTypeInput.currentIndex()
             selected_report_type_id = self.addreportdlg.report_types[selected_report_type_index][1]
             selected_report_author_index = self.addreportdlg.reportAuthorInput.currentIndex() - 1
             new_report_year = str(self.addreportdlg.reportYearInput.value())
             selected_report_contract_index = self.addreportdlg.reportContractInput.currentIndex() - 1
-            new_report_link = self.addreportdlg.reportLinkInput.text()
+            new_report_link = self.addreportdlg.reportLinkInput.text().replace("'", "''")
             selected_report_conf_index = self.addreportdlg.reportConfInput.currentIndex() - 1
-            new_report_conf_limit = self.addreportdlg.reportConfLimitInput.text()
+            new_report_conf_limit = self.addreportdlg.reportConfLimitInput.text().replace("'", "''")
             fields_to_update = 'name, shortname, report_type_id, year'
             values_to_insert = f"'{new_report_name}', '{new_report_shortname}', {str(selected_report_type_id)}, {new_report_year}"
             if selected_report_author_index >= 0:
@@ -828,14 +830,14 @@ class GeoDM:
         reload_contract_data()
 
         def generate_sql():
-            new_contract_number = self.addcontractdlg.contractNumberInput.text()
-            new_contract_name = self.addcontractdlg.contractNameInput.text()
+            new_contract_number = self.addcontractdlg.contractNumberInput.text().replace("'", "''")
+            new_contract_name = self.addcontractdlg.contractNameInput.text().replace("'", "''")
             selected_contract_type_index = self.addcontractdlg.contractTypeInput.currentIndex()
             selected_contract_type_id = self.addcontractdlg.contract_types[selected_contract_type_index][1]
             selected_contract_date = self.addcontractdlg.contractDateInput.dateTime()
             selected_customer_index = self.addcontractdlg.contractCustomerInput.currentIndex() - 1
             selected_contractor_index = self.addcontractdlg.contractContractorInput.currentIndex() - 1
-            new_contract_link = self.addcontractdlg.contractLinkInput.text()
+            new_contract_link = self.addcontractdlg.contractLinkInput.text().replace("'", "''")
             selected_parent_contract_index = self.addcontractdlg.contractParentContractInput.currentIndex() - 1
             fields_to_update = 'number, name, contract_type_id, date'
             values_to_insert = f"'{new_contract_number}', '{new_contract_name}', '{selected_contract_type_id}', '{selected_contract_date.toString('yyyy-MM-dd')}'"
@@ -947,7 +949,7 @@ class GeoDM:
             reload_proc_data()
 
             def generate_sql():
-                new_proc_name = self.addprocdlg.procNameInput.text()
+                new_proc_name = self.addprocdlg.procNameInput.text().replace("'", "''")
                 new_proc_year = str(self.addprocdlg.procYearInput.value())
                 selected_proc_type_index = self.addprocdlg.procTypeInput.currentIndex()
                 selected_proc_type_id = self.addprocdlg.proc_types[selected_proc_type_index]['proc_type_id']
@@ -1192,7 +1194,7 @@ class GeoDM:
 
         def generate_sql():
             selected_proc_id = self.proc_list[self.updateprocdlg.selected_proc_row]['proc_id']
-            new_proc_name = self.updateprocdlg.procNameInput.text()
+            new_proc_name = self.updateprocdlg.procNameInput.text().replace("'", "''")
             new_proc_year = str(self.updateprocdlg.procYearInput.value())
             selected_proc_type_index = self.updateprocdlg.procTypeInput.currentIndex()
             selected_proc_type_id = self.updateprocdlg.proc_types[selected_proc_type_index]['proc_type_id']
@@ -1303,6 +1305,277 @@ class GeoDM:
             self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать обработку(и) и слой с геометрией", level=Qgis.Warning, duration=5)
 
 
+    def update_survey(self):
+        selected_survey_rows = list(set([x.row() for x in self.dockwind.surveyTableWidget.selectedItems()]))
+        if len(selected_survey_rows) == 1:
+            self.updatesurveydlg = AddSurveyDialog()
+            self.updatesurveydlg.refreshProjButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+            self.updatesurveydlg.refreshAuthorsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+            self.updatesurveydlg.refreshContractsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+            self.updatesurveydlg.refreshReportsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+
+            self.updatesurveydlg.selected_survey_row = selected_survey_rows[0]
+            self.updatesurveydlg.setWindowTitle('Изменить съемку')
+            self.updatesurveydlg.insertSurveyButton.setText('Изменить съемку')
+            ##################################################################
+            # fill_with_selected_survey()
+            # generate_and_execute_sql()
+
+            ##################################################################
+            self.updatesurveydlg.reports_to_link = []
+
+            def reload_survey_name():
+                self.updatesurveydlg.surveyNameInput.clear()
+                self.updatesurveydlg.surveyNameInput.setText(self.surveys_view_list[self.updatesurveydlg.selected_survey_row]['name'])
+
+            def reload_loc_types():
+                self.updatesurveydlg.surveyLocTypeInput.clear()
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        sql = f"select * from {self.location_types}"
+                        cur.execute(sql)
+                        self.updatesurveydlg.location_types_list = cur.fetchall()
+                        self.updatesurveydlg.surveyLocTypeInput.addItems([row['name'] for row in self.updatesurveydlg.location_types_list])
+                    selected_loc_type = self.surveys_view_list[self.updatesurveydlg.selected_survey_row]['location_type']
+                if selected_loc_type:
+                    self.updatesurveydlg.surveyLocTypeInput.setCurrentText(selected_loc_type)
+
+            def reload_survey_types():
+                self.updatesurveydlg.surveyTypeInput.clear()
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        sql = f"select * from {self.survey_types}"
+                        cur.execute(sql)
+                        self.updatesurveydlg.survey_types_list = cur.fetchall()
+                        self.updatesurveydlg.surveyTypeInput.addItems(
+                            [row['name'] for row in self.updatesurveydlg.survey_types_list])
+                    selected_survey_type = self.surveys_view_list[self.updatesurveydlg.selected_survey_row]['survey_type']
+                if selected_survey_type:
+                    self.updatesurveydlg.surveyTypeInput.setCurrentText(selected_survey_type)
+
+            def reload_projects():
+                self.updatesurveydlg.projectInput.clear()
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        sql = f"select * from {self.projects}"
+                        cur.execute(sql)
+                        self.updatesurveydlg.projects_list = cur.fetchall()
+                        self.updatesurveydlg.projectInput.addItems(
+                            [row['name_ru'] for row in self.updatesurveydlg.projects_list])
+                        selected_survey_id = self.surveys_view_list[self.updatesurveydlg.selected_survey_row]['survey_id']
+                        if selected_survey_id:
+                            sql = f"select project_id from {self.surveys} where survey_id = {str(selected_survey_id)}"
+                            cur.execute(sql)
+                            selected_project_id = cur.fetchall()[0][0]
+                            if selected_project_id:
+                                selected_project_name = [x for x in self.updatesurveydlg.projects_list if x[0] == selected_project_id][0]['name_ru']
+                                if selected_project_name:
+                                    self.updatesurveydlg.projectInput.setCurrentText(selected_project_name)
+
+            def reload_survey_year():
+                year = self.surveys_view_list[self.updatesurveydlg.selected_survey_row]['year']
+                if year:
+                    self.updatesurveydlg.surveyYearInput.setValue(year)
+
+            def reload_companies():
+                filter_string = self.updatesurveydlg.authorFilterInput.text().strip().lower().replace("'", "''")
+                self.updatesurveydlg.surveyAuthorInput.clear()
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        sql = f"select * from {self.companies}"
+                        if filter_string:
+                            sql += f" where LOWER(name) like '%{filter_string}%' " \
+                                   f"or LOWER(shortname) like '%{filter_string}%'"
+                        sql += " order by name"
+                        cur.execute(sql)
+                        self.updatesurveydlg.companies_list = list(cur.fetchall())
+                        self.updatesurveydlg.surveyAuthorInput.addItem('')
+                        self.updatesurveydlg.surveyAuthorInput.addItems([row['name'] for row in self.updatesurveydlg.companies_list])
+                    selected_survey_author = self.surveys_view_list[self.updatesurveydlg.selected_survey_row]['acquisition_company']
+                if selected_survey_author:
+                    self.updatesurveydlg.surveyAuthorInput.setCurrentText(selected_survey_author)
+
+            def reload_contracts():
+                filter_string = self.updatesurveydlg.contractFilterInput.text().strip().lower().replace("'", "''")
+                self.updatesurveydlg.surveyContractInput.clear()
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        sql = f"select * from {self.contracts_view}"
+                        # f"or LOWER(name) like '%{filter_string}%' " \
+                        if filter_string:
+                            sql += f" where LOWER(number) like '%{filter_string}%' " \
+                                   f"or LOWER(name) like '%{filter_string}%' " \
+                                   f"or date::text like '%{filter_string}%' " \
+                                   f"or LOWER(customer) like '%{filter_string}%' " \
+                                   f"or LOWER(customer_short) like '%{filter_string}%' " \
+                                   f"or LOWER(contractor) like '%{filter_string}%' " \
+                                   f"or LOWER(contractor_short) like '%{filter_string}%'"
+                        sql += " order by date DESC"
+                        cur.execute(sql)
+                        self.updatesurveydlg.contracts_list = cur.fetchall()
+                        self.updatesurveydlg.surveyContractInput.addItem('')
+                        self.updatesurveydlg.surveyContractInput.addItems([row['number'] + ' от ' + str(row['date']) + ' ' +
+                                                                        row['customer_short'] + '-' + row[
+                                                                            'contractor_short'] for row in
+                                                                        self.updatesurveydlg.contracts_list])
+                    selected_survey_contract_id = self.surveys_view_list[self.updatesurveydlg.selected_survey_row]['acquisition_contract_id']
+                    if selected_survey_contract_id:
+                        selected_survey_contracts = [x for x in self.updatesurveydlg.contracts_list if x['contract_id'] == selected_survey_contract_id]
+                        if selected_survey_contracts:
+                            selected_survey_contract = selected_survey_contracts[0]
+                            self.updatesurveydlg.surveyAuthorInput.setCurrentText(f"{selected_survey_contract['number']} от "
+                                                                                  f"{str(selected_survey_contract['date'])} "
+                                                                                  f"{selected_survey_contract['customer_short']}-"
+                                                                                  f"{selected_survey_contract['contractor_short']}")
+
+            def reload_reports():
+                filter_string = self.updatesurveydlg.reportFilterInput.text().strip().lower().replace("'", "''")
+                self.updatesurveydlg.surveyReportsInput.clear()
+                self.updatesurveydlg.surveyReportsTableWidget.clearContents()
+
+                sql = f"select * from {self.reports_view}"
+                if filter_string:
+                    sql += f" where LOWER(name) like '%{filter_string}%' " \
+                           f"or LOWER(shortname) like '%{filter_string}%' " \
+                           f"or LOWER(company_name) like '%{filter_string}%' " \
+                           f"or LOWER(company_shortname) like '%{filter_string}%' " \
+                           f"or LOWER(contract_number) like '%{filter_string}%' " \
+                           f"or LOWER(contract_name) like '%{filter_string}%' " \
+                           f"or year::text like '%{filter_string}%' " \
+                           f"or LOWER(conf) like '%{filter_string}%' " \
+                           f"or LOWER(conf_shortname) like '%{filter_string}%' " \
+                           f"or LOWER(conf_limit) like '%{filter_string}%' " \
+                           f"or LOWER(report_type) like '%{filter_string}%'"
+                sql += " order by shortname DESC"
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.updatesurveydlg.all_reports_list = cur.fetchall()
+                        self.updatesurveydlg.surveyReportsInput.addItem('Выберите отчет для привязки')
+                        self.updatesurveydlg.surveyReportsInput.addItems(
+                            [row['shortname'] for row in self.updatesurveydlg.all_reports_list])
+                self.updatesurveydlg.surveyReportsTableWidget.setRowCount(0)
+                self.updatesurveydlg.surveyReportsTableWidget.setColumnCount(2)
+                self.updatesurveydlg.surveyReportsTableWidget.setHorizontalHeaderLabels(['Тип', 'Название'])
+                header = self.updatesurveydlg.surveyReportsTableWidget.horizontalHeader()
+                header.resizeSection(0, 100)
+                header.resizeSection(1, 255)
+                selected_survey_id = self.surveys_view_list[self.updatesurveydlg.selected_survey_row]['survey_id']
+                if selected_survey_id:
+                    sql = f"select report_id from {self.reports_to_surveys} where survey_id = {str(selected_survey_id)}"
+                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                        with pgconn.cursor() as cur:
+                            cur.execute(sql)
+                            selected_report_ids = [x[0] for x in cur.fetchall()]
+                            [self.updatesurveydlg.reports_to_link.append(x) for x in self.updatesurveydlg.all_reports_list if x['report_id'] in selected_report_ids and x not in self.updatesurveydlg.reports_to_link]
+                            for i, report in enumerate(self.updatesurveydlg.reports_to_link):
+                                self.updatesurveydlg.surveyReportsTableWidget.insertRow(i)
+                                citem = QTableWidgetItem(report['report_type'])
+                                citem.setToolTip(report['report_type'])
+                                citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                                self.updatesurveydlg.surveyReportsTableWidget.setItem(i, 0, citem)
+                                citem = QTableWidgetItem(report['shortname'])
+                                citem.setToolTip(report['name'])
+                                citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                                self.updatesurveydlg.surveyReportsTableWidget.setItem(i, 1, citem)
+
+            def reload_survey_data():
+                reload_survey_name()
+                reload_loc_types()
+                reload_survey_types()
+                reload_projects()
+                reload_survey_year()
+                reload_companies()
+                reload_contracts()
+                reload_reports()
+
+            reload_survey_data()
+
+            def link_existing_report():
+                selected_report_index = self.updatesurveydlg.surveyReportsInput.currentIndex() - 1
+                if selected_report_index >= 0 and self.updatesurveydlg.all_reports_list[selected_report_index]['report_id'] not in \
+                        [x['report_id'] for x in self.updatesurveydlg.reports_to_link]:
+                    self.updatesurveydlg.reports_to_link.append(self.updatesurveydlg.all_reports_list[selected_report_index])
+                    i = self.updatesurveydlg.surveyReportsTableWidget.rowCount()
+                    self.updatesurveydlg.surveyReportsTableWidget.insertRow(i)
+                    citem = QTableWidgetItem(self.updatesurveydlg.all_reports_list[selected_report_index]['report_type'])
+                    citem.setToolTip(self.updatesurveydlg.all_reports_list[selected_report_index]['report_type'])
+                    citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                    self.updatesurveydlg.surveyReportsTableWidget.setItem(i, 0, citem)
+                    citem = QTableWidgetItem(self.updatesurveydlg.all_reports_list[selected_report_index]['shortname'])
+                    citem.setToolTip(self.updatesurveydlg.all_reports_list[selected_report_index]['name'])
+                    citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                    self.updatesurveydlg.surveyReportsTableWidget.setItem(i, 1, citem)
+                self.updatesurveydlg.surveyReportsInput.setCurrentIndex(0)
+
+            def unlink_existing_report():
+                selected_reports_rows = list(set([x.row() for x in self.updatesurveydlg.surveyReportsTableWidget.selectedItems()]))
+                if selected_reports_rows:
+                    [self.updatesurveydlg.reports_to_link.pop(x) for x in selected_reports_rows]
+                    [self.updatesurveydlg.surveyReportsTableWidget.removeRow(x) for x in selected_reports_rows]
+
+            def generate_and_execute_sql():
+                selected_survey_id = self.surveys_view_list[self.updatesurveydlg.selected_survey_row]['survey_id']
+                new_survey_name = self.updatesurveydlg.surveyNameInput.text().replace("'", "''")
+                selected_loc_type_index = self.updatesurveydlg.surveyLocTypeInput.currentIndex()
+                selected_loc_type_id = self.updatesurveydlg.location_types_list[selected_loc_type_index]['location_type_id']
+                selected_survey_type_index = self.updatesurveydlg.surveyTypeInput.currentIndex()
+                selected_survey_type_id = self.updatesurveydlg.survey_types_list[selected_survey_type_index]['survey_type_id']
+                selected_project_index = self.updatesurveydlg.projectInput.currentIndex()
+                selected_project_id = self.updatesurveydlg.projects_list[selected_project_index]['id']
+                new_survey_year = str(self.updatesurveydlg.surveyYearInput.value())
+                selected_author_index = self.updatesurveydlg.surveyAuthorInput.currentIndex() - 1
+                selected_contract_index = self.updatesurveydlg.surveyContractInput.currentIndex() - 1
+                fields_to_update = ['name', 'location_type_id', 'type_id', 'project_id', 'year']
+                values_to_update = [f"'{new_survey_name}'", str(selected_loc_type_id), str(selected_survey_type_id), str(selected_project_id), str(new_survey_year)]
+                if selected_author_index >= 0:
+                    fields_to_update.append('acquisition_company_id')
+                    selected_author_id = self.updatesurveydlg.companies_list[selected_author_index]['company_id']
+                    values_to_update.append(str(selected_author_id))
+                if selected_contract_index >= 0:
+                    fields_to_update.append('acquisition_contract_id')
+                    selected_contract_id = self.updatesurveydlg.contracts_list[selected_contract_index]['contract_id']
+                    values_to_update.append(str(selected_contract_id))
+
+                fields_values = ', '.join([a[0] + ' = ' + a[1] for a in zip(fields_to_update, values_to_update)])
+                self.sql = f"update {self.surveys} set {fields_values} where survey_id = {selected_survey_id};"
+                if self.updatesurveydlg.reports_to_link:
+                    self.sql += f" delete from {self.reports_to_surveys} where survey_id = {selected_survey_id};"
+                    self.sql += f" insert into {self.reports_to_surveys}(report_id, survey_id) " \
+                                f"values{', '.join(['(' + str(x['report_id']) + ', ' + str(selected_survey_id) + ')' for x in self.updatesurveydlg.reports_to_link])};"
+                # self.iface.messageBar().pushMessage('sql', self.sql, level=Qgis.Success, duration=5)
+                mwidget = self.iface.messageBar().createMessage(
+                    f"Изменить данные съемки {new_survey_name}?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                mbutton.pressed.connect(self.refresh_surveys)
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+                self.updatesurveydlg.accept()
+
+            self.updatesurveydlg.addProjectButton.clicked.connect(self.add_project)
+            self.updatesurveydlg.refreshProjButton.clicked.connect(reload_projects)
+            self.updatesurveydlg.addCompanyButton.clicked.connect(self.add_company)
+            self.updatesurveydlg.authorFilterInput.textEdited.connect(reload_companies)
+            self.updatesurveydlg.refreshAuthorsButton.clicked.connect(reload_companies)
+            self.updatesurveydlg.addContractButton.clicked.connect(self.add_contract)
+            self.updatesurveydlg.contractFilterInput.textEdited.connect(reload_contracts)
+            self.updatesurveydlg.refreshContractsButton.clicked.connect(reload_contracts)
+            self.updatesurveydlg.addReportButton.clicked.connect(self.add_report)
+            self.updatesurveydlg.reportFilterInput.textEdited.connect(reload_reports)
+            self.updatesurveydlg.refreshReportsButton.clicked.connect(reload_reports)
+            self.updatesurveydlg.surveyReportsInput.activated.connect(link_existing_report)
+            self.updatesurveydlg.unlinkSelectedReportButton.clicked.connect(unlink_existing_report)
+            self.updatesurveydlg.insertSurveyButton.clicked.connect(generate_and_execute_sql)
+            # self.updatesurveydlg.insertSurveyButton.clicked.connect(self.refresh_surveys)
+
+            self.updatesurveydlg.show()
+
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одну съемку', level=Qgis.Warning, duration=3)
+
+
     def add_survey(self):
         self.addsurveydlg = AddSurveyDialog()
         self.addsurveydlg.refreshProjButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
@@ -1311,7 +1584,6 @@ class GeoDM:
         self.addsurveydlg.refreshReportsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
 
         self.addsurveydlg.reports_to_link = []
-
 
         def reload_survey_data():
             self.addsurveydlg.surveyTypeInput.clear()
@@ -1374,7 +1646,7 @@ class GeoDM:
                     self.addsurveydlg.projectInput.addItems([row['name_ru'] for row in self.addsurveydlg.projects_list])
 
         def reload_companies():
-            filter_string = self.addsurveydlg.authorFilterInput.text().strip().lower()
+            filter_string = self.addsurveydlg.authorFilterInput.text().strip().lower().replace("'", "''")
             self.addsurveydlg.surveyAuthorInput.clear()
             with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
                 with pgconn.cursor() as cur:
@@ -1389,7 +1661,7 @@ class GeoDM:
                     self.addsurveydlg.surveyAuthorInput.addItems([row['name'] for row in self.addsurveydlg.companies_list])
 
         def reload_contracts():
-            filter_string = self.addsurveydlg.contractFilterInput.text().strip().lower()
+            filter_string = self.addsurveydlg.contractFilterInput.text().strip().lower().replace("'", "''")
             self.addsurveydlg.surveyContractInput.clear()
             with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
                 with pgconn.cursor() as cur:
@@ -1413,7 +1685,7 @@ class GeoDM:
                                                                     self.addsurveydlg.contracts_list])
 
         def reload_reports():
-            filter_string = self.addsurveydlg.reportFilterInput.text().strip().lower()
+            filter_string = self.addsurveydlg.reportFilterInput.text().strip().lower().replace("'", "''")
             self.addsurveydlg.surveyReportsInput.clear()
             sql = f"select * from {self.reports_view}"
             if filter_string:
@@ -1468,7 +1740,7 @@ class GeoDM:
                     cur.execute(sql)
                     new_survey_id = cur.fetchall()[0][0]
 
-            new_survey_name = self.addsurveydlg.surveyNameInput.text()
+            new_survey_name = self.addsurveydlg.surveyNameInput.text().replace("'", "''")
             selected_loc_type_index = self.addsurveydlg.surveyLocTypeInput.currentIndex()
             selected_loc_type_id = self.addsurveydlg.location_types_list[selected_loc_type_index]['location_type_id']
             selected_survey_type_index = self.addsurveydlg.surveyTypeInput.currentIndex()
@@ -1477,9 +1749,7 @@ class GeoDM:
             selected_project_id = self.addsurveydlg.projects_list[selected_project_index]['id']
             new_survey_year = str(self.addsurveydlg.surveyYearInput.value())
             selected_author_index = self.addsurveydlg.surveyAuthorInput.currentIndex() - 1
-
             selected_contract_index = self.addsurveydlg.surveyContractInput.currentIndex() - 1
-
             fields_to_update = 'survey_id, name, location_type_id, type_id, project_id, year'
             values_to_insert = f"{str(new_survey_id)}, '{new_survey_name}', {str(selected_loc_type_id)}, {str(selected_survey_type_id)}, {str(selected_project_id)}, {str(new_survey_year)}"
             if selected_author_index >=0:
@@ -1505,8 +1775,10 @@ class GeoDM:
             mbutton = QPushButton(mwidget)
             mbutton.setText('Подтвердить')
             mbutton.pressed.connect(self.execute_sql)
+            mbutton.pressed.connect(self.refresh_surveys)
             mwidget.layout().addWidget(mbutton)
             self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+            self.addsurveydlg.accept()
 
         self.addsurveydlg.addProjectButton.clicked.connect(self.add_project)
         self.addsurveydlg.refreshProjButton.clicked.connect(reload_projects)
@@ -1522,9 +1794,29 @@ class GeoDM:
         self.addsurveydlg.surveyReportsInput.activated.connect(link_existing_report)
         self.addsurveydlg.unlinkSelectedReportButton.clicked.connect(unlink_existing_report)
         self.addsurveydlg.insertSurveyButton.clicked.connect(generate_and_execute_sql)
-        self.addsurveydlg.insertSurveyButton.clicked.connect(self.refresh_surveys)
+        # self.addsurveydlg.insertSurveyButton.clicked.connect(self.refresh_surveys)
 
         self.addsurveydlg.show()
+
+
+    def delete_survey(self):
+        selected_cells = self.dockwind.surveyTableWidget.selectedItems()
+        selected_rows = list(set([x.row() for x in selected_cells]))
+        if selected_rows:
+            selected_survey_ids_list = [self.surveys_view_list[i]['survey_id'] for i in selected_rows]
+            self.sql = f"delete from {self.surveys} where survey_id in ({', '.join([str(x) for x in selected_survey_ids_list])});" \
+                       f" delete from {self.proc_geom_to_surveys} where survey_id in ({', '.join([str(x) for x in selected_survey_ids_list])});" \
+                       f" delete from {self.reports_to_surveys} where survey_id in ({', '.join([str(x) for x in selected_survey_ids_list])});" \
+                       f" update {self.seismic_lines_field_2d} set survey_id = NULL where survey_id in ({', '.join([str(x) for x in selected_survey_ids_list])});" \
+                       f" update {self.seismic_pols_field_3d} set survey_id = NULL where survey_id in ({', '.join([str(x) for x in selected_survey_ids_list])});"
+            mwidget = self.iface.messageBar().createMessage(f"Удалить из базы съемки {', '.join(['[' + x['name'] + ']' for x in [self.surveys_view_list[i] for i in selected_rows]])}? "
+                                                            f"Это приведет к удалению их связей со всеми профилями, площадками, отчетами и другими связанными объектами.")
+            mbutton = QPushButton(mwidget)
+            mbutton.setText('Подтвердить')
+            mbutton.pressed.connect(self.execute_sql)
+            mbutton.pressed.connect(self.refresh_surveys)
+            mwidget.layout().addWidget(mbutton)
+            self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
 
 
     def run_mps(self):
@@ -1555,10 +1847,11 @@ class GeoDM:
             self.iface.mapCanvas().selectionChanged.connect(self.set_selected_proc_features_list)
             self.iface.layerTreeView().currentLayerChanged.connect(self.set_selected_proc_features_list)
 
+            self.refresh_processings()
             self.dockwind.selectProcForSelectedGeometryButton.clicked.connect(self.select_proc_by_geometry)
             self.dockwind.selectGeometryForSelectedProcButton.clicked.connect(self.select_geometry_by_proc)
-            self.refresh_processings()
             self.dockwind.refreshProcButton.clicked.connect(self.refresh_processings)
+            self.dockwind.procFilterLineEdit.textEdited.connect(self.refresh_processings)
             self.dockwind.addProcPushButton.clicked.connect(self.add_proc)
             self.dockwind.changeProcPushButton.clicked.connect(self.update_proc_for_selected_features)
             self.dockwind.updateProcPushButton.clicked.connect(self.update_proc)
@@ -1566,11 +1859,14 @@ class GeoDM:
 
             self.refresh_surveys()
             self.dockwind.refreshSurveyButton.clicked.connect(self.refresh_surveys)
+            self.dockwind.surveyFilterLineEdit.textEdited.connect(self.refresh_surveys)
             self.dockwind.selectSurveyForSelectedGeometryButton.clicked.connect(self.select_surveys_by_geometry)
             self.dockwind.selectGeometryForSelectedSurveyButton.clicked.connect(self.select_geometry_by_surveys)
             self.dockwind.linkSurveyToGeometryButton.clicked.connect(self.link_selected_surveys_to_geometry)
             self.dockwind.unlinkSurveyFromGeometryButton.clicked.connect(self.unlink_selected_surveys_from_geometry)
             self.dockwind.addSurveyPushButton.clicked.connect(self.add_survey)
+            self.dockwind.updateSurveyPushButton.clicked.connect(self.update_survey)
+            self.dockwind.deleteSurveyPushButton.clicked.connect(self.delete_survey)
 
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwind)
             self.dockwind.adjustSize()
