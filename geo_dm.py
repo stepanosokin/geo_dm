@@ -107,9 +107,12 @@ class GeoDM:
         self.reports_to_surveys = 'dm.reports_to_surveys'
         self.seismic_lines_field_2d = 'dm.seismic_lines_field_2d'
         self.seismic_pols_field_3d = 'dm.seismic_pols_field_3d'
+        self.seismic_datasets_view = 'dm.seismic_datasets_view'
+        self.datasets_to_geometries = 'dm.datasets_to_geometries'
 
         self.survey_id_filter = None
         self.proc_id_filter = None
+        self.dataset_id_filter = None
 
         self.selectedProcLayer = None
 
@@ -422,7 +425,7 @@ class GeoDM:
                 sql += ' or '.join(values_to_delete)
                 self.sql = sql
                 # self.iface.messageBar().pushMessage('sql', sql, level=Qgis.Success, duration=5)
-                mwidget = self.iface.messageBar().createMessage(f"Удалить связь {str(len(survey_ids))} съемок и {str(len(geom_ids))} объектв в активном слое?")
+                mwidget = self.iface.messageBar().createMessage(f"Удалить связь {str(len(survey_ids))} съемок и {str(len(geom_ids))} объектов в активном слое?")
                 mbutton = QPushButton(mwidget)
                 mbutton.setText('Подтвердить')
                 mbutton.pressed.connect(self.execute_sql)
@@ -434,13 +437,13 @@ class GeoDM:
         try:
             sql = f"select * from {self.processings_view}"
             filter_str = self.dockwind.procFilterLineEdit.text().lower().strip()
-            if filter_str not in ['', None]:
-                sql += f" where LOWER(name) like '%{filter_str}%' or LOWER(proc_type) like '%{filter_str}%' or year::text = '{filter_str}' " \
+            if filter_str:
+                sql += f" where (LOWER(name) like '%{filter_str}%' or LOWER(proc_type) like '%{filter_str}%' or year::text = '{filter_str}' " \
                        f"or LOWER(company_name) like '%{filter_str}%' or LOWER(company_shortname) like '%{filter_str}%' " \
                        f"or LOWER(contract_number) like '%{filter_str}%' or LOWER(contract_name) like '%{filter_str}%' " \
-                       f"or LOWER(report_name) like '%{filter_str}%' or LOWER(project_name) like '%{filter_str}%'"
+                       f"or LOWER(report_name) like '%{filter_str}%' or LOWER(project_name) like '%{filter_str}%')"
             if self.proc_id_filter:
-                if filter_str not in ['', None]:
+                if filter_str:
                     sql += ' and'
                 else:
                     sql += ' where'
@@ -512,7 +515,13 @@ class GeoDM:
                     cur.execute(self.sql)
                     # self.pgconn.commit()
                     pgconn.commit()
+
+                    # Это чтобы обновить атрибуты выбранных объектов
+                    self.set_selected_proc_features_list()
+
+                    # Это чтобы убрать лишние уведомления
                     [self.iface.messageBar().popWidget(x) for x in self.iface.messageBar().items()]
+
                     self.iface.messageBar().pushMessage('Запрос выполнен', self.sql,
                                                         level=Qgis.Success, duration=3)
                     # [self.iface.messageBar().popWidget(x) for x in self.iface.messageBar().items()]
@@ -568,6 +577,39 @@ class GeoDM:
                         self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=3)
             else:
                 self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать слой и объекты в нем", level=Qgis.Warning, duration=5)
+
+
+    def clear_proc_for_selected_geometry(self):
+        # selected_cells = self.dockwind.procTableWidget.selectedItems()
+        # selected_rows = list(set(x.row() for x in selected_cells))
+        # if selected_rows:
+        #     proc_ids = [self.proc_list[i]['proc_id'] for i in selected_rows]
+        if self.selectedProcLayer and self.selectedProcFeaturesList and \
+            any(['line_id' in [f.name() for f in self.selectedProcLayer.fields()],
+                 'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]]):
+            if 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                glayer = self.seismic_lines_processed_2d
+                gfield = 'line_id'
+                table = self.seismic_lines_processed_2d
+            else:
+                glayer = self.seismic_pols_processed_3d
+                gfield = 'pol_id'
+                table = self.seismic_pols_processed_3d
+            geom_ids = [x[gfield] for x in self.selectedProcFeaturesList]
+            self.sql = f"update {glayer} set proc_id = NULL where {gfield} in ({', '.join([str(x) for x in geom_ids])});"
+            mwidget = self.iface.messageBar().createMessage(
+                f"Отвязать от обработки {str(len(geom_ids))} объектов в активном слое? Это приведет к обнулению поля 'Обработка' у этих объектов. "
+                f"В дальнейшем Вы сможене привязать геометрию к другой обработке.")
+            mbutton = QPushButton(mwidget)
+            mbutton.setText('Подтвердить')
+            mbutton.pressed.connect(self.execute_sql)
+            mwidget.layout().addWidget(mbutton)
+            self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы одну геометрию', level=Qgis.Warning, duration=5)
+        # else:
+        #     self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы одну обработку и хотя бы одну геометрию', level=Qgis.Warning,
+        #
 
 
     def display_selected_geometry_count(self):
@@ -1271,6 +1313,9 @@ class GeoDM:
             self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одну обработку', level=Qgis.Warning, duration=3)
 
 
+
+
+
     def select_proc_by_geometry(self):
         if self.selectedProcLayer != None and len(self.selectedProcFeaturesList) > 0:
             if 'proc_id' in [f.name() for f in self.selectedProcLayer.fields()]:
@@ -1819,6 +1864,79 @@ class GeoDM:
             self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
 
 
+    def get_datasets_from_postgres(self):
+        selected_proc_rows = list(set([x.row() for x in self.dockwind.procTableWidget.selectedItems()]))
+        if selected_proc_rows:
+            selected_proc_ids_string = ', '.join([str(self.proc_list[x]['proc_id']) for x in selected_proc_rows])
+            sql = f"select * from {self.seismic_datasets_view} " \
+                  f"where dataset_id in " \
+                    f"(select dataset_id from {self.datasets_to_geometries} " \
+                        f"where geometry_id in (select line_id from {self.seismic_lines_processed_2d} where proc_id in ({selected_proc_ids_string})) " \
+                        f" or geometry_id in (select pol_id from {self.seismic_pols_processed_3d} where proc_id in ({selected_proc_ids_string})))"
+            filter_str = self.dockwind.datasetFilterLineEdit.text().lower().strip()
+            if filter_str:
+                sql += f" and (LOWER(datasource_type) like '%{filter_str}%'" \
+                       f" or LOWER(shortname) like '%{filter_str}%'" \
+                       f" or LOWER(name) like '%{filter_str}%'" \
+                       f" or LOWER(seismic_type) like '%{filter_str}%'" \
+                       f" or LOWER(format) like '%{filter_str}%'" \
+                       f" or LOWER(data_quality) like '%{filter_str}%')"
+            if self.dataset_id_filter:
+                sql += f" and dataset_id in ({', '.join([str(x) for x in self.dataset_id_filter])})"
+            sql += ' order by dataset_id'
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    if pgconn:
+                        with pgconn.cursor() as cur:
+                            cur.execute(sql)
+                            self.seismic_datasets_view_list = list(cur.fetchall())
+                            sql = f"select dataset_id, geometry_id from {self.datasets_to_geometries}"
+                            cur.execute(sql)
+                            self.datasets_to_geometries_list = list(cur.fetchall())
+                            return True
+                    else:
+                        self.iface.messageBar().pushMessage('Ошибка',
+                                                            'Не удалось загрузить сведения о наборах данных из базы ' + sql,
+                                                            level=Qgis.Critical, duration=5)
+                        return False
+            except:
+                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить сведения о наборах данных из базы ' + sql,
+                                                    level=Qgis.Critical, duration=5)
+                return False
+        else:
+            return False
+
+
+
+    def refresh_datasets(self):
+        self.dockwind.datasetTableWidget.clear()
+        self.dockwind.datasetTableWidget.setRowCount(0)
+        self.dockwind.datasetTableWidget.setColumnCount(3)
+        self.dockwind.datasetTableWidget.setHorizontalHeaderLabels(['Название', 'Тип', 'формат'])
+        header = self.dockwind.datasetTableWidget.horizontalHeader()
+        header.resizeSection(0, 100)
+        header.resizeSection(1, 200)
+        header.resizeSection(2, 50)
+        if self.get_datasets_from_postgres():
+            for i, dataset_row in enumerate(self.seismic_datasets_view_list):
+                self.dockwind.datasetTableWidget.insertRow(i)
+                citem = QTableWidgetItem(dataset_row['shortname'])
+                citem.setToolTip(str(dataset_row['name']))
+                citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                self.dockwind.datasetTableWidget.setItem(i, 0, citem)
+                citem = QTableWidgetItem(dataset_row['seismic_type'])
+                citem.setToolTip(str(dataset_row['seismic_type']))
+                citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                self.dockwind.datasetTableWidget.setItem(i, 1, citem)
+                citem = QTableWidgetItem(dataset_row['format'])
+                citem.setToolTip(str(dataset_row['format']))
+                citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                self.dockwind.datasetTableWidget.setItem(i, 2, citem)
+        else:
+            self.dockwind.datasetTableWidget.clear()
+
+
+
     def run_mps(self):
         """Run method that performs all the real work"""
 
@@ -1845,6 +1963,7 @@ class GeoDM:
             self.set_selected_proc_features_list()
             self.display_selected_geometry_count()
             self.iface.mapCanvas().selectionChanged.connect(self.set_selected_proc_features_list)
+
             self.iface.layerTreeView().currentLayerChanged.connect(self.set_selected_proc_features_list)
 
             self.refresh_processings()
@@ -1854,6 +1973,7 @@ class GeoDM:
             self.dockwind.procFilterLineEdit.textEdited.connect(self.refresh_processings)
             self.dockwind.addProcPushButton.clicked.connect(self.add_proc)
             self.dockwind.changeProcPushButton.clicked.connect(self.update_proc_for_selected_features)
+            self.dockwind.unlinkProcFromGeometryButton.clicked.connect(self.clear_proc_for_selected_geometry)
             self.dockwind.updateProcPushButton.clicked.connect(self.update_proc)
             self.dockwind.deleteProcPushButton.clicked.connect(self.delete_proc)
 
@@ -1867,6 +1987,8 @@ class GeoDM:
             self.dockwind.addSurveyPushButton.clicked.connect(self.add_survey)
             self.dockwind.updateSurveyPushButton.clicked.connect(self.update_survey)
             self.dockwind.deleteSurveyPushButton.clicked.connect(self.delete_survey)
+
+            self.dockwind.procTableWidget.itemSelectionChanged.connect(self.refresh_datasets)
 
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwind)
             self.dockwind.adjustSize()
