@@ -26,7 +26,15 @@ from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QTableWidgetItem, QTableWidget, QPushButton, QAbstractItemView
-from qgis.core import Qgis, QgsProject, QgsLayerTreeUtils, QgsVectorLayerSelectedFeatureSource, QgsMapLayer, QgsMapLayerType
+from qgis.core import \
+    Qgis, \
+    QgsProject, \
+    QgsLayerTreeUtils, \
+    QgsVectorLayerSelectedFeatureSource, \
+    QgsCoordinateReferenceSystem, \
+    QgsMapLayer, \
+    QgsMapLayerType, \
+    QgsCoordinateTransform
 import psycopg2
 from psycopg2.extras import *
 from datetime import datetime
@@ -110,6 +118,9 @@ class GeoDM:
         self.seismic_datasets_view = 'dm.seismic_datasets_view'
         self.datasets_to_geometries = 'dm.datasets_to_geometries'
 
+        self.datasets_to_geometries_list = None
+        self.seismic_datasets_view_list = None
+
         self.survey_id_filter = None
         self.proc_id_filter = None
         self.dataset_id_filter = None
@@ -119,6 +130,8 @@ class GeoDM:
         self.selectedProcFeaturesList = []
 
         self.sql = ''
+
+        self.show_datasets_for_selected_proc = True
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -315,9 +328,11 @@ class GeoDM:
                     selected_features_ids_list = list(set([f.attribute('line_id') for f in self.selectedProcFeaturesList]))
                 else:
                     selected_features_ids_list = []
-                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                    pass
+                # with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                #     pass
                 selected_features_survey_ids = [y[1] for y in self.proc_geom_to_surveys_list if y[0] in selected_features_ids_list]
+                # selected_features_survey_ids = [y['survey_id'] for y in self.proc_geom_to_surveys_list if
+                #                                 y['processed_geom_id'] in selected_features_ids_list]
                 # selected_survey_indexes = [x[0] for x in enumerate(self.surveys_list) if x[1][1] in selected_features_survey_ids]
                 [x.setSelected(False) for x in self.dockwind.surveyTableWidget.selectedItems()]
                 # self.dockwind.surveyTableWidget.setSelectionMode(QAbstractItemView.MultiSelection)
@@ -358,7 +373,11 @@ class GeoDM:
             # self.iface.messageBar().pushMessage('query', query, level=Qgis.Success, duration=5)
             self.selectedProcLayer.selectByExpression(query)
             if len(self.selectedProcLayer.selectedFeatures()) > 0:
-                box = self.selectedProcLayer.boundingBoxOfSelected()
+                project_crs = QgsCoordinateReferenceSystem(QgsProject.instance().crs())
+                layer_crs = self.selectedProcLayer.crs()
+                lyr2proj = QgsCoordinateTransform(layer_crs, project_crs, QgsProject.instance())
+                box = lyr2proj.transformBoundingBox(self.selectedProcLayer.boundingBoxOfSelected())
+
                 self.iface.mapCanvas().setExtent(box)
                 self.iface.mapCanvas().refresh()
         else:
@@ -431,6 +450,10 @@ class GeoDM:
                 mbutton.pressed.connect(self.execute_sql)
                 mwidget.layout().addWidget(mbutton)
                 self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы одну геометрию',
+                                                    level=Qgis.Warning,
+                                                    duration=3)
 
 
     def get_proc_from_postgres(self):
@@ -1343,7 +1366,10 @@ class GeoDM:
             self.selectedProcLayer.removeSelection()
             self.selectedProcLayer.selectByExpression(f'"proc_id" in ({proc_ids_string})')
             if len(self.selectedProcLayer.selectedFeatures()) > 0:
-                box = self.selectedProcLayer.boundingBoxOfSelected()
+                project_crs = QgsCoordinateReferenceSystem(QgsProject.instance().crs())
+                layer_crs = self.selectedProcLayer.crs()
+                lyr2proj = QgsCoordinateTransform(layer_crs, project_crs, QgsProject.instance())
+                box = lyr2proj.transformBoundingBox(self.selectedProcLayer.boundingBoxOfSelected())
                 self.iface.mapCanvas().setExtent(box)
                 self.iface.mapCanvas().refresh()
         else:
@@ -1866,47 +1892,59 @@ class GeoDM:
 
     def get_datasets_from_postgres(self):
         selected_proc_rows = list(set([x.row() for x in self.dockwind.procTableWidget.selectedItems()]))
+
+        # if selected_proc_rows:
         if selected_proc_rows:
             selected_proc_ids_string = ', '.join([str(self.proc_list[x]['proc_id']) for x in selected_proc_rows])
-            sql = f"select * from {self.seismic_datasets_view} " \
-                  f"where dataset_id in " \
-                    f"(select dataset_id from {self.datasets_to_geometries} " \
+        sql = f"select * from {self.seismic_datasets_view}"
+        if self.show_datasets_for_selected_proc:
+            if selected_proc_rows:
+                sql += f" where dataset_id in " \
+                       f"(select dataset_id from {self.datasets_to_geometries} " \
                         f"where geometry_id in (select line_id from {self.seismic_lines_processed_2d} where proc_id in ({selected_proc_ids_string})) " \
                         f" or geometry_id in (select pol_id from {self.seismic_pols_processed_3d} where proc_id in ({selected_proc_ids_string})))"
-            filter_str = self.dockwind.datasetFilterLineEdit.text().lower().strip()
-            if filter_str:
-                sql += f" and (LOWER(datasource_type) like '%{filter_str}%'" \
-                       f" or LOWER(shortname) like '%{filter_str}%'" \
-                       f" or LOWER(name) like '%{filter_str}%'" \
-                       f" or LOWER(seismic_type) like '%{filter_str}%'" \
-                       f" or LOWER(format) like '%{filter_str}%'" \
-                       f" or LOWER(data_quality) like '%{filter_str}%')"
-            if self.dataset_id_filter:
-                sql += f" and dataset_id in ({', '.join([str(x) for x in self.dataset_id_filter])})"
-            sql += ' order by dataset_id'
-            try:
-                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                    if pgconn:
-                        with pgconn.cursor() as cur:
-                            cur.execute(sql)
-                            self.seismic_datasets_view_list = list(cur.fetchall())
-                            sql = f"select dataset_id, geometry_id from {self.datasets_to_geometries}"
-                            cur.execute(sql)
-                            self.datasets_to_geometries_list = list(cur.fetchall())
-                            return True
-                    else:
-                        self.iface.messageBar().pushMessage('Ошибка',
-                                                            'Не удалось загрузить сведения о наборах данных из базы ' + sql,
-                                                            level=Qgis.Critical, duration=5)
-                        return False
-            except:
-                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить сведения о наборах данных из базы ' + sql,
-                                                    level=Qgis.Critical, duration=5)
+            else:
                 return False
-        else:
+        filter_str = self.dockwind.datasetFilterLineEdit.text().lower().strip()
+        if filter_str:
+            if self.show_datasets_for_selected_proc:
+                if selected_proc_rows:
+                    sql += f" and (LOWER(datasource_type) like '%{filter_str}%'"
+                else:
+                    return False
+            else:
+                sql += f" where (LOWER(datasource_type) like '%{filter_str}%'"
+            sql += f" or LOWER(shortname) like '%{filter_str}%'" \
+               f" or LOWER(name) like '%{filter_str}%'" \
+               f" or LOWER(seismic_type) like '%{filter_str}%'" \
+               f" or LOWER(format) like '%{filter_str}%'" \
+               f" or LOWER(data_quality) like '%{filter_str}%')"
+        if self.dataset_id_filter:
+            if self.show_datasets_for_selected_proc:
+                sql += f" and dataset_id in ({', '.join([str(x) for x in self.dataset_id_filter])})"
+            else:
+                sql += f" where dataset_id in ({', '.join([str(x) for x in self.dataset_id_filter])})"
+        sql += ' order by dataset_id'
+        try:
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                if pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.seismic_datasets_view_list = list(cur.fetchall())
+                        sql = f"select dataset_id, geometry_id from {self.datasets_to_geometries}"
+                        cur.execute(sql)
+                        self.datasets_to_geometries_list = list(cur.fetchall())
+                        return True
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить сведения о наборах данных из базы ' + sql,
+                                                        level=Qgis.Critical, duration=5)
+                    return False
+        except:
+            self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить сведения о наборах данных из базы ' + sql,
+                                                level=Qgis.Critical, duration=5)
             return False
-
-
+        # else:
+        #     return False
 
     def refresh_datasets(self):
         self.dockwind.datasetTableWidget.clear()
@@ -1936,6 +1974,157 @@ class GeoDM:
             self.dockwind.datasetTableWidget.clear()
 
 
+    def select_datasets_by_geometry(self):
+        if self.selectedProcLayer != None and len(self.selectedProcFeaturesList) > 0:
+            if 'proc_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                if 'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                    selected_features_ids_list = list(set([f.attribute('pol_id') for f in self.selectedProcFeaturesList]))
+                elif 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                    selected_features_ids_list = list(set([f.attribute('line_id') for f in self.selectedProcFeaturesList]))
+                else:
+                    selected_features_ids_list = []
+                if self.datasets_to_geometries_list and self.seismic_datasets_view_list:
+                    selected_features_dataset_ids = [y['dataset_id'] for y in self.datasets_to_geometries_list if y['geometry_id'] in selected_features_ids_list]
+                    [x.setSelected(False) for x in self.dockwind.datasetTableWidget.selectedItems()]
+                    self.dockwind.datasetTableWidget.clear()
+                    self.dockwind.datasetTableWidget.setRowCount(0)
+                    self.dockwind.datasetTableWidget.setColumnCount(3)
+                    self.dockwind.datasetTableWidget.setHorizontalHeaderLabels(['Название', 'Тип', 'формат'])
+                    header = self.dockwind.datasetTableWidget.horizontalHeader()
+                    header.resizeSection(0, 100)
+                    header.resizeSection(1, 200)
+                    header.resizeSection(2, 50)
+                    if selected_features_dataset_ids:
+                        self.dataset_id_filter = selected_features_dataset_ids
+                    else:
+                        self.dataset_id_filter = [-1]
+                    self.refresh_datasets()
+                    self.dataset_id_filter = None
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать Проект по обработке, содержащий наборы данных",
+                                                        level=Qgis.Warning,
+                                                        duration=5)
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать слой и объекты в нем", level=Qgis.Warning,
+                                                duration=5)
+
+
+    def select_geometry_by_datasets(self):
+        if self.datasets_to_geometries_list and self.seismic_datasets_view_list:
+            selected_dataset_rows = list(set([x.row() for x in self.dockwind.datasetTableWidget.selectedItems()]))
+            selected_dataset_ids = [self.seismic_datasets_view_list[i]['dataset_id'] for i in selected_dataset_rows]
+            if selected_dataset_ids and self.selectedProcLayer and \
+                any(['line_id' in [f.name() for f in self.selectedProcLayer.fields()],
+                     'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]]):
+                proc_geom_string = ', '.join([str(x['geometry_id']) for x in self.datasets_to_geometries_list if x['dataset_id'] in selected_dataset_ids])
+                self.selectedProcLayer.removeSelection()
+                if 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                    gfield = 'line_id'
+                else:
+                    gfield = 'pol_id'
+                query = f'"{gfield}" in ({proc_geom_string})'
+                # self.iface.messageBar().pushMessage('query', query, level=Qgis.Success, duration=5)
+                self.selectedProcLayer.selectByExpression(query)
+                if self.selectedProcLayer.selectedFeatures():
+                    project_crs = QgsCoordinateReferenceSystem(QgsProject.instance().crs())
+                    layer_crs = self.selectedProcLayer.crs()
+                    lyr2proj = QgsCoordinateTransform(layer_crs, project_crs, QgsProject.instance())
+                    box = lyr2proj.transformBoundingBox(self.selectedProcLayer.boundingBoxOfSelected())
+                    self.iface.mapCanvas().setExtent(box)
+                    self.iface.mapCanvas().refresh()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать наборы данных и слой с геометрией обработанной сейсмики",
+                                                    level=Qgis.Warning,
+                                                    duration=5)
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать Обработку, содержащую наборы данных", level=Qgis.Warning,
+                                                duration=5)
+
+
+    def link_selected_datasets_to_geometry(self):
+        if self.datasets_to_geometries_list and self.seismic_datasets_view_list:
+            selected_cells = self.dockwind.datasetTableWidget.selectedItems()
+            selected_rows = list(set([x.row() for x in selected_cells]))
+            if selected_rows:
+                dataset_ids = [self.seismic_datasets_view_list[i]['dataset_id'] for i in selected_rows]
+                if self.selectedProcLayer and self.selectedProcFeaturesList and \
+                        any(['line_id' in[f.name() for f in self.selectedProcLayer.fields()],
+                             'pol_id' in[f.name() for f in self.selectedProcLayer.fields()]]):
+                    if 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                        gfield = 'line_id'
+                        table = self.seismic_lines_processed_2d
+                    else:
+                        gfield = 'pol_id'
+                        table = self.seismic_pols_processed_3d
+                    geom_ids = [x[gfield] for x in self.selectedProcFeaturesList]
+                    sql = f"insert into {self.datasets_to_geometries}(dataset_id, geometry_id) values"
+                    values_to_insert = []
+                    for geom_id in geom_ids:
+                        for dataset_id in dataset_ids:
+                            values_to_insert.append(f"({str(dataset_id)}, {str(geom_id)})")
+                    sql += ', '.join(values_to_insert)
+                    self.sql = sql
+                    mwidget = self.iface.messageBar().createMessage(
+                        f"Связать {str(len(dataset_ids))} наборов данных с {str(len(geom_ids))} объектами в активном слое?")
+                    mbutton = QPushButton(mwidget)
+                    mbutton.setText('Подтвердить')
+                    mbutton.pressed.connect(self.execute_sql)
+                    mwidget.layout().addWidget(mbutton)
+                    self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один Набор данных', level=Qgis.Warning, duration=3)
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать хотя бы одну Обработку и хотя бы один Набор данных",
+                                                level=Qgis.Warning,
+                                                duration=5)
+
+
+    def unlink_selected_datasets_from_geometry(self):
+        selected_cells = self.dockwind.datasetTableWidget.selectedItems()
+        selected_rows = list(set([x.row() for x in selected_cells]))
+        if selected_rows:
+            dataset_ids = [self.seismic_datasets_view_list[i]['dataset_id'] for i in selected_rows]
+            if self.selectedProcLayer and self.selectedProcFeaturesList and \
+                any(['line_id' in [f.name() for f in self.selectedProcLayer.fields()],
+                         'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]]):
+                if 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                    gfield = 'line_id'
+                    table = self.seismic_lines_processed_2d
+                else:
+                    gfield = 'pol_id'
+                    table = self.seismic_pols_processed_3d
+                geom_ids = [x[gfield] for x in self.selectedProcFeaturesList]
+                sql = f"delete from {self.datasets_to_geometries} where "
+                values_to_delete = []
+                for geom_id in geom_ids:
+                    for dataset_id in dataset_ids:
+                        values_to_delete.append(f"(geometry_id = {str(geom_id)} and dataset_id = {str(dataset_id)})")
+                sql += ' or '.join(values_to_delete)
+                self.sql = sql
+                mwidget = self.iface.messageBar().createMessage(
+                    f"Удалить связь {str(len(dataset_ids))} наборов данных и {str(len(geom_ids))} объектов в активном слое?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы одну геометрию',
+                                                    level=Qgis.Warning,
+                                                    duration=3)
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один набор данных', level=Qgis.Warning,
+                                                duration=3)
+
+
+    def check_show_datasets_for_all_proc(self):
+        self.show_datasets_for_selected_proc = False
+        self.refresh_datasets()
+
+    def check_show_datasets_for_selected_proc(self):
+        self.show_datasets_for_selected_proc = True
+        self.refresh_datasets()
+
 
     def run_mps(self):
         """Run method that performs all the real work"""
@@ -1956,6 +2145,9 @@ class GeoDM:
         self.dockwind.refreshSurveyButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
         self.dockwind.selectSurveyForSelectedGeometryButton.setIcon(QIcon(':/plugins/geo_dm/spreadsheet.png'))
         self.dockwind.selectGeometryForSelectedSurveyButton.setIcon(QIcon(':/plugins/geo_dm/geometry.png'))
+        self.dockwind.refreshDatasetButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.dockwind.selectDatasetForSelectedGeometryButton.setIcon(QIcon(':/plugins/geo_dm/spreadsheet.png'))
+        self.dockwind.selectGeometryForSelectedDatasetButton.setIcon(QIcon(':/plugins/geo_dm/geometry.png'))
 
         ltreenode = QgsProject.instance().layerTreeRoot().children()
         layers = list(filter(lambda x: x.type() == QgsMapLayerType.VectorLayer and x.isSpatial(), QgsLayerTreeUtils().collectMapLayersRecursive(ltreenode)))
@@ -1963,7 +2155,6 @@ class GeoDM:
             self.set_selected_proc_features_list()
             self.display_selected_geometry_count()
             self.iface.mapCanvas().selectionChanged.connect(self.set_selected_proc_features_list)
-
             self.iface.layerTreeView().currentLayerChanged.connect(self.set_selected_proc_features_list)
 
             self.refresh_processings()
@@ -1988,7 +2179,14 @@ class GeoDM:
             self.dockwind.updateSurveyPushButton.clicked.connect(self.update_survey)
             self.dockwind.deleteSurveyPushButton.clicked.connect(self.delete_survey)
 
+            self.dockwind.showSelectedProcDatasetsRadioButton.clicked.connect(self.check_show_datasets_for_selected_proc)
+            self.dockwind.showAllProcDatasetsRadioButton.clicked.connect(self.check_show_datasets_for_all_proc)
             self.dockwind.procTableWidget.itemSelectionChanged.connect(self.refresh_datasets)
+            self.dockwind.datasetFilterLineEdit.textEdited.connect(self.refresh_datasets)
+            self.dockwind.selectDatasetForSelectedGeometryButton.clicked.connect(self.select_datasets_by_geometry)
+            self.dockwind.selectGeometryForSelectedDatasetButton.clicked.connect(self.select_geometry_by_datasets)
+            self.dockwind.linkDatasetToGeometryButton.clicked.connect(self.link_selected_datasets_to_geometry)
+            self.dockwind.unlinkDatasetFromGeometryButton.clicked.connect(self.unlink_selected_datasets_from_geometry)
 
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwind)
             self.dockwind.adjustSize()

@@ -109,8 +109,7 @@
      <string>Добавить в базу данных новую Обработку</string>
     </property>
     <property name="text">
-     <string>Добавить
-обработку</string>
+     <string>Добавить</string>
     </property>
    </widget>
    <widget class="QPushButton" name="deleteProcPushButton">
@@ -175,6 +174,9 @@
       <height>21</height>
      </rect>
     </property>
+    <property name="toolTip">
+     <string>Обновить список обработок</string>
+    </property>
     <property name="text">
      <string/>
     </property>
@@ -225,8 +227,7 @@
      <string>Изменить выбранную обработку</string>
     </property>
     <property name="text">
-     <string>Изменить
-обработку</string>
+     <string>Изменить</string>
     </property>
    </widget>
    <widget class="QPushButton" name="selectProcForSelectedGeometryButton">
@@ -573,7 +574,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>280</y>
+      <y>270</y>
       <width>181</width>
       <height>16</height>
      </rect>
@@ -593,18 +594,18 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>300</y>
+      <y>310</y>
       <width>371</width>
-      <height>171</height>
+      <height>161</height>
      </rect>
     </property>
    </widget>
    <widget class="QLineEdit" name="datasetFilterLineEdit">
     <property name="geometry">
      <rect>
-      <x>242</x>
-      <y>280</y>
-      <width>121</width>
+      <x>252</x>
+      <y>290</y>
+      <width>111</width>
       <height>20</height>
      </rect>
     </property>
@@ -612,8 +613,8 @@
    <widget class="QLabel" name="datasetFilterLabel">
     <property name="geometry">
      <rect>
-      <x>200</x>
-      <y>280</y>
+      <x>210</x>
+      <y>290</y>
       <width>47</width>
       <height>13</height>
      </rect>
@@ -633,10 +634,13 @@
     <property name="geometry">
      <rect>
       <x>360</x>
-      <y>280</y>
+      <y>290</y>
       <width>21</width>
       <height>21</height>
      </rect>
+    </property>
+    <property name="toolTip">
+     <string>Обновить список наборов данных</string>
     </property>
     <property name="text">
      <string/>
@@ -650,6 +654,9 @@
       <width>71</width>
       <height>31</height>
      </rect>
+    </property>
+    <property name="toolTip">
+     <string>Показать только наборы данных для выделенных обработок и геометрии</string>
     </property>
     <property name="text">
      <string/>
@@ -669,6 +676,9 @@
       <width>71</width>
       <height>31</height>
      </rect>
+    </property>
+    <property name="toolTip">
+     <string>Выделить и приблизить карту к геометрии для выбранных наборов данных</string>
     </property>
     <property name="text">
      <string/>
@@ -819,6 +829,49 @@
     <property name="text">
      <string>Отвязать
 геометрию</string>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="showSelectedProcDatasetsRadioButton">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>290</y>
+      <width>141</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>8</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>Выделенные обработки</string>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="showAllProcDatasetsRadioButton">
+    <property name="geometry">
+     <rect>
+      <x>160</x>
+      <y>290</y>
+      <width>41</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>8</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>Все</string>
     </property>
    </widget>
   </widget>
