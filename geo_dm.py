@@ -117,6 +117,11 @@ class GeoDM:
         self.seismic_pols_field_3d = 'dm.seismic_pols_field_3d'
         self.seismic_datasets_view = 'dm.seismic_datasets_view'
         self.datasets_to_geometries = 'dm.datasets_to_geometries'
+        self.datasource_types = 'dm.datasource_types'
+        self.seismic_types = 'dm.seismic_types'
+        self.formats = 'dm.formats'
+        self.data_quality = 'dm.data_quality'
+        self.drives_view = 'dm.drives_view'
 
         self.datasets_to_geometries_list = None
         self.seismic_datasets_view_list = None
@@ -2126,6 +2131,113 @@ class GeoDM:
         self.refresh_datasets()
 
 
+    def add_dataset(self):
+        self.adddatasetdlg = AddDatasetDialog()
+        self.adddatasetdlg.datasetRefreshLinksButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.adddatasetdlg.datasetRefreshDrivesButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.adddatasetdlg.datasetRefreshTransmittalsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+
+        self.adddatasetdlg.drives_view_list = None
+
+        self.adddatasetdlg.drives_to_link = []
+        self.adddatasetdlg.links_to_link = []
+        self.adddatasetdlg.transmittals_to_link = []
+
+        def reload_datasource_types():
+            self.adddatasetdlg.datasetDataSourceTypeComboBoxInput.clear()
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.datasource_types}"
+                    cur.execute(sql)
+                    self.adddatasetdlg.datasource_types_list = cur.fetchall()
+                    self.adddatasetdlg.datasetDataSourceTypeComboBoxInput.addItems([row['name'] for row in self.adddatasetdlg.datasource_types_list])
+
+        def reload_seismic_types():
+            self.adddatasetdlg.datasetTypeComboBoxInput.clear()
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.seismic_types}"
+                    cur.execute(sql)
+                    self.adddatasetdlg.seismic_types_list = cur.fetchall()
+                    self.adddatasetdlg.datasetTypeComboBoxInput.addItems(
+                        [row['name'] for row in self.adddatasetdlg.seismic_types_list])
+
+        def reload_formats():
+            self.adddatasetdlg.datasetFormatComboBoxInput.clear()
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.formats}"
+                    cur.execute(sql)
+                    self.adddatasetdlg.formats_list = cur.fetchall()
+                    self.adddatasetdlg.datasetFormatComboBoxInput.addItems(
+                        [row['name'] for row in self.adddatasetdlg.formats_list])
+
+        def reload_data_quality():
+            self.adddatasetdlg.datasetQualityComboBoxInput.clear()
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.data_quality}"
+                    cur.execute(sql)
+                    self.adddatasetdlg.data_quality_list = cur.fetchall()
+                    self.adddatasetdlg.datasetQualityComboBoxInput.addItems(
+                        [row['name_ru'] for row in self.adddatasetdlg.data_quality_list])
+
+        def get_drives_from_postgres():
+            sql = f"select * from {self.drives_view}"
+            filter_str = self.adddatasetdlg.datasetAllDrivesFilterLineEditInput.text().lower().strip()
+            if filter_str:
+                sql += f" where (LOWER(drive_number) like '%{filter_str}%' or LOWER(drive_type) like '%{filter_str}%' " \
+                       f"or LOWER(label) like '%{filter_str}%' or LOWER(conf_name) like '%{filter_str}%' " \
+                       f"or LOWER(conf_name_short) like '%{filter_str}%' or LOWER(conf_limit) like '%{filter_str}%'"
+            sql += ' order by drive_number'
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    if pgconn:
+                        with pgconn.cursor() as cur:
+                            cur.execute(sql)
+                            self.adddatasetdlg.drives_view_list = list(cur.fetchall())
+                            return True
+                    else:
+                        self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить данные о физических носителях из базы',
+                                                level=Qgis.Critical, duration=5)
+                        return False
+            except:
+                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить данные о физических носителях из базы ' + sql,
+                                                    level=Qgis.Critical, duration=5)
+                return False
+
+        def reload_drives():
+            self.adddatasetdlg.datasetAllDrivesTableWidget.clear()
+            self.adddatasetdlg.datasetAllDrivesTableWidget.setRowCount(0)
+            self.adddatasetdlg.datasetAllDrivesTableWidget.setColumnCount(2)
+            self.adddatasetdlg.datasetAllDrivesTableWidget.setHorizontalHeaderLabels(['Номер', 'Тип'])
+            header = self.adddatasetdlg.datasetAllDrivesTableWidget.horizontalHeader()
+            header.resizeSection(0, 159)
+            header.resizeSection(1, 50)
+            if get_drives_from_postgres():
+                for i, drive_row in enumerate(self.adddatasetdlg.drives_view_list):
+                    self.adddatasetdlg.datasetAllDrivesTableWidget.insertRow(i)
+                    citem = QTableWidgetItem(drive_row['drive_number'])
+                    citem.setToolTip(str(drive_row['drive_number']))
+                    citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                    self.dockwind.surveyTableWidget.setItem(i, 0, citem)
+                    citem = QTableWidgetItem(drive_row['drive_type'])
+                    citem.setToolTip(str(drive_row['drive_type']))
+                    citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                    self.dockwind.surveyTableWidget.setItem(i, 1, citem)
+
+        reload_datasource_types()
+        reload_seismic_types()
+        reload_formats()
+        reload_data_quality()
+        reload_drives()
+
+        self.adddatasetdlg.datasetRefreshDrivesButton.clicked.connect(reload_drives)
+        self.adddatasetdlg.datasetAllDrivesFilterLineEditInput.textEdited.connect(reload_drives)
+
+        self.adddatasetdlg.show()
+
+
     def run_mps(self):
         """Run method that performs all the real work"""
 
@@ -2187,6 +2299,7 @@ class GeoDM:
             self.dockwind.selectGeometryForSelectedDatasetButton.clicked.connect(self.select_geometry_by_datasets)
             self.dockwind.linkDatasetToGeometryButton.clicked.connect(self.link_selected_datasets_to_geometry)
             self.dockwind.unlinkDatasetFromGeometryButton.clicked.connect(self.unlink_selected_datasets_from_geometry)
+            self.dockwind.addDatasetPushButton.clicked.connect(self.add_dataset)
 
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwind)
             self.dockwind.adjustSize()
