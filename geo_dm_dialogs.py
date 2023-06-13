@@ -143,3 +143,33 @@ class AddDatasetDialog(QtWidgets.QDialog, FORM_CLASS_ADD_DATASET):
         """Constructor."""
         super(AddDatasetDialog, self).__init__(parent)
         self.setupUi(self)
+
+
+FORM_CLASS_ADD_DRIVE, _ = uic.loadUiType(os.path.join(
+    os.path.dirname(__file__), 'geo_dm_add_drive_dialog.ui'))
+
+class AddDriveDialog(QtWidgets.QDialog, FORM_CLASS_ADD_DRIVE):
+    def __init__(self, parent=None):
+        """Constructor."""
+        super(AddDriveDialog, self).__init__(parent)
+        self.setupUi(self)
+
+
+FORM_CLASS_ADD_LINK, _ = uic.loadUiType(os.path.join(
+    os.path.dirname(__file__), 'geo_dm_add_link_dialog.ui'))
+
+class AddLinkDialog(QtWidgets.QDialog, FORM_CLASS_ADD_LINK):
+    def __init__(self, parent=None):
+        """Constructor."""
+        super(AddLinkDialog, self).__init__(parent)
+        self.setupUi(self)
+
+
+FORM_CLASS_ADD_TRANSMITTAL, _ = uic.loadUiType(os.path.join(
+    os.path.dirname(__file__), 'geo_dm_add_transmittal_dialog.ui'))
+
+class AddTransmittalDialog(QtWidgets.QDialog, FORM_CLASS_ADD_TRANSMITTAL):
+    def __init__(self, parent=None):
+        """Constructor."""
+        super(AddTransmittalDialog, self).__init__(parent)
+        self.setupUi(self)

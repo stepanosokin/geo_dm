@@ -121,7 +121,13 @@ class GeoDM:
         self.seismic_types = 'dm.seismic_types'
         self.formats = 'dm.formats'
         self.data_quality = 'dm.data_quality'
+        self.drives = 'dm.drives'
         self.drives_view = 'dm.drives_view'
+        self.links = 'dm.links'
+        self.transmittals = 'dm.transmittals'
+        self.transmittals_view = 'dm.transmittals_view'
+        self.drive_types = 'dm.drive_types'
+        self.transmittal_types = 'dm.transmittal_types'
 
         self.datasets_to_geometries_list = None
         self.seismic_datasets_view_list = None
@@ -1504,6 +1510,27 @@ class GeoDM:
                                                                                   f"{selected_survey_contract['customer_short']}-"
                                                                                   f"{selected_survey_contract['contractor_short']}")
 
+            def reload_linked_reports():
+                self.updatesurveydlg.surveyReportsTableWidget.clear()
+                self.updatesurveydlg.surveyReportsTableWidget.setRowCount(0)
+                self.updatesurveydlg.surveyReportsTableWidget.setColumnCount(2)
+                self.updatesurveydlg.surveyReportsTableWidget.setHorizontalHeaderLabels(['Тип', 'Название'])
+                header = self.updatesurveydlg.surveyReportsTableWidget.horizontalHeader()
+                header.resizeSection(0, 100)
+                header.resizeSection(1, 255)
+                # selected_survey_id = self.surveys_view_list[self.updatesurveydlg.selected_survey_row]['survey_id']
+                if self.updatesurveydlg.reports_to_link:
+                    for i, report in enumerate(self.updatesurveydlg.reports_to_link):
+                        self.updatesurveydlg.surveyReportsTableWidget.insertRow(i)
+                        citem = QTableWidgetItem(report['report_type'])
+                        citem.setToolTip(report['report_type'])
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.updatesurveydlg.surveyReportsTableWidget.setItem(i, 0, citem)
+                        citem = QTableWidgetItem(report['shortname'])
+                        citem.setToolTip(report['name'])
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.updatesurveydlg.surveyReportsTableWidget.setItem(i, 1, citem)
+
             def reload_reports():
                 filter_string = self.updatesurveydlg.reportFilterInput.text().strip().lower().replace("'", "''")
                 self.updatesurveydlg.surveyReportsInput.clear()
@@ -1544,16 +1571,17 @@ class GeoDM:
                             cur.execute(sql)
                             selected_report_ids = [x[0] for x in cur.fetchall()]
                             [self.updatesurveydlg.reports_to_link.append(x) for x in self.updatesurveydlg.all_reports_list if x['report_id'] in selected_report_ids and x not in self.updatesurveydlg.reports_to_link]
-                            for i, report in enumerate(self.updatesurveydlg.reports_to_link):
-                                self.updatesurveydlg.surveyReportsTableWidget.insertRow(i)
-                                citem = QTableWidgetItem(report['report_type'])
-                                citem.setToolTip(report['report_type'])
-                                citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                                self.updatesurveydlg.surveyReportsTableWidget.setItem(i, 0, citem)
-                                citem = QTableWidgetItem(report['shortname'])
-                                citem.setToolTip(report['name'])
-                                citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                                self.updatesurveydlg.surveyReportsTableWidget.setItem(i, 1, citem)
+                            reload_linked_reports()
+                            # for i, report in enumerate(self.updatesurveydlg.reports_to_link):
+                            #     self.updatesurveydlg.surveyReportsTableWidget.insertRow(i)
+                            #     citem = QTableWidgetItem(report['report_type'])
+                            #     citem.setToolTip(report['report_type'])
+                            #     citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                            #     self.updatesurveydlg.surveyReportsTableWidget.setItem(i, 0, citem)
+                            #     citem = QTableWidgetItem(report['shortname'])
+                            #     citem.setToolTip(report['name'])
+                            #     citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                            #     self.updatesurveydlg.surveyReportsTableWidget.setItem(i, 1, citem)
 
             def reload_survey_data():
                 reload_survey_name()
@@ -1572,23 +1600,30 @@ class GeoDM:
                 if selected_report_index >= 0 and self.updatesurveydlg.all_reports_list[selected_report_index]['report_id'] not in \
                         [x['report_id'] for x in self.updatesurveydlg.reports_to_link]:
                     self.updatesurveydlg.reports_to_link.append(self.updatesurveydlg.all_reports_list[selected_report_index])
-                    i = self.updatesurveydlg.surveyReportsTableWidget.rowCount()
-                    self.updatesurveydlg.surveyReportsTableWidget.insertRow(i)
-                    citem = QTableWidgetItem(self.updatesurveydlg.all_reports_list[selected_report_index]['report_type'])
-                    citem.setToolTip(self.updatesurveydlg.all_reports_list[selected_report_index]['report_type'])
-                    citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                    self.updatesurveydlg.surveyReportsTableWidget.setItem(i, 0, citem)
-                    citem = QTableWidgetItem(self.updatesurveydlg.all_reports_list[selected_report_index]['shortname'])
-                    citem.setToolTip(self.updatesurveydlg.all_reports_list[selected_report_index]['name'])
-                    citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                    self.updatesurveydlg.surveyReportsTableWidget.setItem(i, 1, citem)
+                    # i = self.updatesurveydlg.surveyReportsTableWidget.rowCount()
+                    # self.updatesurveydlg.surveyReportsTableWidget.insertRow(i)
+                    # citem = QTableWidgetItem(self.updatesurveydlg.all_reports_list[selected_report_index]['report_type'])
+                    # citem.setToolTip(self.updatesurveydlg.all_reports_list[selected_report_index]['report_type'])
+                    # citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                    # self.updatesurveydlg.surveyReportsTableWidget.setItem(i, 0, citem)
+                    # citem = QTableWidgetItem(self.updatesurveydlg.all_reports_list[selected_report_index]['shortname'])
+                    # citem.setToolTip(self.updatesurveydlg.all_reports_list[selected_report_index]['name'])
+                    # citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                    # self.updatesurveydlg.surveyReportsTableWidget.setItem(i, 1, citem)
+                    reload_linked_reports()
                 self.updatesurveydlg.surveyReportsInput.setCurrentIndex(0)
+
+
 
             def unlink_existing_report():
                 selected_reports_rows = list(set([x.row() for x in self.updatesurveydlg.surveyReportsTableWidget.selectedItems()]))
                 if selected_reports_rows:
-                    [self.updatesurveydlg.reports_to_link.pop(x) for x in selected_reports_rows]
-                    [self.updatesurveydlg.surveyReportsTableWidget.removeRow(x) for x in selected_reports_rows]
+                    self.updatesurveydlg.reports_to_link = [x for x in self.updatesurveydlg.reports_to_link if
+                                                               self.updatesurveydlg.reports_to_link.index(
+                                                                   x) not in selected_reports_rows]
+                    reload_linked_reports()
+                    # [self.updatesurveydlg.reports_to_link.pop(x) for x in selected_reports_rows]
+                    # [self.updatesurveydlg.surveyReportsTableWidget.removeRow(x) for x in selected_reports_rows]
 
             def generate_and_execute_sql():
                 selected_survey_id = self.surveys_view_list[self.updatesurveydlg.selected_survey_row]['survey_id']
@@ -1615,8 +1650,9 @@ class GeoDM:
 
                 fields_values = ', '.join([a[0] + ' = ' + a[1] for a in zip(fields_to_update, values_to_update)])
                 self.sql = f"update {self.surveys} set {fields_values} where survey_id = {selected_survey_id};"
+                self.sql += f" delete from {self.reports_to_surveys} where survey_id = {selected_survey_id};"
                 if self.updatesurveydlg.reports_to_link:
-                    self.sql += f" delete from {self.reports_to_surveys} where survey_id = {selected_survey_id};"
+                    # self.sql += f" delete from {self.reports_to_surveys} where survey_id = {selected_survey_id};"
                     self.sql += f" insert into {self.reports_to_surveys}(report_id, survey_id) " \
                                 f"values{', '.join(['(' + str(x['report_id']) + ', ' + str(selected_survey_id) + ')' for x in self.updatesurveydlg.reports_to_link])};"
                 # self.iface.messageBar().pushMessage('sql', self.sql, level=Qgis.Success, duration=5)
@@ -1828,7 +1864,7 @@ class GeoDM:
             selected_contract_index = self.addsurveydlg.surveyContractInput.currentIndex() - 1
             fields_to_update = 'survey_id, name, location_type_id, type_id, project_id, year'
             values_to_insert = f"{str(new_survey_id)}, '{new_survey_name}', {str(selected_loc_type_id)}, {str(selected_survey_type_id)}, {str(selected_project_id)}, {str(new_survey_year)}"
-            if selected_author_index >=0:
+            if selected_author_index >= 0:
                 fields_to_update += ', acquisition_company_id'
                 selected_author_id = self.addsurveydlg.companies_list[selected_author_index]['company_id']
                 values_to_insert += f", {str(selected_author_id)}"
@@ -2138,6 +2174,8 @@ class GeoDM:
         self.adddatasetdlg.datasetRefreshTransmittalsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
 
         self.adddatasetdlg.drives_view_list = None
+        self.adddatasetdlg.links_list = None
+        self.adddatasetdlg.transmittals_list = None
 
         self.adddatasetdlg.drives_to_link = []
         self.adddatasetdlg.links_to_link = []
@@ -2188,14 +2226,14 @@ class GeoDM:
             if filter_str:
                 sql += f" where (LOWER(drive_number) like '%{filter_str}%' or LOWER(drive_type) like '%{filter_str}%' " \
                        f"or LOWER(label) like '%{filter_str}%' or LOWER(conf_name) like '%{filter_str}%' " \
-                       f"or LOWER(conf_name_short) like '%{filter_str}%' or LOWER(conf_limit) like '%{filter_str}%'"
+                       f"or LOWER(conf_name_short) like '%{filter_str}%' or LOWER(conf_limit) like '%{filter_str}%')"
             sql += ' order by drive_number'
             try:
                 with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
                     if pgconn:
                         with pgconn.cursor() as cur:
                             cur.execute(sql)
-                            self.adddatasetdlg.drives_view_list = list(cur.fetchall())
+                            self.adddatasetdlg.drives_view_list = cur.fetchall()
                             return True
                     else:
                         self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить данные о физических носителях из базы',
@@ -2212,30 +2250,432 @@ class GeoDM:
             self.adddatasetdlg.datasetAllDrivesTableWidget.setColumnCount(2)
             self.adddatasetdlg.datasetAllDrivesTableWidget.setHorizontalHeaderLabels(['Номер', 'Тип'])
             header = self.adddatasetdlg.datasetAllDrivesTableWidget.horizontalHeader()
-            header.resizeSection(0, 159)
+            header.resizeSection(0, 148)
             header.resizeSection(1, 50)
             if get_drives_from_postgres():
                 for i, drive_row in enumerate(self.adddatasetdlg.drives_view_list):
                     self.adddatasetdlg.datasetAllDrivesTableWidget.insertRow(i)
                     citem = QTableWidgetItem(drive_row['drive_number'])
+                    # print(drive_row['drive_number'])
                     citem.setToolTip(str(drive_row['drive_number']))
                     citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                    self.dockwind.surveyTableWidget.setItem(i, 0, citem)
+                    self.adddatasetdlg.datasetAllDrivesTableWidget.setItem(i, 0, citem)
                     citem = QTableWidgetItem(drive_row['drive_type'])
                     citem.setToolTip(str(drive_row['drive_type']))
                     citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                    self.dockwind.surveyTableWidget.setItem(i, 1, citem)
+                    self.adddatasetdlg.datasetAllDrivesTableWidget.setItem(i, 1, citem)
+
+        def reload_links():
+            filter_string = self.adddatasetdlg.datasetLinksFilterLineEditInput.text().strip().lower().replace("'", "''").replace('\\', '\\\\')
+            self.adddatasetdlg.datasetLinkComboBoxInput.clear()
+            sql = f"select * from {self.links}"
+            if filter_string:
+                sql += f" where LOWER(link) like'%{filter_string}%'"
+            sql += " order by link"
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    cur.execute(sql)
+                    self.adddatasetdlg.links_list = list(cur.fetchall())
+                    self.adddatasetdlg.datasetLinkComboBoxInput.addItem('Выберите ссылку')
+                    self.adddatasetdlg.datasetLinkComboBoxInput.addItems([row['link'] for row in self.adddatasetdlg.links_list])
+
+        def reload_transmittals():
+            filter_string = self.adddatasetdlg.datasetTransmittalsFilterLineEditInput.text().strip().lower().replace("'", "''")
+            self.adddatasetdlg.datasetTransmittalComboBoxInput.clear()
+            sql = f"select * from {self.transmittals_view}"
+            if filter_string:
+                sql += f" where LOWER(transmittal_type) like'%{filter_string}%'" \
+                       f" or LOWER(number) like'%{filter_string}%'" \
+                       f" or LOWER(name) like'%{filter_string}%'" \
+                       f" or LOWER(from_company) like'%{filter_string}%'" \
+                       f" or LOWER(to_company) like'%{filter_string}%'" \
+                       f" or datestamp::text like'%{filter_string}%'" \
+                       f" or LOWER(comments) like'%{filter_string}%'" \
+                       f" or LOWER(from_company_short) like'%{filter_string}%'" \
+                       f" or LOWER(to_company_short) like'%{filter_string}%'"
+            sql += ' order by number'
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    cur.execute(sql)
+                    self.adddatasetdlg.transmittals_list = list(cur.fetchall())
+                    self.adddatasetdlg.datasetTransmittalComboBoxInput.addItem('Выберите акт приема-передачи')
+                    for row in self.adddatasetdlg.transmittals_list:
+                        transm_item_str = ''
+                        if row['number']:
+                            transm_item_str += f"{row['number']} "
+                        if row['datestamp']:
+                            transm_item_str += f"от {row['datestamp']} "
+                        if row['from_company_short']:
+                            transm_item_str += f" {row['from_company_short']}"
+                        if row['to_company_short']:
+                            transm_item_str += f"->{row['to_company_short']}"
+                        self.adddatasetdlg.datasetTransmittalComboBoxInput.addItem(transm_item_str)
 
         reload_datasource_types()
         reload_seismic_types()
         reload_formats()
         reload_data_quality()
         reload_drives()
+        reload_links()
+        reload_transmittals()
+
+        def reload_linked_drives():
+            self.adddatasetdlg.datasetLinkedDrivesTableWidget.clear()
+            self.adddatasetdlg.datasetLinkedDrivesTableWidget.setRowCount(0)
+            self.adddatasetdlg.datasetLinkedDrivesTableWidget.setColumnCount(2)
+            self.adddatasetdlg.datasetLinkedDrivesTableWidget.setHorizontalHeaderLabels(['Номер', 'Тип'])
+            header = self.adddatasetdlg.datasetLinkedDrivesTableWidget.horizontalHeader()
+            header.resizeSection(0, 130)
+            header.resizeSection(1, 50)
+            if self.adddatasetdlg.drives_to_link:
+                for i, drive_row in enumerate(self.adddatasetdlg.drives_to_link):
+                    self.adddatasetdlg.datasetLinkedDrivesTableWidget.insertRow(i)
+                    citem = QTableWidgetItem(drive_row['drive_number'])
+                    # print(drive_row['drive_number'])
+                    citem.setToolTip(str(drive_row['drive_number']))
+                    citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                    self.adddatasetdlg.datasetLinkedDrivesTableWidget.setItem(i, 0, citem)
+                    citem = QTableWidgetItem(drive_row['drive_type'])
+                    citem.setToolTip(str(drive_row['drive_type']))
+                    citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                    self.adddatasetdlg.datasetLinkedDrivesTableWidget.setItem(i, 1, citem)
+
+        def link_drive():
+            selected_drive_rows = list(set([x.row() for x in self.adddatasetdlg.datasetAllDrivesTableWidget.selectedItems()]))
+            if selected_drive_rows:
+                self.adddatasetdlg.drives_to_link.extend([self.adddatasetdlg.drives_view_list[x] for x in selected_drive_rows if self.adddatasetdlg.drives_view_list[x] not in self.adddatasetdlg.drives_to_link])
+                reload_linked_drives()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один носитель', level=Qgis.Warning, duration=5)
+
+        def unlink_drive():
+            selected_drive_rows = list(set([x.row() for x in self.adddatasetdlg.datasetLinkedDrivesTableWidget.selectedItems()]))
+            if selected_drive_rows:
+                # [self.adddatasetdlg.drives_to_link.pop(x) for x in selected_drive_rows]
+                self.adddatasetdlg.drives_to_link = [x for x in self.adddatasetdlg.drives_to_link if self.adddatasetdlg.drives_to_link.index(x) not in selected_drive_rows]
+                reload_linked_drives()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один связанный носитель', level=Qgis.Warning,
+                                                    duration=5)
+
+        def reload_linked_links():
+            self.adddatasetdlg.datasetLinksTableWidget.clear()
+            self.adddatasetdlg.datasetLinksTableWidget.setRowCount(0)
+            self.adddatasetdlg.datasetLinksTableWidget.setColumnCount(2)
+            self.adddatasetdlg.datasetLinksTableWidget.setHorizontalHeaderLabels(['Адрес', 'id'])
+            header = self.adddatasetdlg.datasetLinksTableWidget.horizontalHeader()
+            header.resizeSection(0, 1000)
+            header.resizeSection(1, 10)
+            if self.adddatasetdlg.links_to_link:
+                for i, link_row in enumerate(self.adddatasetdlg.links_to_link):
+                    self.adddatasetdlg.datasetLinksTableWidget.insertRow(i)
+                    citem = QTableWidgetItem(link_row['link'])
+                    citem.setToolTip(str(link_row['link']))
+                    citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                    self.adddatasetdlg.datasetLinksTableWidget.setItem(i, 0, citem)
+                    citem = QTableWidgetItem(link_row['link_id'])
+                    citem.setToolTip(str(link_row['link_id']))
+                    citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                    self.adddatasetdlg.datasetLinksTableWidget.setItem(i, 1, citem)
+
+        def link_link():
+            selected_link_index = self.adddatasetdlg.datasetLinkComboBoxInput.currentIndex() - 1
+            if selected_link_index >= 0:
+                if self.adddatasetdlg.links_list[selected_link_index] not in self.adddatasetdlg.links_to_link:
+                    self.adddatasetdlg.links_to_link.append(self.adddatasetdlg.links_list[selected_link_index])
+                reload_linked_links()
+                self.adddatasetdlg.datasetLinkComboBoxInput.setCurrentIndex(0)
+
+        def unlink_link():
+            selected_link_rows = list(set([x.row() for x in self.adddatasetdlg.datasetLinksTableWidget.selectedItems()]))
+            if selected_link_rows:
+                self.adddatasetdlg.links_to_link = [x for x in self.adddatasetdlg.links_to_link if self.adddatasetdlg.links_to_link.index(x) not in selected_link_rows]
+                reload_linked_links()
+
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы одну связанную ссылку', level=Qgis.Warning,
+                                                    duration=5)
+
+        def reload_linked_transmittals():
+            self.adddatasetdlg.datasetTransmittalsTableWidget.clear()
+            self.adddatasetdlg.datasetTransmittalsTableWidget.setRowCount(0)
+            self.adddatasetdlg.datasetTransmittalsTableWidget.setColumnCount(4)
+            self.adddatasetdlg.datasetTransmittalsTableWidget.setHorizontalHeaderLabels(['Номер', 'Дата', 'Отправитель', 'Получатель'])
+            header = self.adddatasetdlg.datasetTransmittalsTableWidget.horizontalHeader()
+            header.resizeSection(0, 70)
+            header.resizeSection(1, 70)
+            header.resizeSection(2, 100)
+            header.resizeSection(3, 100)
+            if self.adddatasetdlg.transmittals_to_link:
+                for i, transmittal_row in enumerate(self.adddatasetdlg.transmittals_to_link):
+                    self.adddatasetdlg.datasetTransmittalsTableWidget.insertRow(i)
+                    citem = QTableWidgetItem(transmittal_row['number'])
+                    citem.setToolTip(str(transmittal_row['number']))
+                    citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                    self.adddatasetdlg.datasetTransmittalsTableWidget.setItem(i, 0, citem)
+                    citem = QTableWidgetItem(str(transmittal_row['datestamp']))
+                    citem.setToolTip(str(transmittal_row['datestamp']))
+                    citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                    self.adddatasetdlg.datasetTransmittalsTableWidget.setItem(i, 1, citem)
+                    citem = QTableWidgetItem(str(transmittal_row['from_company_short']))
+                    citem.setToolTip(str(transmittal_row['from_company']))
+                    citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                    self.adddatasetdlg.datasetTransmittalsTableWidget.setItem(i, 2, citem)
+                    citem = QTableWidgetItem(str(transmittal_row['to_company_short']))
+                    citem.setToolTip(str(transmittal_row['to_company']))
+                    citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                    self.adddatasetdlg.datasetTransmittalsTableWidget.setItem(i, 3, citem)
+
+        def link_transmittal():
+            selected_transmittal_index = self.adddatasetdlg.datasetTransmittalComboBoxInput.currentIndex() - 1
+            if selected_transmittal_index >= 0:
+                if self.adddatasetdlg.transmittals_list[selected_transmittal_index] not in self.adddatasetdlg.transmittals_to_link:
+                    self.adddatasetdlg.transmittals_to_link.append(self.adddatasetdlg.transmittals_list[selected_transmittal_index])
+                reload_linked_transmittals()
+                self.adddatasetdlg.datasetTransmittalComboBoxInput.setCurrentIndex(0)
+
+        def unlink_transmittal():
+            selected_transmittal_rows = list(set([x.row() for x in self.adddatasetdlg.datasetTransmittalsTableWidget.selectedItems()]))
+            if selected_transmittal_rows:
+                self.adddatasetdlg.transmittals_to_link = [x for x in self.adddatasetdlg.transmittals_to_link if self.adddatasetdlg.transmittals_to_link.index(x) not in selected_transmittal_rows]
+                reload_linked_transmittals()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один связанный акт приема-передачи', level=Qgis.Warning,
+                                                    duration=5)
+
+        def generate_and_execute_sql():
+            pass
 
         self.adddatasetdlg.datasetRefreshDrivesButton.clicked.connect(reload_drives)
         self.adddatasetdlg.datasetAllDrivesFilterLineEditInput.textEdited.connect(reload_drives)
+        self.adddatasetdlg.datasetNewDriveButton.clicked.connect(self.add_drive)
+        self.adddatasetdlg.datasetLinkDriveButton.clicked.connect(link_drive)
+        self.adddatasetdlg.datasetUnLinkDriveButton.clicked.connect(unlink_drive)
+        self.adddatasetdlg.datasetRefreshLinksButton.clicked.connect(reload_links)
+        self.adddatasetdlg.datasetLinksFilterLineEditInput.textEdited.connect(reload_links)
+        self.adddatasetdlg.datasetLinkComboBoxInput.activated.connect(link_link)
+        self.adddatasetdlg.unlinkSelectedLinksButton.clicked.connect(unlink_link)
+        self.adddatasetdlg.datasetNewLinkButton.clicked.connect(self.add_link)
+        self.adddatasetdlg.datasetRefreshTransmittalsButton.clicked.connect(reload_transmittals)
+        self.adddatasetdlg.datasetTransmittalsFilterLineEditInput.textEdited.connect(reload_transmittals)
+        self.adddatasetdlg.datasetTransmittalComboBoxInput.activated.connect(link_transmittal)
+        self.adddatasetdlg.unlinkSelectedTransmittalsButton.clicked.connect(unlink_transmittal)
+        self.adddatasetdlg.datasetNewTransmittalButton.clicked.connect(self.add_transmittal)
+        self.adddatasetdlg.insertDatasetButton.clicked.connect(generate_and_execute_sql)
 
         self.adddatasetdlg.show()
+
+
+    def add_drive(self):
+        self.adddrivedlg = AddDriveDialog()
+
+        self.adddrivedlg.drive_types_list = None
+        self.adddrivedlg.conf_list = None
+
+        def reload_drive_types():
+            self.adddrivedlg.driveTypeComboBox.clear()
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.drive_types}"
+                    cur.execute(sql)
+                    self.adddrivedlg.drive_types_list = list(cur.fetchall())
+                    self.adddrivedlg.driveTypeComboBox.addItems([row['name'] for row in self.adddrivedlg.drive_types_list])
+
+        def reload_conf():
+            self.adddrivedlg.driveConfComboBox.clear()
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.conf}"
+                    cur.execute(sql)
+                    self.adddrivedlg.conf_list = list(cur.fetchall())
+                    self.adddrivedlg.driveConfComboBox.addItem('Выберите тип конфиденциальности')
+                    self.adddrivedlg.driveConfComboBox.addItems([row['conf_name'] for row in self.adddrivedlg.conf_list])
+
+        reload_drive_types()
+        reload_conf()
+
+        def generate_and_execute_sql():
+            new_drive_number = self.adddrivedlg.driveNumberLineEdit.text().strip().replace("'", "''")
+            if new_drive_number:
+                selected_drive_type_index = self.adddrivedlg.driveTypeComboBox.currentIndex()
+                selected_drive_type_id = self.adddrivedlg.drive_types_list[selected_drive_type_index]['drive_type_id']
+                selected_drive_type_name = self.adddrivedlg.drive_types_list[selected_drive_type_index]['name']
+                new_drive_label = self.adddrivedlg.driveLabelTextEdit.toPlainText().strip().replace("'", "''")
+                new_drive_sizegb = self.adddrivedlg.driveSizeGbSpinBox.value()
+                selected_conf_index = self.adddrivedlg.driveConfComboBox.currentIndex() - 1
+                new_drive_conf_limit = self.adddrivedlg.driveConfLimitLineEdit.text().strip().replace("'", "''")
+                fields_to_update = 'drive_number, type_id'
+                values_to_insert = f"'{new_drive_number}', {str(selected_drive_type_id)}"
+                if new_drive_label:
+                    fields_to_update += ', label'
+                    values_to_insert += f", '{new_drive_label}'"
+                if new_drive_sizegb > 0:
+                    fields_to_update += ', volume_gb'
+                    values_to_insert += f", {str(new_drive_sizegb)}"
+                if selected_conf_index >= 0:
+                    fields_to_update += ', conf_id'
+                    selected_conf_id = self.adddrivedlg.conf_list[selected_conf_index]['conf_id']
+                    values_to_insert += f", {str(selected_conf_id)}"
+                if new_drive_conf_limit:
+                    fields_to_update += ', conf_limit'
+                    values_to_insert += f", '{new_drive_conf_limit}'"
+
+                self.sql = f"insert into {self.drives}({fields_to_update}) values({values_to_insert})"
+
+                mwidget = self.iface.messageBar().createMessage(f"Добавить в базу {selected_drive_type_name} {str(new_drive_number)}?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+                self.adddrivedlg.accept()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Введите номер и тип нового физ.носителя',
+                                                    level=Qgis.Warning, duration=5)
+
+        self.adddrivedlg.insertDriveButton.clicked.connect(generate_and_execute_sql)
+
+        self.adddrivedlg.show()
+
+
+    def add_link(self):
+        self.addlinkdlg = AddLinkDialog()
+        def generate_and_execute_sql():
+            new_link = self.addlinkdlg.linkPlainTextEdit.toPlainText().strip().replace("'", "''") #.replace('\\', '\\\\')
+            if new_link:
+                sql = f"select * from {self.links}"
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        all_links_list = list(cur.fetchall())
+                        if new_link not in [x['link'] for x in all_links_list]:
+                            self.sql = f"insert into {self.links}(link) values('{new_link}');"
+                            mwidget = self.iface.messageBar().createMessage(
+                                f"Добавить в базу новую ссылку {new_link}?")
+                            mbutton = QPushButton(mwidget)
+                            mbutton.setText('Подтвердить')
+                            mbutton.pressed.connect(self.execute_sql)
+                            mwidget.layout().addWidget(mbutton)
+                            self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+                            self.addlinkdlg.accept()
+                        else:
+                            self.iface.messageBar().pushMessage('Ошибка', 'Такая ссылка уже есть в базе',
+                                                                level=Qgis.Warning, duration=5)
+        self.addlinkdlg.insertLinkButton.clicked.connect(generate_and_execute_sql)
+        self.addlinkdlg.show()
+
+
+    def add_transmittal(self):
+        self.addtransmittaldlg = AddTransmittalDialog()
+        self.addtransmittaldlg.transmittalRefreshCompaniesPushButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+
+        self.addtransmittaldlg.transmittal_types_list = None
+        self.addtransmittaldlg.from_companies_list = None
+        self.addtransmittaldlg.to_companies_list = None
+
+        def reload_transmittal_types():
+            self.addtransmittaldlg.transmittalTypeComboBox.clear()
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.transmittal_types}"
+                    cur.execute(sql)
+                    self.addtransmittaldlg.transmittal_types_list = cur.fetchall()
+                    self.addtransmittaldlg.transmittalTypeComboBox.addItems(
+                        [row['name'] for row in self.addtransmittaldlg.transmittal_types_list])
+
+        def reload_from_companies():
+            self.addtransmittaldlg.transmittalFromCompanyComboBox.clear()
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.companies}"
+                    filter_str = self.addtransmittaldlg.transmittalFromCompanyFilterLineEdit.text().lower().strip().replace("'", "''")
+                    if filter_str:
+                        sql += f" where LOWER(name) like '%{filter_str}%' " \
+                               f"or LOWER(shortname) like '%{filter_str}%'"
+                    sql += ' order by name'
+                    cur.execute(sql)
+                    self.addtransmittaldlg.from_companies_list = cur.fetchall()
+                    self.addtransmittaldlg.transmittalFromCompanyComboBox.addItem('Выберите отправителя')
+                    self.addtransmittaldlg.transmittalFromCompanyComboBox.addItems(
+                        [row['name'] for row in self.addtransmittaldlg.from_companies_list])
+
+        def reload_to_companies():
+            self.addtransmittaldlg.transmittalToCompanyComboBox.clear()
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.companies}"
+                    filter_str = self.addtransmittaldlg.transmittalToCompanyFilterLineEdit.text().lower().strip().replace("'", "''")
+                    if filter_str:
+                        sql += f" where LOWER(name) like '%{filter_str}%' " \
+                               f"or LOWER(shortname) like '%{filter_str}%'"
+                    sql += ' order by name'
+                    cur.execute(sql)
+                    self.addtransmittaldlg.to_companies_list = cur.fetchall()
+                    self.addtransmittaldlg.transmittalToCompanyComboBox.addItem('Выберите отправителя')
+                    self.addtransmittaldlg.transmittalToCompanyComboBox.addItems(
+                        [row['name'] for row in self.addtransmittaldlg.to_companies_list])
+
+        reload_transmittal_types()
+        reload_from_companies()
+        reload_to_companies()
+
+        def generate_and_execute_sql():
+            selected_transmittal_type_index = self.addtransmittaldlg.transmittalTypeComboBox.currentIndex()
+            new_transmittal_number = self.addtransmittaldlg.transmittalNumberLineEdit.text().strip().replace("'", "''")
+            # new_transmittal_date = self.addtransmittaldlg.transmittalDateEdit.dateTime()
+            new_transmittal_date = self.addtransmittaldlg.transmittalCalendarWidget.selectedDate()
+            # selected_contract_date.toString('yyyy-MM-dd')
+            selected_transmittal_from_company_index = self.addtransmittaldlg.transmittalFromCompanyComboBox.currentIndex() - 1
+            selected_transmittal_to_company_index = self.addtransmittaldlg.transmittalToCompanyComboBox.currentIndex() - 1
+            if all([new_transmittal_number,
+                    selected_transmittal_from_company_index >= 0,
+                    selected_transmittal_to_company_index >= 0]):
+                selected_transmittal_type_id = self.addtransmittaldlg.transmittal_types_list[selected_transmittal_type_index]['transmittal_type_id']
+                selected_transmittal_from_company_id = self.addtransmittaldlg.from_companies_list[selected_transmittal_from_company_index]['company_id']
+                selected_transmittal_to_company_id = self.addtransmittaldlg.to_companies_list[selected_transmittal_to_company_index]['company_id']
+                new_transmittal_name = self.addtransmittaldlg.transmittalNameLineEdit.text().strip().lower().replace("'", "''")
+                new_transmittal_desc = self.addtransmittaldlg.transmittalDescPlainTextEdit.toPlainText().strip().lower().replace("'", "''")
+                new_transmittal_comments = self.addtransmittaldlg.transmittalCommentsPlainTextEdit.toPlainText().strip().lower().replace("'", "''")
+                new_transmittal_scan_link = self.addtransmittaldlg.transmittalScanLinkLineEdit.text().strip().lower().replace("'", "''")
+                fields_to_update = 'transmittal_type_id, number, datestamp, from_company_id, to_company_id'
+                values_to_insert = f"{str(selected_transmittal_type_id)}, " \
+                                   f"'{new_transmittal_number}', " \
+                                   f"'{new_transmittal_date.toString('yyyy-MM-dd')}', " \
+                                   f"{str(selected_transmittal_from_company_id)}, " \
+                                   f"{str(selected_transmittal_to_company_id)}"
+                if new_transmittal_name:
+                    fields_to_update += ', name'
+                    values_to_insert += f", '{new_transmittal_name}'"
+                if new_transmittal_desc:
+                    fields_to_update += ', description'
+                    values_to_insert += f", '{new_transmittal_desc}'"
+                if new_transmittal_comments:
+                    fields_to_update += ', comments'
+                    values_to_insert += f", '{new_transmittal_comments}'"
+                if new_transmittal_scan_link:
+                    fields_to_update += ', scan_link'
+                    values_to_insert += f", '{new_transmittal_scan_link}'"
+
+                self.sql = f"insert into {self.transmittals}({fields_to_update}) values({values_to_insert});"
+                mwidget = self.iface.messageBar().createMessage(f"Добавить в базу акт {str(new_transmittal_number)}?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+                self.addtransmittaldlg.accept()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно указать Тип, Номер, Дату, Отправителя и Получателя акта', level=Qgis.Warning,
+                                                    duration=3)
+
+        self.addtransmittaldlg.transmittalFromCompanyFilterLineEdit.textEdited.connect(reload_from_companies)
+        self.addtransmittaldlg.transmittalToCompanyFilterLineEdit.textEdited.connect(reload_to_companies)
+        self.addtransmittaldlg.transmittalNewCompanyPushButton.clicked.connect(self.add_company)
+        self.addtransmittaldlg.transmittalRefreshCompaniesPushButton.clicked.connect(reload_from_companies)
+        self.addtransmittaldlg.transmittalRefreshCompaniesPushButton.clicked.connect(reload_to_companies)
+        self.addtransmittaldlg.insertTransmittalPushButton.clicked.connect(generate_and_execute_sql)
+
+        self.addtransmittaldlg.show()
 
 
     def run_mps(self):
