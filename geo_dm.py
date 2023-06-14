@@ -116,14 +116,19 @@ class GeoDM:
         self.seismic_lines_field_2d = 'dm.seismic_lines_field_2d'
         self.seismic_pols_field_3d = 'dm.seismic_pols_field_3d'
         self.seismic_datasets_view = 'dm.seismic_datasets_view'
+        self.seismic_datasets = 'dm.seismic_datasets'
+        self.seismic_datasets_dataset_id_seq = 'dm.seismic_datasets_dataset_id_seq'
         self.datasets_to_geometries = 'dm.datasets_to_geometries'
+        self.seismic_datasets_to_transmittals = 'dm.seismic_datasets_to_transmittals'
         self.datasource_types = 'dm.datasource_types'
         self.seismic_types = 'dm.seismic_types'
         self.formats = 'dm.formats'
         self.data_quality = 'dm.data_quality'
         self.drives = 'dm.drives'
         self.drives_view = 'dm.drives_view'
+        self.drives_to_datasets = 'dm.drives_to_datasets'
         self.links = 'dm.links'
+        self.links_to_datasets = 'dm.links_to_datasets'
         self.transmittals = 'dm.transmittals'
         self.transmittals_view = 'dm.transmittals_view'
         self.drive_types = 'dm.drive_types'
@@ -564,6 +569,9 @@ class GeoDM:
                                                 level=Qgis.Critical, duration=5)
 
         self.sql = ''
+        self.refresh_processings()
+        self.refresh_datasets()
+        self.refresh_surveys()
 
 
     def update_proc_for_selected_features(self):
@@ -666,18 +674,21 @@ class GeoDM:
         # self.iface.messageBar().pushMessage('Инфо',
         #                                     f"Выбран слой {str(selectedLayer.name())}",
         #                                     level=Qgis.Warning, duration=3)
-        if all([selectedLayer.type() == QgsMapLayerType.VectorLayer,
-                'proc_id' in [f.name() for f in selectedLayer.fields()],
-                selectedLayer.isSpatial()]):
-            self.selectedProcLayer = selectedLayer
-            self.dockwind.selectedLayerLabel.setText(selectedLayer.name())
-            self.selectedProcFeaturesList = self.selectedProcLayer.selectedFeatures()
-            self.display_selected_geometry_count()
-            pass
+        #if all([selectedLayer.type() == QgsMapLayerType.VectorLayer, 'proc_id' in [f.name() for f in selectedLayer.fields()],
+        if selectedLayer.type() == QgsMapLayerType.VectorLayer:
+            if all(['proc_id' in [f.name() for f in selectedLayer.fields()], selectedLayer.isSpatial()]):
+                self.selectedProcLayer = selectedLayer
+                self.dockwind.selectedLayerLabel.setText(selectedLayer.name())
+                self.selectedProcFeaturesList = self.selectedProcLayer.selectedFeatures()
+                self.display_selected_geometry_count()
+            else:
+                self.selectedProcLayer = None
+                self.selectedProcFeaturesList = []
+                self.dockwind.selectedLayerLabel.setText('Нужно выбрать векторный слой!')
         else:
             self.selectedProcLayer = None
             self.selectedProcFeaturesList = []
-            self.dockwind.selectedLayerLabel.setText('Нужно выбрать слой!')
+            self.dockwind.selectedLayerLabel.setText('Нужно выбрать векторный слой!')
             # self.iface.messageBar().pushMessage('Ошибка', 'Необходимо выбрать один слой в таблице содержания, содержащий геометрию обработанной сейсмики',
             #                                     level=Qgis.Warning, duration=3)
             self.display_selected_geometry_count()
@@ -1572,16 +1583,6 @@ class GeoDM:
                             selected_report_ids = [x[0] for x in cur.fetchall()]
                             [self.updatesurveydlg.reports_to_link.append(x) for x in self.updatesurveydlg.all_reports_list if x['report_id'] in selected_report_ids and x not in self.updatesurveydlg.reports_to_link]
                             reload_linked_reports()
-                            # for i, report in enumerate(self.updatesurveydlg.reports_to_link):
-                            #     self.updatesurveydlg.surveyReportsTableWidget.insertRow(i)
-                            #     citem = QTableWidgetItem(report['report_type'])
-                            #     citem.setToolTip(report['report_type'])
-                            #     citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                            #     self.updatesurveydlg.surveyReportsTableWidget.setItem(i, 0, citem)
-                            #     citem = QTableWidgetItem(report['shortname'])
-                            #     citem.setToolTip(report['name'])
-                            #     citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                            #     self.updatesurveydlg.surveyReportsTableWidget.setItem(i, 1, citem)
 
             def reload_survey_data():
                 reload_survey_name()
@@ -2173,6 +2174,8 @@ class GeoDM:
         self.adddatasetdlg.datasetRefreshDrivesButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
         self.adddatasetdlg.datasetRefreshTransmittalsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
 
+        self.adddatasetdlg.new_dataset_id = None
+        self.adddatasetdlg.datasource_types_list = None
         self.adddatasetdlg.drives_view_list = None
         self.adddatasetdlg.links_list = None
         self.adddatasetdlg.transmittals_list = None
@@ -2180,6 +2183,7 @@ class GeoDM:
         self.adddatasetdlg.drives_to_link = []
         self.adddatasetdlg.links_to_link = []
         self.adddatasetdlg.transmittals_to_link = []
+
 
         def reload_datasource_types():
             self.adddatasetdlg.datasetDataSourceTypeComboBoxInput.clear()
@@ -2443,8 +2447,89 @@ class GeoDM:
                 self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один связанный акт приема-передачи', level=Qgis.Warning,
                                                     duration=5)
 
+        def refresh_datasets_and_select_new():
+            self.dockwind.showAllProcDatasetsRadioButton.setChecked(True)
+            self.check_show_datasets_for_all_proc()
+            new_dataset_row = self.seismic_datasets_view_list.index([x for x in self.seismic_datasets_view_list if x['dataset_id'] == self.adddatasetdlg.new_dataset_id][0])
+            self.dockwind.datasetTableWidget.selectRow(new_dataset_row)
+
         def generate_and_execute_sql():
-            pass
+            drive_ids_to_insert = None
+            link_ids_to_insert = None
+            transmittal_ids_to_insert = None
+
+            selected_datasource_type_index = self.adddatasetdlg.datasetDataSourceTypeComboBoxInput.currentIndex()
+            new_shortname = self.adddatasetdlg.datasetShortnameLineEditInput.text().strip().replace("'", "''")
+            new_name = self.adddatasetdlg.datasetNameLineEditInput.text().strip().replace("'", "''")
+            selected_type_index = self.adddatasetdlg.datasetTypeComboBoxInput.currentIndex()
+            selected_format_index = self.adddatasetdlg.datasetFormatComboBoxInput.currentIndex()
+            selected_quality_index = self.adddatasetdlg.datasetQualityComboBoxInput.currentIndex()
+            new_sizegb = self.adddatasetdlg.datasetSizeGbSpinBoxInput.value()
+            if all([new_shortname, new_name, self.selectedProcFeaturesList]):
+                selected_datasource_type_id = self.adddatasetdlg.datasource_types_list[selected_datasource_type_index]['datasource_type_id']
+                selected_type_id = self.adddatasetdlg.seismic_types_list[selected_type_index]['seismic_type_id']
+                selected_format_id = self.adddatasetdlg.formats_list[selected_format_index]['format_id']
+                selected_quality_id = self.adddatasetdlg.data_quality_list[selected_quality_index]['data_quality_id']
+                if self.adddatasetdlg.drives_to_link:
+                    drive_ids_to_insert = [x['drive_id'] for x in self.adddatasetdlg.drives_to_link]
+                if self.adddatasetdlg.links_to_link:
+                    link_ids_to_insert = [x['link_id'] for x in self.adddatasetdlg.links_to_link]
+                if self.adddatasetdlg.transmittals_to_link:
+                    transmittal_ids_to_insert = [x['transmittal_id'] for x in self.adddatasetdlg.transmittals_to_link]
+                if 'proc_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                    geom_field = ''
+                    if 'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                        geom_field = 'pol_id'
+                    elif 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                        geom_field = 'line_id'
+                    geom_ids_to_link = [f.attribute(geom_field) for f in self.selectedProcFeaturesList]
+                else:
+                    geom_ids_to_link = None
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        sql = f"select * from nextval('{self.seismic_datasets_dataset_id_seq}'::regclass)"
+                        cur.execute(sql)
+                        self.adddatasetdlg.new_dataset_id = cur.fetchall()[0][0]
+                fields_to_update = ['dataset_id', 'datasource_type_id', 'shortname', 'name', 'seismic_type_id', 'format_id', 'data_quality_id']
+                values_to_insert = [str(self.adddatasetdlg.new_dataset_id), str(selected_datasource_type_id), f"'{new_shortname}'", f"'{new_name}'", str(selected_type_id), str(selected_format_id), str(selected_quality_id)]
+                if new_sizegb > 0:
+                    fields_to_update.append('size_gb')
+                    values_to_insert.append(str(new_sizegb))
+                sql = f"insert into {self.seismic_datasets}({', '.join(fields_to_update)}) values({', '.join(values_to_insert)});"
+                if drive_ids_to_insert:
+                    sql += f" insert into {self.drives_to_datasets}(drive_id, dataset_id) " \
+                           f"values{', '.join(['(' + str(x) + ', ' + str(self.adddatasetdlg.new_dataset_id) + ')' for x in drive_ids_to_insert])}" \
+                           f";"
+                if link_ids_to_insert:
+                    sql += f" insert into {self.links_to_datasets}(link_id, dataset_id) " \
+                           f"values{', '.join(['(' + str(x) + ', ' + str(self.adddatasetdlg.new_dataset_id) + ')' for x in link_ids_to_insert])}" \
+                           f";"
+                if transmittal_ids_to_insert:
+                    sql += f" insert into {self.seismic_datasets_to_transmittals}(transmittal_id, seismic_dataset_id) " \
+                           f"values{', '.join(['(' + str(x) + ', ' + str(self.adddatasetdlg.new_dataset_id) + ')' for x in transmittal_ids_to_insert])}" \
+                           f";"
+                if geom_ids_to_link:
+                    sql += f" insert into {self.datasets_to_geometries}(geometry_id, dataset_id) " \
+                           f"values{', '.join(['(' + str(x) + ', ' + str(self.adddatasetdlg.new_dataset_id) + ')' for x in geom_ids_to_link])}" \
+                           f";"
+                # self.iface.messageBar().pushMessage('sql',
+                #                                     sql,
+                #                                     level=Qgis.Success,
+                #                                     duration=5)
+                self.sql = sql
+                mwidget = self.iface.messageBar().createMessage(f"Добавить в базу набор данных {str(new_name)}?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                # mbutton.pressed.connect(refresh_datasets_and_select_new)
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+                self.adddatasetdlg.accept()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Нужно указать все обязательные поля и выбрать геометрию обработанной сейсмики',
+                                                    level=Qgis.Warning,
+                                                    duration=5)
 
         self.adddatasetdlg.datasetRefreshDrivesButton.clicked.connect(reload_drives)
         self.adddatasetdlg.datasetAllDrivesFilterLineEditInput.textEdited.connect(reload_drives)
@@ -2463,8 +2548,533 @@ class GeoDM:
         self.adddatasetdlg.datasetNewTransmittalButton.clicked.connect(self.add_transmittal)
         self.adddatasetdlg.insertDatasetButton.clicked.connect(generate_and_execute_sql)
 
-        self.adddatasetdlg.show()
+        if self.selectedProcFeaturesList:
+            self.adddatasetdlg.show()
+        else:
+            self.iface.messageBar().pushMessage('Ошибка',
+                                                'Нужно выбрать слой и геометрию обработанной сейсмики',
+                                                level=Qgis.Warning,
+                                                duration=5)
 
+
+    def update_dataset(self):
+        selected_dataset_rows = list(set([x.row() for x in self.dockwind.datasetTableWidget.selectedItems()]))
+        if len(selected_dataset_rows) == 1:
+            self.updatedatasetdlg = AddDatasetDialog()
+            self.updatedatasetdlg.datasetRefreshLinksButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+            self.updatedatasetdlg.datasetRefreshDrivesButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+            self.updatedatasetdlg.datasetRefreshTransmittalsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+
+            self.updatedatasetdlg.new_dataset_id = None
+            self.updatedatasetdlg.datasource_types_list = None
+            self.updatedatasetdlg.drives_view_list = None
+            self.updatedatasetdlg.links_list = None
+            self.updatedatasetdlg.transmittals_list = None
+
+            self.updatedatasetdlg.drives_to_link = []
+            self.updatedatasetdlg.links_to_link = []
+            self.updatedatasetdlg.transmittals_to_link = []
+
+            self.updatedatasetdlg.selected_dataset_row =  selected_dataset_rows[0]
+            self.updatedatasetdlg.setWindowTitle('Изменить набор данных')
+            self.updatedatasetdlg.insertDatasetButton.setText('Изменить набор данных')
+
+            def reload_datasource_types():
+                self.updatedatasetdlg.datasetDataSourceTypeComboBoxInput.clear()
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        sql = f"select * from {self.datasource_types}"
+                        cur.execute(sql)
+                        self.updatedatasetdlg.datasource_types_list = cur.fetchall()
+                        self.updatedatasetdlg.datasetDataSourceTypeComboBoxInput.addItems([row['name'] for row in self.updatedatasetdlg.datasource_types_list])
+                    selected_datasource_type = self.seismic_datasets_view_list[self.updatedatasetdlg.selected_dataset_row]['datasource_type']
+                if selected_datasource_type:
+                    self.updatedatasetdlg.datasetDataSourceTypeComboBoxInput.setCurrentText(selected_datasource_type)
+
+            def reload_dataset_shortname():
+                self.updatedatasetdlg.datasetShortnameLineEditInput.clear()
+                self.updatedatasetdlg.datasetShortnameLineEditInput.setText(self.seismic_datasets_view_list[self.updatedatasetdlg.selected_dataset_row]['shortname'])
+            
+            def reload_dataset_name():
+                self.updatedatasetdlg.datasetNameLineEditInput.clear()
+                self.updatedatasetdlg.datasetNameLineEditInput.setText(self.seismic_datasets_view_list[self.updatedatasetdlg.selected_dataset_row]['name'])
+
+            def reload_seismic_types():
+                self.updatedatasetdlg.datasetTypeComboBoxInput.clear()
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        sql = f"select * from {self.seismic_types}"
+                        cur.execute(sql)
+                        self.updatedatasetdlg.seismic_types_list = cur.fetchall()
+                        self.updatedatasetdlg.datasetTypeComboBoxInput.addItems([row['name'] for row in self.updatedatasetdlg.seismic_types_list])
+                    selected_seismic_type = self.seismic_datasets_view_list[self.updatedatasetdlg.selected_dataset_row]['seismic_type']
+                if selected_seismic_type:
+                    self.updatedatasetdlg.datasetTypeComboBoxInput.setCurrentText(selected_seismic_type)
+
+            def reload_formats():
+                self.updatedatasetdlg.datasetFormatComboBoxInput.clear()
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        sql = f"select * from {self.formats}"
+                        cur.execute(sql)
+                        self.updatedatasetdlg.formats_list = cur.fetchall()
+                        self.updatedatasetdlg.datasetFormatComboBoxInput.addItems([row['name'] for row in self.updatedatasetdlg.formats_list])
+                    selected_format = self.seismic_datasets_view_list[self.updatedatasetdlg.selected_dataset_row]['format']
+                if selected_format:
+                    self.updatedatasetdlg.datasetFormatComboBoxInput.setCurrentText(selected_format)
+
+            def reload_data_quality():
+                self.updatedatasetdlg.datasetQualityComboBoxInput.clear()
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        sql = f"select * from {self.data_quality}"
+                        cur.execute(sql)
+                        self.updatedatasetdlg.data_quality_list = cur.fetchall()
+                        self.updatedatasetdlg.datasetQualityComboBoxInput.addItems(
+                            [row['name_ru'] for row in self.updatedatasetdlg.data_quality_list])
+                    selected_quality = self.seismic_datasets_view_list[self.updatedatasetdlg.selected_dataset_row]['data_quality']
+                if selected_quality:
+                    self.updatedatasetdlg.datasetQualityComboBoxInput.setCurrentText(selected_quality)
+
+            def reload_sizegb():
+                size = self.seismic_datasets_view_list[self.updatedatasetdlg.selected_dataset_row]['size_gb']
+                if size:
+                    self.updatedatasetdlg.datasetSizeGbSpinBoxInput.setValue(size)
+
+            def get_drives_from_postgres():
+                sql = f"select * from {self.drives_view}"
+                filter_str = self.updatedatasetdlg.datasetAllDrivesFilterLineEditInput.text().lower().strip()
+                if filter_str:
+                    sql += f" where (LOWER(drive_number) like '%{filter_str}%' or LOWER(drive_type) like '%{filter_str}%' " \
+                           f"or LOWER(label) like '%{filter_str}%' or LOWER(conf_name) like '%{filter_str}%' " \
+                           f"or LOWER(conf_name_short) like '%{filter_str}%' or LOWER(conf_limit) like '%{filter_str}%')"
+                sql += ' order by drive_number'
+                try:
+                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                        if pgconn:
+                            with pgconn.cursor() as cur:
+                                cur.execute(sql)
+                                self.updatedatasetdlg.drives_view_list = cur.fetchall()
+                                return True
+                        else:
+                            self.iface.messageBar().pushMessage('Ошибка',
+                                                                'Не удалось загрузить данные о физических носителях из базы',
+                                                                level=Qgis.Critical, duration=5)
+                            return False
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Не удалось загрузить данные о физических носителях из базы ' + sql,
+                                                        level=Qgis.Critical, duration=5)
+                    return False
+            
+            def get_linked_drives_from_postgres():
+                selected_dataset_id = self.seismic_datasets_view_list[self.updatedatasetdlg.selected_dataset_row]['dataset_id']
+                sql = f"select drive_id from {self.drives_to_datasets} where dataset_id = {str(selected_dataset_id)}"
+                try:
+                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                        if pgconn:
+                            with pgconn.cursor() as cur:
+                                cur.execute(sql)
+                                selected_drive_ids = [x['drive_id'] for x in cur.fetchall()]
+                                for drive in self.updatedatasetdlg.drives_view_list:
+                                    if drive['drive_id'] in selected_drive_ids and drive not in self.updatedatasetdlg.drives_to_link:
+                                        self.updatedatasetdlg.drives_to_link.append(drive)
+                                return True
+                        else:
+                            self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить данные о физических носителях из базы ' + sql, level=Qgis.Critical, duration=5)
+                            return False
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить данные о физических носителях из базы ' + sql, level=Qgis.Critical, duration=5)
+                    return False
+
+            def reload_linked_drives():
+                self.updatedatasetdlg.datasetLinkedDrivesTableWidget.clear()
+                self.updatedatasetdlg.datasetLinkedDrivesTableWidget.setRowCount(0)
+                self.updatedatasetdlg.datasetLinkedDrivesTableWidget.setColumnCount(2)
+                self.updatedatasetdlg.datasetLinkedDrivesTableWidget.setHorizontalHeaderLabels(['Номер', 'Тип'])
+                header = self.updatedatasetdlg.datasetLinkedDrivesTableWidget.horizontalHeader()
+                header.resizeSection(0, 130)
+                header.resizeSection(1, 50)
+                if self.updatedatasetdlg.drives_to_link:
+                    for i, drive_row in enumerate(self.updatedatasetdlg.drives_to_link):
+                        self.updatedatasetdlg.datasetLinkedDrivesTableWidget.insertRow(i)
+                        citem = QTableWidgetItem(drive_row['drive_number'])
+                        # print(drive_row['drive_number'])
+                        citem.setToolTip(str(drive_row['drive_number']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.updatedatasetdlg.datasetLinkedDrivesTableWidget.setItem(i, 0, citem)
+                        citem = QTableWidgetItem(drive_row['drive_type'])
+                        citem.setToolTip(str(drive_row['drive_type']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.updatedatasetdlg.datasetLinkedDrivesTableWidget.setItem(i, 1, citem)
+            
+            def reload_drives():
+                self.updatedatasetdlg.datasetAllDrivesTableWidget.clear()
+                self.updatedatasetdlg.datasetAllDrivesTableWidget.setRowCount(0)
+                self.updatedatasetdlg.datasetAllDrivesTableWidget.setColumnCount(2)
+                self.updatedatasetdlg.datasetAllDrivesTableWidget.setHorizontalHeaderLabels(['Номер', 'Тип'])
+                header = self.updatedatasetdlg.datasetAllDrivesTableWidget.horizontalHeader()
+                header.resizeSection(0, 148)
+                header.resizeSection(1, 50)
+                if get_drives_from_postgres():
+                    for i, drive_row in enumerate(self.updatedatasetdlg.drives_view_list):
+                        self.updatedatasetdlg.datasetAllDrivesTableWidget.insertRow(i)
+                        citem = QTableWidgetItem(drive_row['drive_number'])
+                        # print(drive_row['drive_number'])
+                        citem.setToolTip(str(drive_row['drive_number']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.updatedatasetdlg.datasetAllDrivesTableWidget.setItem(i, 0, citem)
+                        citem = QTableWidgetItem(drive_row['drive_type'])
+                        citem.setToolTip(str(drive_row['drive_type']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.updatedatasetdlg.datasetAllDrivesTableWidget.setItem(i, 1, citem)
+
+            def reload_links():
+                filter_string = self.updatedatasetdlg.datasetLinksFilterLineEditInput.text().strip().lower().replace("'", "''").replace('\\', '\\\\')
+                self.updatedatasetdlg.datasetLinkComboBoxInput.clear()
+                sql = f"select * from {self.links}"
+                if filter_string:
+                    sql += f" where LOWER(link) like'%{filter_string}%'"
+                sql += " order by link"
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.updatedatasetdlg.links_list = list(cur.fetchall())
+                        self.updatedatasetdlg.datasetLinkComboBoxInput.addItem('Выберите ссылку')
+                        self.updatedatasetdlg.datasetLinkComboBoxInput.addItems([row['link'] for row in self.updatedatasetdlg.links_list])
+
+            def get_linked_links_from_postgres():
+                selected_dataset_id = self.seismic_datasets_view_list[self.updatedatasetdlg.selected_dataset_row]['dataset_id']
+                sql = f"select link_id from {self.links_to_datasets} where dataset_id = {str(selected_dataset_id)}"
+                try:
+                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                        if pgconn:
+                            with pgconn.cursor() as cur:
+                                cur.execute(sql)
+                                selected_link_ids = [x['link_id'] for x in cur.fetchall()]
+                                for link in self.updatedatasetdlg.links_list:
+                                    if link['link_id'] in selected_link_ids and link not in self.updatedatasetdlg.links_to_link:
+                                        self.updatedatasetdlg.links_to_link.append(link)
+                                return True
+                        else:
+                            self.iface.messageBar().pushMessage('Ошибка',
+                                                                'Не удалось загрузить данные о ссылках из базы ' + sql,
+                                                                level=Qgis.Critical, duration=5)
+                            return False
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Не удалось загрузить данные о ссылках из базы ' + sql,
+                                                        level=Qgis.Critical, duration=5)
+                    return False
+            
+            def reload_linked_links():
+                self.updatedatasetdlg.datasetLinksTableWidget.clear()
+                self.updatedatasetdlg.datasetLinksTableWidget.setRowCount(0)
+                self.updatedatasetdlg.datasetLinksTableWidget.setColumnCount(2)
+                self.updatedatasetdlg.datasetLinksTableWidget.setHorizontalHeaderLabels(['Адрес', 'id'])
+                header = self.updatedatasetdlg.datasetLinksTableWidget.horizontalHeader()
+                header.resizeSection(0, 1000)
+                header.resizeSection(1, 10)
+                if self.updatedatasetdlg.links_to_link:
+                    for i, link_row in enumerate(self.updatedatasetdlg.links_to_link):
+                        self.updatedatasetdlg.datasetLinksTableWidget.insertRow(i)
+                        citem = QTableWidgetItem(link_row['link'])
+                        citem.setToolTip(str(link_row['link']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.updatedatasetdlg.datasetLinksTableWidget.setItem(i, 0, citem)
+                        citem = QTableWidgetItem(link_row['link_id'])
+                        citem.setToolTip(str(link_row['link_id']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.updatedatasetdlg.datasetLinksTableWidget.setItem(i, 1, citem)
+
+            def reload_transmittals():
+                filter_string = self.updatedatasetdlg.datasetTransmittalsFilterLineEditInput.text().strip().lower().replace("'", "''")
+                self.updatedatasetdlg.datasetTransmittalComboBoxInput.clear()
+                sql = f"select * from {self.transmittals_view}"
+                if filter_string:
+                    sql += f" where LOWER(transmittal_type) like'%{filter_string}%'" \
+                           f" or LOWER(number) like'%{filter_string}%'" \
+                           f" or LOWER(name) like'%{filter_string}%'" \
+                           f" or LOWER(from_company) like'%{filter_string}%'" \
+                           f" or LOWER(to_company) like'%{filter_string}%'" \
+                           f" or datestamp::text like'%{filter_string}%'" \
+                           f" or LOWER(comments) like'%{filter_string}%'" \
+                           f" or LOWER(from_company_short) like'%{filter_string}%'" \
+                           f" or LOWER(to_company_short) like'%{filter_string}%'"
+                sql += ' order by number'
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.updatedatasetdlg.transmittals_list = list(cur.fetchall())
+                        self.updatedatasetdlg.datasetTransmittalComboBoxInput.addItem('Выберите акт приема-передачи')
+                        for row in self.updatedatasetdlg.transmittals_list:
+                            transm_item_str = ''
+                            if row['number']:
+                                transm_item_str += f"{row['number']} "
+                            if row['datestamp']:
+                                transm_item_str += f"от {row['datestamp']} "
+                            if row['from_company_short']:
+                                transm_item_str += f" {row['from_company_short']}"
+                            if row['to_company_short']:
+                                transm_item_str += f"->{row['to_company_short']}"
+                            self.updatedatasetdlg.datasetTransmittalComboBoxInput.addItem(transm_item_str)
+
+            def get_linked_transmittals_from_postgres():
+                selected_dataset_id = self.seismic_datasets_view_list[self.updatedatasetdlg.selected_dataset_row]['dataset_id']
+                sql = f"select transmittal_id from {self.seismic_datasets_to_transmittals} where seismic_dataset_id = {str(selected_dataset_id)}"
+                try:
+                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                        if pgconn:
+                            with pgconn.cursor() as cur:
+                                cur.execute(sql)
+                                selected_transmittal_ids = [x['transmittal_id'] for x in cur.fetchall()]
+                                for transm in self.updatedatasetdlg.transmittals_list:
+                                    if transm['transmittal_id'] in selected_transmittal_ids and transm not in self.updatedatasetdlg.transmittals_to_link:
+                                        self.updatedatasetdlg.transmittals_to_link.append(transm)
+                                return True
+                        else:
+                            self.iface.messageBar().pushMessage('Ошибка',
+                                                                'Не удалось загрузить данные об актах из базы ' + sql,
+                                                                level=Qgis.Critical, duration=5)
+                            return False
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Не удалось загрузить данные об актах из базы ' + sql,
+                                                        level=Qgis.Critical, duration=5)
+                    return False
+
+            def reload_linked_transmittals():
+                self.updatedatasetdlg.datasetTransmittalsTableWidget.clear()
+                self.updatedatasetdlg.datasetTransmittalsTableWidget.setRowCount(0)
+                self.updatedatasetdlg.datasetTransmittalsTableWidget.setColumnCount(4)
+                self.updatedatasetdlg.datasetTransmittalsTableWidget.setHorizontalHeaderLabels(
+                    ['Номер', 'Дата', 'Отправитель', 'Получатель'])
+                header = self.updatedatasetdlg.datasetTransmittalsTableWidget.horizontalHeader()
+                header.resizeSection(0, 70)
+                header.resizeSection(1, 70)
+                header.resizeSection(2, 100)
+                header.resizeSection(3, 100)
+                if self.updatedatasetdlg.transmittals_to_link:
+                    for i, transmittal_row in enumerate(self.updatedatasetdlg.transmittals_to_link):
+                        self.updatedatasetdlg.datasetTransmittalsTableWidget.insertRow(i)
+                        citem = QTableWidgetItem(transmittal_row['number'])
+                        citem.setToolTip(str(transmittal_row['number']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.updatedatasetdlg.datasetTransmittalsTableWidget.setItem(i, 0, citem)
+                        citem = QTableWidgetItem(str(transmittal_row['datestamp']))
+                        citem.setToolTip(str(transmittal_row['datestamp']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.updatedatasetdlg.datasetTransmittalsTableWidget.setItem(i, 1, citem)
+                        citem = QTableWidgetItem(str(transmittal_row['from_company_short']))
+                        citem.setToolTip(str(transmittal_row['from_company']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.updatedatasetdlg.datasetTransmittalsTableWidget.setItem(i, 2, citem)
+                        citem = QTableWidgetItem(str(transmittal_row['to_company_short']))
+                        citem.setToolTip(str(transmittal_row['to_company']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.updatedatasetdlg.datasetTransmittalsTableWidget.setItem(i, 3, citem)
+
+            def link_drive():
+                selected_drive_rows = list(set([x.row() for x in self.updatedatasetdlg.datasetAllDrivesTableWidget.selectedItems()]))
+                if selected_drive_rows:
+                    self.updatedatasetdlg.drives_to_link.extend(
+                        [self.updatedatasetdlg.drives_view_list[x] for x in selected_drive_rows if
+                         self.updatedatasetdlg.drives_view_list[x] not in self.updatedatasetdlg.drives_to_link])
+                    reload_linked_drives()
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один носитель',
+                                                        level=Qgis.Warning, duration=5)
+
+            def unlink_drive():
+                selected_drive_rows = list(set([x.row() for x in self.updatedatasetdlg.datasetLinkedDrivesTableWidget.selectedItems()]))
+                if selected_drive_rows:
+                    # [self.updatedatasetdlg.drives_to_link.pop(x) for x in selected_drive_rows]
+                    self.updatedatasetdlg.drives_to_link = [x for x in self.updatedatasetdlg.drives_to_link if self.updatedatasetdlg.drives_to_link.index(x) not in selected_drive_rows]
+                    reload_linked_drives()
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один связанный носитель',
+                                                        level=Qgis.Warning,
+                                                        duration=5)
+
+            def link_link():
+                selected_link_index = self.updatedatasetdlg.datasetLinkComboBoxInput.currentIndex() - 1
+                if selected_link_index >= 0:
+                    if self.updatedatasetdlg.links_list[selected_link_index] not in self.updatedatasetdlg.links_to_link:
+                        self.updatedatasetdlg.links_to_link.append(self.updatedatasetdlg.links_list[selected_link_index])
+                    reload_linked_links()
+                    self.updatedatasetdlg.datasetLinkComboBoxInput.setCurrentIndex(0)
+
+            def unlink_link():
+                selected_link_rows = list(set([x.row() for x in self.updatedatasetdlg.datasetLinksTableWidget.selectedItems()]))
+                if selected_link_rows:
+                    self.updatedatasetdlg.links_to_link = [x for x in self.updatedatasetdlg.links_to_link if self.updatedatasetdlg.links_to_link.index(x) not in selected_link_rows]
+                    reload_linked_links()
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы одну связанную ссылку',
+                                                        level=Qgis.Warning,
+                                                        duration=5)
+
+            def link_transmittal():
+                selected_transmittal_index = self.updatedatasetdlg.datasetTransmittalComboBoxInput.currentIndex() - 1
+                if selected_transmittal_index >= 0:
+                    if self.updatedatasetdlg.transmittals_list[selected_transmittal_index] not in self.updatedatasetdlg.transmittals_to_link:
+                        self.updatedatasetdlg.transmittals_to_link.append(self.updatedatasetdlg.transmittals_list[selected_transmittal_index])
+                    reload_linked_transmittals()
+                    self.updatedatasetdlg.datasetTransmittalComboBoxInput.setCurrentIndex(0)
+
+            def unlink_transmittal():
+                selected_transmittal_rows = list(set([x.row() for x in self.updatedatasetdlg.datasetTransmittalsTableWidget.selectedItems()]))
+                if selected_transmittal_rows:
+                    self.updatedatasetdlg.transmittals_to_link = [x for x in self.updatedatasetdlg.transmittals_to_link if self.updatedatasetdlg.transmittals_to_link.index(x) not in selected_transmittal_rows]
+                    reload_linked_transmittals()
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Нужно выбрать хотя бы один связанный акт приема-передачи',
+                                                        level=Qgis.Warning,
+                                                        duration=5)
+            
+            def generate_and_execute_sql():
+                drive_ids_to_insert = None
+                link_ids_to_insert = None
+                transmittal_ids_to_insert = None
+
+                selected_dataset_id = self.seismic_datasets_view_list[self.updatedatasetdlg.selected_dataset_row]['dataset_id']
+                selected_datasource_type_index = self.updatedatasetdlg.datasetDataSourceTypeComboBoxInput.currentIndex()
+                new_shortname = self.updatedatasetdlg.datasetShortnameLineEditInput.text().strip().replace("'", "''")
+                new_name = self.updatedatasetdlg.datasetNameLineEditInput.text().strip().replace("'", "''")
+                selected_type_index = self.updatedatasetdlg.datasetTypeComboBoxInput.currentIndex()
+                selected_format_index = self.updatedatasetdlg.datasetFormatComboBoxInput.currentIndex()
+                selected_quality_index = self.updatedatasetdlg.datasetQualityComboBoxInput.currentIndex()
+                new_sizegb = self.updatedatasetdlg.datasetSizeGbSpinBoxInput.value()
+                if all([new_shortname, new_name, self.selectedProcFeaturesList]):
+                    selected_datasource_type_id = \
+                    self.updatedatasetdlg.datasource_types_list[selected_datasource_type_index]['datasource_type_id']
+                    selected_type_id = self.updatedatasetdlg.seismic_types_list[selected_type_index]['seismic_type_id']
+                    selected_format_id = self.updatedatasetdlg.formats_list[selected_format_index]['format_id']
+                    selected_quality_id = self.updatedatasetdlg.data_quality_list[selected_quality_index][
+                        'data_quality_id']
+                    if self.updatedatasetdlg.drives_to_link:
+                        drive_ids_to_insert = [x['drive_id'] for x in self.updatedatasetdlg.drives_to_link]
+                    if self.updatedatasetdlg.links_to_link:
+                        link_ids_to_insert = [x['link_id'] for x in self.updatedatasetdlg.links_to_link]
+                    if self.updatedatasetdlg.transmittals_to_link:
+                        transmittal_ids_to_insert = [x['transmittal_id'] for x in
+                                                     self.updatedatasetdlg.transmittals_to_link]
+                    if 'proc_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                        geom_field = ''
+                        if 'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                            geom_field = 'pol_id'
+                        elif 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                            geom_field = 'line_id'
+                        geom_ids_to_link = [f.attribute(geom_field) for f in self.selectedProcFeaturesList]
+                    else:
+                        geom_ids_to_link = None
+
+
+
+                    fields_to_update = ['datasource_type_id', 'shortname', 'name', 'seismic_type_id',
+                                        'format_id', 'data_quality_id']
+                    values_to_insert = [str(selected_datasource_type_id),
+                                        f"'{new_shortname}'", f"'{new_name}'", str(selected_type_id),
+                                        str(selected_format_id), str(selected_quality_id)]
+                    if new_sizegb > 0:
+                        fields_to_update.append('size_gb')
+                        values_to_insert.append(str(new_sizegb))
+                    sql = f"update {self.seismic_datasets} set {', '.join([x[0] + ' = ' + x[1] for x in zip(fields_to_update, values_to_insert)])} where dataset_id = {str(selected_dataset_id)};"
+                    if drive_ids_to_insert:
+                        sql += f" delete from {self.drives_to_datasets} where dataset_id = {str(selected_dataset_id)};"
+                        sql += f" insert into {self.drives_to_datasets}(drive_id, dataset_id) " \
+                               f"values{', '.join(['(' + str(x) + ', ' + str(selected_dataset_id) + ')' for x in drive_ids_to_insert])}" \
+                               f";"
+                    if link_ids_to_insert:
+                        sql += f" delete from {self.links_to_datasets} where dataset_id = {str(selected_dataset_id)};"
+                        sql += f" insert into {self.links_to_datasets}(link_id, dataset_id) " \
+                               f"values{', '.join(['(' + str(x) + ', ' + str(selected_dataset_id) + ')' for x in link_ids_to_insert])}" \
+                               f";"
+                    if transmittal_ids_to_insert:
+                        sql += f" delete from {self.seismic_datasets_to_transmittals} where seismic_dataset_id = {str(selected_dataset_id)};"
+                        sql += f" insert into {self.seismic_datasets_to_transmittals}(transmittal_id, seismic_dataset_id) " \
+                               f"values{', '.join(['(' + str(x) + ', ' + str(selected_dataset_id) + ')' for x in transmittal_ids_to_insert])}" \
+                               f";"
+                    # if geom_ids_to_link:
+                    #     sql += f" insert into {self.datasets_to_geometries}(geometry_id, dataset_id) " \
+                    #            f"values{', '.join(['(' + str(x) + ', ' + str(self.updatedatasetdlg.new_dataset_id) + ')' for x in geom_ids_to_link])}" \
+                    #            f";"
+                    # self.iface.messageBar().pushMessage('sql',
+                    #                                     sql,
+                    #                                     level=Qgis.Success,
+                    #                                     duration=5)
+                    self.sql = sql
+                    mwidget = self.iface.messageBar().createMessage(f"Изменить набор данных {str(new_name)}?")
+                    mbutton = QPushButton(mwidget)
+                    mbutton.setText('Подтвердить')
+                    mbutton.pressed.connect(self.execute_sql)
+                    mwidget.layout().addWidget(mbutton)
+                    self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+                    self.updatedatasetdlg.accept()
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Нужно указать все обязательные поля',
+                                                        level=Qgis.Warning,
+                                                        duration=5)
+            
+            reload_datasource_types()
+            reload_dataset_shortname()
+            reload_dataset_name()
+            reload_seismic_types()
+            reload_formats()
+            reload_data_quality()
+            reload_sizegb()
+            reload_drives()
+            get_linked_drives_from_postgres()
+            reload_linked_drives()
+            reload_links()
+            get_linked_links_from_postgres()
+            reload_linked_links()
+            reload_transmittals()
+            get_linked_transmittals_from_postgres()
+            reload_linked_transmittals()
+
+            self.updatedatasetdlg.datasetRefreshDrivesButton.clicked.connect(reload_drives)
+            self.updatedatasetdlg.datasetAllDrivesFilterLineEditInput.textEdited.connect(reload_drives)
+            self.updatedatasetdlg.datasetNewDriveButton.clicked.connect(self.add_drive)
+            self.updatedatasetdlg.datasetLinkDriveButton.clicked.connect(link_drive)
+            self.updatedatasetdlg.datasetUnLinkDriveButton.clicked.connect(unlink_drive)
+            self.updatedatasetdlg.datasetRefreshLinksButton.clicked.connect(reload_links)
+            self.updatedatasetdlg.datasetLinksFilterLineEditInput.textEdited.connect(reload_links)
+            self.updatedatasetdlg.datasetLinkComboBoxInput.activated.connect(link_link)
+            self.updatedatasetdlg.unlinkSelectedLinksButton.clicked.connect(unlink_link)
+            self.updatedatasetdlg.datasetNewLinkButton.clicked.connect(self.add_link)
+            self.updatedatasetdlg.datasetRefreshTransmittalsButton.clicked.connect(reload_transmittals)
+            self.updatedatasetdlg.datasetTransmittalsFilterLineEditInput.textEdited.connect(reload_transmittals)
+            self.updatedatasetdlg.datasetTransmittalComboBoxInput.activated.connect(link_transmittal)
+            self.updatedatasetdlg.unlinkSelectedTransmittalsButton.clicked.connect(unlink_transmittal)
+            self.updatedatasetdlg.datasetNewTransmittalButton.clicked.connect(self.add_transmittal)
+            self.updatedatasetdlg.insertDatasetButton.clicked.connect(generate_and_execute_sql)
+
+            self.updatedatasetdlg.show()
+
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один набор данных', level=Qgis.Warning, duration=3)
+
+    def delete_dataset(self):
+        selected_cells = self.dockwind.datasetTableWidget.selectedItems()
+        selected_rows = list(set([x.row() for x in selected_cells]))
+        if selected_rows:
+            selected_dataset_ids_list = [self.seismic_datasets_view_list[i]['dataset_id'] for i in selected_rows]
+            self.sql = f"delete from {self.seismic_datasets} where dataset_id in ({', '.join([str(x) for x in selected_dataset_ids_list])});" \
+                       f" delete from {self.datasets_to_geometries} where dataset_id in ({', '.join([str(x) for x in selected_dataset_ids_list])});" \
+                       f" delete from {self.drives_to_datasets} where dataset_id in ({', '.join([str(x) for x in selected_dataset_ids_list])});" \
+                       f" delete from {self.links_to_datasets} where dataset_id in ({', '.join([str(x) for x in selected_dataset_ids_list])});" \
+                       f" delete from {self.seismic_datasets_to_transmittals} where seismic_dataset_id in ({', '.join([str(x) for x in selected_dataset_ids_list])});"
+            mwidget = self.iface.messageBar().createMessage(f"Удалить из базы наборы данных {', '.join(['[' + x['shortname'] + ']' for x in [self.seismic_datasets_view_list[i] for i in selected_rows]])}? "
+                                                            f"Это приведет к удалению их связей со всеми профилями, площадками, носителями, актами и другими связанными объектами.")
+            mbutton = QPushButton(mwidget)
+            mbutton.setText('Подтвердить')
+            mbutton.pressed.connect(self.execute_sql)
+            # mbutton.pressed.connect(self.refresh_datasets)
+            mwidget.layout().addWidget(mbutton)
+            self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
 
     def add_drive(self):
         self.adddrivedlg = AddDriveDialog()
@@ -2740,6 +3350,8 @@ class GeoDM:
             self.dockwind.linkDatasetToGeometryButton.clicked.connect(self.link_selected_datasets_to_geometry)
             self.dockwind.unlinkDatasetFromGeometryButton.clicked.connect(self.unlink_selected_datasets_from_geometry)
             self.dockwind.addDatasetPushButton.clicked.connect(self.add_dataset)
+            self.dockwind.updateDatasetPushButton.clicked.connect(self.update_dataset)
+            self.dockwind.deleteDatasetPushButton.clicked.connect(self.delete_dataset)
 
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwind)
             self.dockwind.adjustSize()
