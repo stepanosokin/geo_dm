@@ -2218,9 +2218,10 @@ class GeoDM:
             self.adddatasetdlg.datasetQualityComboBoxInput.clear()
             with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
                 with pgconn.cursor() as cur:
-                    sql = f"select * from {self.data_quality}"
+                    sql = f"select * from {self.data_quality} order by quality_range DESC"
                     cur.execute(sql)
                     self.adddatasetdlg.data_quality_list = cur.fetchall()
+                    self.adddatasetdlg.datasetQualityComboBoxInput.addItem('Выберите качество')
                     self.adddatasetdlg.datasetQualityComboBoxInput.addItems(
                         [row['name_ru'] for row in self.adddatasetdlg.data_quality_list])
 
@@ -2463,13 +2464,15 @@ class GeoDM:
             new_name = self.adddatasetdlg.datasetNameLineEditInput.text().strip().replace("'", "''")
             selected_type_index = self.adddatasetdlg.datasetTypeComboBoxInput.currentIndex()
             selected_format_index = self.adddatasetdlg.datasetFormatComboBoxInput.currentIndex()
-            selected_quality_index = self.adddatasetdlg.datasetQualityComboBoxInput.currentIndex()
+            selected_quality_index = self.adddatasetdlg.datasetQualityComboBoxInput.currentIndex() - 1
             new_sizegb = self.adddatasetdlg.datasetSizeGbSpinBoxInput.value()
             if all([new_shortname, new_name, self.selectedProcFeaturesList]):
                 selected_datasource_type_id = self.adddatasetdlg.datasource_types_list[selected_datasource_type_index]['datasource_type_id']
                 selected_type_id = self.adddatasetdlg.seismic_types_list[selected_type_index]['seismic_type_id']
                 selected_format_id = self.adddatasetdlg.formats_list[selected_format_index]['format_id']
-                selected_quality_id = self.adddatasetdlg.data_quality_list[selected_quality_index]['data_quality_id']
+                selected_quality_id = None
+                if selected_quality_index >= 0:
+                    selected_quality_id = self.adddatasetdlg.data_quality_list[selected_quality_index]['data_quality_id']
                 if self.adddatasetdlg.drives_to_link:
                     drive_ids_to_insert = [x['drive_id'] for x in self.adddatasetdlg.drives_to_link]
                 if self.adddatasetdlg.links_to_link:
@@ -2490,8 +2493,11 @@ class GeoDM:
                         sql = f"select * from nextval('{self.seismic_datasets_dataset_id_seq}'::regclass)"
                         cur.execute(sql)
                         self.adddatasetdlg.new_dataset_id = cur.fetchall()[0][0]
-                fields_to_update = ['dataset_id', 'datasource_type_id', 'shortname', 'name', 'seismic_type_id', 'format_id', 'data_quality_id']
-                values_to_insert = [str(self.adddatasetdlg.new_dataset_id), str(selected_datasource_type_id), f"'{new_shortname}'", f"'{new_name}'", str(selected_type_id), str(selected_format_id), str(selected_quality_id)]
+                fields_to_update = ['dataset_id', 'datasource_type_id', 'shortname', 'name', 'seismic_type_id', 'format_id']
+                values_to_insert = [str(self.adddatasetdlg.new_dataset_id), str(selected_datasource_type_id), f"'{new_shortname}'", f"'{new_name}'", str(selected_type_id), str(selected_format_id)]
+                if selected_quality_id:
+                    fields_to_update.append('data_quality_id')
+                    values_to_insert.append(str(selected_quality_id))
                 if new_sizegb > 0:
                     fields_to_update.append('size_gb')
                     values_to_insert.append(str(new_sizegb))
@@ -2627,14 +2633,17 @@ class GeoDM:
                 self.updatedatasetdlg.datasetQualityComboBoxInput.clear()
                 with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
                     with pgconn.cursor() as cur:
-                        sql = f"select * from {self.data_quality}"
+                        sql = f"select * from {self.data_quality} order by quality_range DESC"
                         cur.execute(sql)
                         self.updatedatasetdlg.data_quality_list = cur.fetchall()
+                        self.updatedatasetdlg.datasetQualityComboBoxInput.addItem('--Выбрать--')
                         self.updatedatasetdlg.datasetQualityComboBoxInput.addItems(
                             [row['name_ru'] for row in self.updatedatasetdlg.data_quality_list])
                     selected_quality = self.seismic_datasets_view_list[self.updatedatasetdlg.selected_dataset_row]['data_quality']
                 if selected_quality:
                     self.updatedatasetdlg.datasetQualityComboBoxInput.setCurrentText(selected_quality)
+                else:
+                    self.updatedatasetdlg.datasetQualityComboBoxInput.setCurrentText('--Выбрать--')
 
             def reload_sizegb():
                 size = self.seismic_datasets_view_list[self.updatedatasetdlg.selected_dataset_row]['size_gb']
@@ -2937,21 +2946,22 @@ class GeoDM:
                 drive_ids_to_insert = None
                 link_ids_to_insert = None
                 transmittal_ids_to_insert = None
-
                 selected_dataset_id = self.seismic_datasets_view_list[self.updatedatasetdlg.selected_dataset_row]['dataset_id']
                 selected_datasource_type_index = self.updatedatasetdlg.datasetDataSourceTypeComboBoxInput.currentIndex()
                 new_shortname = self.updatedatasetdlg.datasetShortnameLineEditInput.text().strip().replace("'", "''")
                 new_name = self.updatedatasetdlg.datasetNameLineEditInput.text().strip().replace("'", "''")
                 selected_type_index = self.updatedatasetdlg.datasetTypeComboBoxInput.currentIndex()
                 selected_format_index = self.updatedatasetdlg.datasetFormatComboBoxInput.currentIndex()
-                selected_quality_index = self.updatedatasetdlg.datasetQualityComboBoxInput.currentIndex()
+                selected_quality_index = self.updatedatasetdlg.datasetQualityComboBoxInput.currentIndex() - 1
                 new_sizegb = self.updatedatasetdlg.datasetSizeGbSpinBoxInput.value()
                 if all([new_shortname, new_name, self.selectedProcFeaturesList]):
                     selected_datasource_type_id = \
                     self.updatedatasetdlg.datasource_types_list[selected_datasource_type_index]['datasource_type_id']
                     selected_type_id = self.updatedatasetdlg.seismic_types_list[selected_type_index]['seismic_type_id']
                     selected_format_id = self.updatedatasetdlg.formats_list[selected_format_index]['format_id']
-                    selected_quality_id = self.updatedatasetdlg.data_quality_list[selected_quality_index][
+                    selected_quality_id = None
+                    if selected_quality_index >= 0:
+                        selected_quality_id = self.updatedatasetdlg.data_quality_list[selected_quality_index][
                         'data_quality_id']
                     if self.updatedatasetdlg.drives_to_link:
                         drive_ids_to_insert = [x['drive_id'] for x in self.updatedatasetdlg.drives_to_link]
@@ -2970,13 +2980,14 @@ class GeoDM:
                     else:
                         geom_ids_to_link = None
 
-
-
                     fields_to_update = ['datasource_type_id', 'shortname', 'name', 'seismic_type_id',
-                                        'format_id', 'data_quality_id']
+                                        'format_id']
                     values_to_insert = [str(selected_datasource_type_id),
                                         f"'{new_shortname}'", f"'{new_name}'", str(selected_type_id),
-                                        str(selected_format_id), str(selected_quality_id)]
+                                        str(selected_format_id)]
+                    if selected_quality_id:
+                        fields_to_update.append('data_quality_id')
+                        values_to_insert.append(str(selected_quality_id))
                     if new_sizegb > 0:
                         fields_to_update.append('size_gb')
                         values_to_insert.append(str(new_sizegb))
@@ -3017,7 +3028,6 @@ class GeoDM:
                                                         'Нужно указать все обязательные поля',
                                                         level=Qgis.Warning,
                                                         duration=5)
-            
             reload_datasource_types()
             reload_dataset_shortname()
             reload_dataset_name()
@@ -3034,7 +3044,6 @@ class GeoDM:
             reload_transmittals()
             get_linked_transmittals_from_postgres()
             reload_linked_transmittals()
-
             self.updatedatasetdlg.datasetRefreshDrivesButton.clicked.connect(reload_drives)
             self.updatedatasetdlg.datasetAllDrivesFilterLineEditInput.textEdited.connect(reload_drives)
             self.updatedatasetdlg.datasetNewDriveButton.clicked.connect(self.add_drive)
@@ -3051,9 +3060,7 @@ class GeoDM:
             self.updatedatasetdlg.unlinkSelectedTransmittalsButton.clicked.connect(unlink_transmittal)
             self.updatedatasetdlg.datasetNewTransmittalButton.clicked.connect(self.add_transmittal)
             self.updatedatasetdlg.insertDatasetButton.clicked.connect(generate_and_execute_sql)
-
             self.updatedatasetdlg.show()
-
         else:
             self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один набор данных', level=Qgis.Warning, duration=3)
 
@@ -3078,7 +3085,6 @@ class GeoDM:
 
     def add_drive(self):
         self.adddrivedlg = AddDriveDialog()
-
         self.adddrivedlg.drive_types_list = None
         self.adddrivedlg.conf_list = None
 
@@ -3129,9 +3135,7 @@ class GeoDM:
                 if new_drive_conf_limit:
                     fields_to_update += ', conf_limit'
                     values_to_insert += f", '{new_drive_conf_limit}'"
-
                 self.sql = f"insert into {self.drives}({fields_to_update}) values({values_to_insert})"
-
                 mwidget = self.iface.messageBar().createMessage(f"Добавить в базу {selected_drive_type_name} {str(new_drive_number)}?")
                 mbutton = QPushButton(mwidget)
                 mbutton.setText('Подтвердить')
@@ -3142,11 +3146,8 @@ class GeoDM:
             else:
                 self.iface.messageBar().pushMessage('Ошибка', 'Введите номер и тип нового физ.носителя',
                                                     level=Qgis.Warning, duration=5)
-
         self.adddrivedlg.insertDriveButton.clicked.connect(generate_and_execute_sql)
-
         self.adddrivedlg.show()
-
 
     def add_link(self):
         self.addlinkdlg = AddLinkDialog()
@@ -3178,7 +3179,6 @@ class GeoDM:
     def add_transmittal(self):
         self.addtransmittaldlg = AddTransmittalDialog()
         self.addtransmittaldlg.transmittalRefreshCompaniesPushButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
-
         self.addtransmittaldlg.transmittal_types_list = None
         self.addtransmittaldlg.from_companies_list = None
         self.addtransmittaldlg.to_companies_list = None
@@ -3265,7 +3265,6 @@ class GeoDM:
                 if new_transmittal_scan_link:
                     fields_to_update += ', scan_link'
                     values_to_insert += f", '{new_transmittal_scan_link}'"
-
                 self.sql = f"insert into {self.transmittals}({fields_to_update}) values({values_to_insert});"
                 mwidget = self.iface.messageBar().createMessage(f"Добавить в базу акт {str(new_transmittal_number)}?")
                 mbutton = QPushButton(mwidget)
@@ -3284,13 +3283,11 @@ class GeoDM:
         self.addtransmittaldlg.transmittalRefreshCompaniesPushButton.clicked.connect(reload_from_companies)
         self.addtransmittaldlg.transmittalRefreshCompaniesPushButton.clicked.connect(reload_to_companies)
         self.addtransmittaldlg.insertTransmittalPushButton.clicked.connect(generate_and_execute_sql)
-
         self.addtransmittaldlg.show()
 
 
     def run_mps(self):
         """Run method that performs all the real work"""
-
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
@@ -3300,7 +3297,6 @@ class GeoDM:
         else:
             # self.dlg = GeoDMDialogProc()
             self.dockwind = GeoDMDockWidgetProc()
-
         self.dockwind.selectProcForSelectedGeometryButton.setIcon(QIcon(':/plugins/geo_dm/spreadsheet.png'))
         self.dockwind.selectGeometryForSelectedProcButton.setIcon(QIcon(':/plugins/geo_dm/geometry.png'))
         self.dockwind.refreshProcButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
@@ -3310,7 +3306,6 @@ class GeoDM:
         self.dockwind.refreshDatasetButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
         self.dockwind.selectDatasetForSelectedGeometryButton.setIcon(QIcon(':/plugins/geo_dm/spreadsheet.png'))
         self.dockwind.selectGeometryForSelectedDatasetButton.setIcon(QIcon(':/plugins/geo_dm/geometry.png'))
-
         ltreenode = QgsProject.instance().layerTreeRoot().children()
         layers = list(filter(lambda x: x.type() == QgsMapLayerType.VectorLayer and x.isSpatial(), QgsLayerTreeUtils().collectMapLayersRecursive(ltreenode)))
         if layers:
@@ -3355,9 +3350,6 @@ class GeoDM:
 
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwind)
             self.dockwind.adjustSize()
-            # selectedLayerIndex = self.dockwind.layersComboBox.currentIndex()
-            #
-            # selectedLayer = layers[selectedLayerIndex]
         else:
             self.iface.messageBar().pushMessage('Ошибка', 'Необходимо добавить в проект слои с геометрией сейсмики', level=Qgis.Warning, duration=3)
 
