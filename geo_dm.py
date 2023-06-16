@@ -411,32 +411,50 @@ class GeoDM:
 
 
     def select_geometry_by_surveys(self):
-        selected_survey_rows = list(set([x.row() for x in self.dockwind.surveyTableWidget.selectedItems()]))
-        # self.iface.messageBar().pushMessage('selected_survey_rows', ', '.join([str(x) for x in selected_survey_rows]), level=Qgis.Success, duration=5)
-        selected_survey_ids = [self.surveys_view_list[i]['survey_id'] for i in selected_survey_rows]
-        # self.iface.messageBar().pushMessage('selected_survey_ids', ', '.join([str(x) for x in selected_survey_ids]), level=Qgis.Success, duration=5)
-        if len(selected_survey_ids) > 0 and self.selectedProcLayer != None and \
-                any(['line_id' in [f.name() for f in self.selectedProcLayer.fields()],
-                     'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]]):
-            proc_geom_string = ', '.join([str(x[0]) for x in self.proc_geom_to_surveys_list if x[1] in selected_survey_ids])
-            self.selectedProcLayer.removeSelection()
-            if 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
-                gfield = 'line_id'
-            else:
-                gfield = 'pol_id'
-            query = f'"{gfield}" in ({proc_geom_string})'
-            # self.iface.messageBar().pushMessage('query', query, level=Qgis.Success, duration=5)
-            self.selectedProcLayer.selectByExpression(query)
-            if len(self.selectedProcLayer.selectedFeatures()) > 0:
-                project_crs = QgsCoordinateReferenceSystem(QgsProject.instance().crs())
-                layer_crs = self.selectedProcLayer.crs()
-                lyr2proj = QgsCoordinateTransform(layer_crs, project_crs, QgsProject.instance())
-                box = lyr2proj.transformBoundingBox(self.selectedProcLayer.boundingBoxOfSelected())
-
-                self.iface.mapCanvas().setExtent(box)
-                self.iface.mapCanvas().refresh()
+        # selected_survey_rows = list(set([x.row() for x in self.dockwind.surveyTableWidget.selectedItems()]))
+        if self.mode in ('proc', 'field'):
+            selected_survey_rows = list(set([x.row() for x in self.wind.surveyTableWidget.selectedItems()]))
         else:
-            self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать съемку(и) и слой с геометрией", level=Qgis.Warning, duration=5)
+            selected_survey_rows = None
+        if self.mode == 'proc':
+            geom_lyr = self.selectedProcLayer
+        elif self.mode == 'field':
+            geom_lyr = self.selectedFieldLayer
+        else:
+            geom_lyr = None
+        # self.iface.messageBar().pushMessage('selected_survey_rows', ', '.join([str(x) for x in selected_survey_rows]), level=Qgis.Success, duration=5)
+        if selected_survey_rows and geom_lyr:
+            selected_survey_ids = [self.surveys_view_list[i]['survey_id'] for i in selected_survey_rows]
+            # self.iface.messageBar().pushMessage('selected_survey_ids', ', '.join([str(x) for x in selected_survey_ids]), level=Qgis.Success, duration=5)
+
+            if self.mode == 'proc' and selected_survey_ids and geom_lyr and \
+                    any(['line_id' in [f.name() for f in geom_lyr.fields()],
+                         'pol_id' in [f.name() for f in geom_lyr.fields()]]):
+                geom_string = ', '.join([str(x['processed_geom_id']) for x in self.proc_geom_to_surveys_list if x['survey_id'] in selected_survey_ids])
+
+                if 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                    gfield = 'line_id'
+                else:
+                    gfield = 'pol_id'
+                query = f'"{gfield}" in ({geom_string})'
+            elif all([self.mode == 'field', selected_survey_ids, geom_lyr, 'survey_id' in [f.name() for f in geom_lyr.fields()]]):
+                geom_string = ', '.join([str(x['survey_id']) for x in self.surveys_view_list if x['survey_id'] in selected_survey_ids])
+                query = f'"survey_id" in ({geom_string})'
+            else:
+                query = None
+            geom_lyr.removeSelection()
+            # self.iface.messageBar().pushMessage('query', query, level=Qgis.Success, duration=5)
+            if query:
+                geom_lyr.selectByExpression(query)
+                if geom_lyr.selectedFeatures():
+                    project_crs = QgsCoordinateReferenceSystem(QgsProject.instance().crs())
+                    layer_crs = geom_lyr.crs()
+                    lyr2proj = QgsCoordinateTransform(layer_crs, project_crs, QgsProject.instance())
+                    box = lyr2proj.transformBoundingBox(geom_lyr.boundingBoxOfSelected())
+                    self.iface.mapCanvas().setExtent(box)
+                    self.iface.mapCanvas().refresh()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать съемку(и) и слой с геометрией", level=Qgis.Warning, duration=5)
 
 
     def link_selected_surveys_to_geometry(self):
@@ -3415,6 +3433,7 @@ class GeoDM:
             self.dockwindfield.refreshSurveyButton.clicked.connect(self.refresh_surveys)
             self.dockwindfield.surveyFilterLineEdit.textEdited.connect(self.refresh_surveys)
             self.dockwindfield.selectSurveyForSelectedGeometryButton.clicked.connect(self.select_surveys_by_geometry)
+            self.dockwindfield.selectGeometryForSelectedSurveyButton.clicked.connect(self.select_geometry_by_surveys)
 
 
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwindfield)
