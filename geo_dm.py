@@ -458,31 +458,70 @@ class GeoDM:
 
 
     def link_selected_surveys_to_geometry(self):
-        selected_cells = self.dockwind.surveyTableWidget.selectedItems()
+        # selected_cells = self.dockwind.surveyTableWidget.selectedItems()
+        if self.mode in ('proc', 'field'):
+            selected_cells = self.wind.surveyTableWidget.selectedItems()
+        else:
+            selected_cells = None
         selected_rows = list(set([x.row() for x in selected_cells]))
-        if len(selected_rows) < 1:
+        if not selected_rows:
             self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одну или несколько съемок', level=Qgis.Warning, duration=3)
         else:
             survey_ids = [self.surveys_view_list[i]['survey_id'] for i in selected_rows]
-            if self.selectedProcLayer != None and len(self.selectedProcFeaturesList) > 0 and \
-                    any(['line_id' in [f.name() for f in self.selectedProcLayer.fields()],
-                         'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]]):
-                if 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
-                    gfield = 'line_id'
-                    table = self.seismic_lines_processed_2d
+            sql = None
+            geom_ids = None
+            if all([self.mode == 'proc', self.selectedProcLayer, self.selectedProcFeaturesList]):
+                if any(['line_id' in [f.name() for f in self.selectedProcLayer.fields()],
+                        'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]]):
+                    # if self.selectedProcLayer != None and len(self.selectedProcFeaturesList) > 0 and \
+                    #         any(['line_id' in [f.name() for f in self.selectedProcLayer.fields()],
+                    #              'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]]):
+                    if 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                        gfield = 'line_id'
+                        table = self.seismic_lines_processed_2d
+                    else:
+                        gfield = 'pol_id'
+                        table = self.seismic_pols_processed_3d
+                    geom_ids = [x[gfield] for x in self.selectedProcFeaturesList]
+                    sql = f"insert into {self.proc_geom_to_surveys}(processed_geom_id, survey_id) values"
+                    # sql += ', '.join['(' + str(g) + ', ' + str(s) + ')' for g, s in geom_ids, survey_ids]
+                    values_to_insert = []
+                    for geom_id in geom_ids:
+                        for survey_id in survey_ids:
+                            values_to_insert.append(f"({str(geom_id)}, {str(survey_id)})")
+                    sql += ', '.join(values_to_insert)
+                    self.sql = sql
+                    # self.iface.messageBar().pushMessage('sql', sql, level=Qgis.Success, duration=5)
+            elif all([len(survey_ids) == 1, self.mode == 'field', self.selectedFieldLayer, self.selectedFieldFeaturesList]):
+                if any(['field_line_id' in [f.name() for f in self.selectedFieldLayer.fields()],
+                         'pol_id' in [f.name() for f in self.selectedFieldLayer.fields()]]):
+                    if 'field_line_id' in [f.name() for f in self.selectedFieldLayer.fields()]:
+                        gfield = 'field_line_id'
+                        table = self.seismic_lines_field_2d
+                    else:
+                        gfield = 'pol_id'
+                        table = self.seismic_pols_field_3d
+                    geom_ids = [x[gfield] for x in self.selectedFieldFeaturesList]
+                    sql = f"update {table} set survey_id = {str(survey_ids[0])} where {gfield} in ({', '.join([str(x) for x in geom_ids])});"
+                    # self.iface.messageBar().pushMessage('sql', sql, level=Qgis.Success, duration=3)
+                    self.sql = sql
+            elif all([len(survey_ids) > 1, self.mode == 'field']):
+                self.iface.messageBar().pushMessage('Ошибка', 'Для присвоения съемки полевой геометрии ужно выбрать одну съемку и хотя бы одну геометрию',
+                                                    level=Qgis.Warning, duration=3)
+            else:
+                if self.mode == 'proc':
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Для присвоения съемки обработанной геометрии ужно выбрать хотя бы одну съемку и хотя бы одну геометрию',
+                                                        level=Qgis.Warning, duration=3)
+                elif self.mode == 'field':
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Для присвоения съемки полевой геометрии ужно выбрать одну съемку и хотя бы одну геометрию',
+                                                    level=Qgis.Warning, duration=3)
                 else:
-                    gfield = 'pol_id'
-                    table = self.seismic_pols_processed_3d
-                geom_ids = [x[gfield] for x in self.selectedProcFeaturesList]
-                sql = f"insert into {self.proc_geom_to_surveys}(processed_geom_id, survey_id) values"
-                # sql += ', '.join['(' + str(g) + ', ' + str(s) + ')' for g, s in geom_ids, survey_ids]
-                values_to_insert = []
-                for geom_id in geom_ids:
-                    for survey_id in survey_ids:
-                        values_to_insert.append(f"({str(geom_id)}, {str(survey_id)})")
-                sql += ', '.join(values_to_insert)
-                self.sql = sql
-                # self.iface.messageBar().pushMessage('sql', sql, level=Qgis.Success, duration=5)
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Для связывания съемки и геометрии ужно выбрать хотя бы одну съемку и хотя бы одну геометрию',
+                                                        level=Qgis.Warning, duration=3)
+            if sql:
                 mwidget = self.iface.messageBar().createMessage(f"Связать {str(len(survey_ids))} съемок с {str(len(geom_ids))} объектами в активном слое?")
                 mbutton = QPushButton(mwidget)
                 mbutton.setText('Подтвердить')
@@ -613,7 +652,10 @@ class GeoDM:
                     pgconn.commit()
 
                     # Это чтобы обновить атрибуты выбранных объектов
-                    self.set_selected_proc_features_list()
+                    if self.mode == 'proc':
+                        self.set_selected_proc_features_list()
+                    elif self.mode == 'field':
+                        self.set_selected_field_features_list()
 
                     # Это чтобы убрать лишние уведомления
                     [self.iface.messageBar().popWidget(x) for x in self.iface.messageBar().items()]
@@ -626,9 +668,12 @@ class GeoDM:
                                                 level=Qgis.Critical, duration=5)
 
         self.sql = ''
-        self.refresh_processings()
-        self.refresh_datasets()
-        self.refresh_surveys()
+        if self.mode == 'proc':
+            self.refresh_processings()
+            self.refresh_datasets()
+            self.refresh_surveys()
+        elif self.mode == 'field':
+            self.refresh_surveys()
 
 
     def update_proc_for_selected_features(self):
@@ -3434,6 +3479,10 @@ class GeoDM:
             self.dockwindfield.surveyFilterLineEdit.textEdited.connect(self.refresh_surveys)
             self.dockwindfield.selectSurveyForSelectedGeometryButton.clicked.connect(self.select_surveys_by_geometry)
             self.dockwindfield.selectGeometryForSelectedSurveyButton.clicked.connect(self.select_geometry_by_surveys)
+            self.dockwindfield.linkSurveyToGeometryButton.clicked.connect(self.link_selected_surveys_to_geometry)
+
+            self.dockwindfield.addSurveyPushButton.clicked.connect(self.add_survey)
+            self.dockwindfield.updateSurveyPushButton.clicked.connect(self.update_survey)
 
 
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwindfield)
