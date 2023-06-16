@@ -142,12 +142,17 @@ class GeoDM:
         self.dataset_id_filter = None
 
         self.selectedProcLayer = None
+        self.selectedFieldLayer = None
 
         self.selectedProcFeaturesList = []
+        self.selectedFieldFeaturesList = []
 
         self.sql = ''
 
         self.show_datasets_for_selected_proc = True
+
+        self.mode = None
+        self.wind = None
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -270,7 +275,9 @@ class GeoDM:
 
     def get_surveys_from_postgres(self):
         sql = f"select * from {self.surveys_view}"
-        filter_str = self.dockwind.surveyFilterLineEdit.text().lower().strip()
+
+        # filter_str = self.dockwind.surveyFilterLineEdit.text().lower().strip()
+        filter_str = self.wind.surveyFilterLineEdit.text().lower().strip()
         if filter_str not in ['', None]:
             sql += f" where (LOWER(name) like '%{filter_str}%' or LOWER(survey_type) like '%{filter_str}%' or year::text = '{filter_str}' " \
                    f"or LOWER(acquisition_company) like '%{filter_str}%' or LOWER(acquisition_company_shortname) like '%{filter_str}%' " \
@@ -304,11 +311,17 @@ class GeoDM:
 
 
     def refresh_surveys(self):
-        self.dockwind.surveyTableWidget.clear()
-        self.dockwind.surveyTableWidget.setRowCount(0)
-        self.dockwind.surveyTableWidget.setColumnCount(4)
-        self.dockwind.surveyTableWidget.setHorizontalHeaderLabels(['Название', 'Тип', 'Исполнитель', 'Год'])
-        header = self.dockwind.surveyTableWidget.horizontalHeader()
+        # self.dockwind.surveyTableWidget.clear()
+        # self.dockwind.surveyTableWidget.setRowCount(0)
+        # self.dockwind.surveyTableWidget.setColumnCount(4)
+        # self.dockwind.surveyTableWidget.setHorizontalHeaderLabels(['Название', 'Тип', 'Исполнитель', 'Год'])
+        # header = self.dockwind.surveyTableWidget.horizontalHeader()
+        self.wind.surveyTableWidget.clear()
+        self.wind.surveyTableWidget.setRowCount(0)
+        self.wind.surveyTableWidget.setColumnCount(4)
+        self.wind.surveyTableWidget.setHorizontalHeaderLabels(['Название', 'Тип', 'Исполнитель', 'Год'])
+        header = self.wind.surveyTableWidget.horizontalHeader()
+
         header.resizeSection(0, 100)
         header.resizeSection(1, 5)
         header.resizeSection(2, 100)
@@ -317,26 +330,44 @@ class GeoDM:
         #     index_list = []
         if self.get_surveys_from_postgres():
             for i, survey_row in enumerate(self.surveys_view_list):
-                self.dockwind.surveyTableWidget.insertRow(i)
+                # self.dockwind.surveyTableWidget.insertRow(i)
+                # citem = QTableWidgetItem(survey_row['name'])
+                # citem.setToolTip(str(survey_row['name']))
+                # citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                # self.dockwind.surveyTableWidget.setItem(i, 0, citem)
+                # citem = QTableWidgetItem(survey_row['survey_type'])
+                # citem.setToolTip(str(survey_row['survey_type']))
+                # citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                # self.dockwind.surveyTableWidget.setItem(i, 1, citem)
+                # citem = QTableWidgetItem(survey_row['acquisition_company_shortname'])
+                # citem.setToolTip(str(survey_row['acquisition_company']))
+                # citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                # self.dockwind.surveyTableWidget.setItem(i, 2, citem)
+                # citem = QTableWidgetItem(str(survey_row['year']))
+                # citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                # self.dockwind.surveyTableWidget.setItem(i, 3, citem)
+
+                self.wind.surveyTableWidget.insertRow(i)
                 citem = QTableWidgetItem(survey_row['name'])
                 citem.setToolTip(str(survey_row['name']))
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                self.dockwind.surveyTableWidget.setItem(i, 0, citem)
+                self.wind.surveyTableWidget.setItem(i, 0, citem)
                 citem = QTableWidgetItem(survey_row['survey_type'])
                 citem.setToolTip(str(survey_row['survey_type']))
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                self.dockwind.surveyTableWidget.setItem(i, 1, citem)
+                self.wind.surveyTableWidget.setItem(i, 1, citem)
                 citem = QTableWidgetItem(survey_row['acquisition_company_shortname'])
                 citem.setToolTip(str(survey_row['acquisition_company']))
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                self.dockwind.surveyTableWidget.setItem(i, 2, citem)
+                self.wind.surveyTableWidget.setItem(i, 2, citem)
                 citem = QTableWidgetItem(str(survey_row['year']))
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                self.dockwind.surveyTableWidget.setItem(i, 3, citem)
+                self.wind.surveyTableWidget.setItem(i, 3, citem)
 
 
     def select_surveys_by_geometry(self):
-        if self.selectedProcLayer != None and len(self.selectedProcFeaturesList) > 0:
+        if all([self.mode == 'proc', self.selectedProcLayer, self.selectedProcFeaturesList]):
+            # if self.selectedProcLayer != None and len(self.selectedProcFeaturesList) > 0:
             if 'proc_id' in [f.name() for f in self.selectedProcLayer.fields()]:
                 if 'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]:
                     selected_features_ids_list = list(set([f.attribute('pol_id') for f in self.selectedProcFeaturesList]))
@@ -344,31 +375,39 @@ class GeoDM:
                     selected_features_ids_list = list(set([f.attribute('line_id') for f in self.selectedProcFeaturesList]))
                 else:
                     selected_features_ids_list = []
-                # with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                #     pass
                 selected_features_survey_ids = [y[1] for y in self.proc_geom_to_surveys_list if y[0] in selected_features_ids_list]
-                # selected_features_survey_ids = [y['survey_id'] for y in self.proc_geom_to_surveys_list if
-                #                                 y['processed_geom_id'] in selected_features_ids_list]
-                # selected_survey_indexes = [x[0] for x in enumerate(self.surveys_list) if x[1][1] in selected_features_survey_ids]
-                [x.setSelected(False) for x in self.dockwind.surveyTableWidget.selectedItems()]
-                # self.dockwind.surveyTableWidget.setSelectionMode(QAbstractItemView.MultiSelection)
-                # [self.dockwind.surveyTableWidget.selectRow(i) for i in selected_survey_indexes]
-                # self.dockwind.surveyTableWidget.setSelectionMode(QAbstractItemView.ContiguousSelection)
-                self.dockwind.surveyTableWidget.clear()
-                self.dockwind.surveyTableWidget.setHorizontalHeaderLabels(['Название', 'Тип', 'Исполнитель', 'Год'])
-                self.dockwind.surveyTableWidget.setRowCount(0)
-                # self.iface.messageBar().pushMessage('selected_survey_indexes', ', '.join([str(x) for x in selected_survey_indexes]), level=Qgis.Warning,
-                #                                     duration=5)
-                if len(selected_features_survey_ids) > 0:
-                    self.survey_id_filter = selected_features_survey_ids
-                else:
-                    self.survey_id_filter = [-1]
-                self.refresh_surveys()
-                self.survey_id_filter = None
-                # self.refresh_surveys(selected_survey_indexes)
+            # else:
+            #     selected_features_survey_ids = []
+            else:
+                selected_features_survey_ids = []
+        elif all([self.mode == 'field', self.selectedFieldLayer, self.selectedFieldFeaturesList]):
+            if 'survey_id' in [f.name() for f in self.selectedFieldLayer.fields()]:
+                selected_features_survey_ids = list(set([f.attribute('survey_id') for f in self.selectedFieldFeaturesList]))
+            else:
+                selected_features_survey_ids = []
         else:
-            self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать слой и объекты в нем", level=Qgis.Warning,
-                                                duration=5)
+            self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать слой и объекты в нем",
+                                            level=Qgis.Warning,
+                                            duration=5)
+            selected_features_survey_ids = []
+
+        # if selected_features_survey_ids:
+        [x.setSelected(False) for x in self.wind.surveyTableWidget.selectedItems()]
+        self.wind.surveyTableWidget.clear()
+        self.wind.surveyTableWidget.setHorizontalHeaderLabels(['Название', 'Тип', 'Исполнитель', 'Год'])
+        self.wind.surveyTableWidget.setRowCount(0)
+
+        if selected_features_survey_ids:
+            self.survey_id_filter = selected_features_survey_ids
+        else:
+            self.survey_id_filter = [-1]
+        self.refresh_surveys()
+        self.survey_id_filter = None
+        # self.refresh_surveys(selected_survey_indexes)
+        # else:
+        #     self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать слой и объекты в нем",
+        #                                     level=Qgis.Warning,
+        #                                     duration=5)
 
 
     def select_geometry_by_surveys(self):
@@ -658,40 +697,53 @@ class GeoDM:
         # if self.selectedProcFeaturesList:
         self.dockwind.selectedGeometryLabel.setText(f"Выбрано объектов: {len(self.selectedProcFeaturesList)}")
 
+    def display_selected_field_geometry_count(self):
+        # if self.selectedProcFeaturesList:
+        self.dockwindfield.selectedGeometryLabel.setText(f"Выбрано объектов: {len(self.selectedFieldFeaturesList)}")
+
+
+    def set_selected_field_features_list(self):
+        selectedLayer = self.iface.layerTreeView().currentLayer()
+        if selectedLayer:
+            if selectedLayer.type() == QgsMapLayerType.VectorLayer:
+                if all(['survey_id' in [f.name() for f in selectedLayer.fields()], selectedLayer.isSpatial()]):
+                    self.selectedFieldLayer = selectedLayer
+                    self.dockwindfield.selectedLayerLabel.setText(selectedLayer.name())
+                    self.selectedFieldFeaturesList = self.selectedFieldLayer.selectedFeatures()
+                    self.display_selected_field_geometry_count()
+                else:
+                    self.selectedFieldLayer = None
+                    self.selectedFieldFeaturesList = []
+                    self.dockwindfield.selectedLayerLabel.setText('Нужно выбрать векторный слой!')
+            else:
+                self.selectedFieldLayer = None
+                self.selectedFieldFeaturesList = []
+                self.dockwindfield.selectedLayerLabel.setText('Нужно выбрать векторный слой!')
+                # self.iface.messageBar().pushMessage('Ошибка', 'Необходимо выбрать один слой в таблице содержания, содержащий геометрию обработанной сейсмики',
+                #                                     level=Qgis.Warning, duration=3)
+                self.display_selected_field_geometry_count()
+
 
     def set_selected_proc_features_list(self):
-        # ltreenode = QgsProject.instance().layerTreeRoot().children()
-        # layers = list(filter(lambda x: x.type() == QgsMapLayerType.VectorLayer and x.isSpatial(),
-        #                      QgsLayerTreeUtils().collectMapLayersRecursive(ltreenode)))
-        # selectedLayerIndex = self.dockwind.layersComboBox.currentIndex()
-
-        # self.selectedProcLayer = layers[selectedLayerIndex]
-
-        # self.selectedProcLayer = None
-        # self.selectedProcFeaturesList = None
-        # selectedLayers = self.iface.layerTreeView().selectedLayers()
         selectedLayer = self.iface.layerTreeView().currentLayer()
-        # self.iface.messageBar().pushMessage('Инфо',
-        #                                     f"Выбран слой {str(selectedLayer.name())}",
-        #                                     level=Qgis.Warning, duration=3)
-        #if all([selectedLayer.type() == QgsMapLayerType.VectorLayer, 'proc_id' in [f.name() for f in selectedLayer.fields()],
-        if selectedLayer.type() == QgsMapLayerType.VectorLayer:
-            if all(['proc_id' in [f.name() for f in selectedLayer.fields()], selectedLayer.isSpatial()]):
-                self.selectedProcLayer = selectedLayer
-                self.dockwind.selectedLayerLabel.setText(selectedLayer.name())
-                self.selectedProcFeaturesList = self.selectedProcLayer.selectedFeatures()
-                self.display_selected_geometry_count()
+        if selectedLayer:
+            if selectedLayer.type() == QgsMapLayerType.VectorLayer:
+                if all(['proc_id' in [f.name() for f in selectedLayer.fields()], selectedLayer.isSpatial()]):
+                    self.selectedProcLayer = selectedLayer
+                    self.dockwind.selectedLayerLabel.setText(selectedLayer.name())
+                    self.selectedProcFeaturesList = self.selectedProcLayer.selectedFeatures()
+                    self.display_selected_geometry_count()
+                else:
+                    self.selectedProcLayer = None
+                    self.selectedProcFeaturesList = []
+                    self.dockwind.selectedLayerLabel.setText('Нужно выбрать векторный слой!')
             else:
                 self.selectedProcLayer = None
                 self.selectedProcFeaturesList = []
                 self.dockwind.selectedLayerLabel.setText('Нужно выбрать векторный слой!')
-        else:
-            self.selectedProcLayer = None
-            self.selectedProcFeaturesList = []
-            self.dockwind.selectedLayerLabel.setText('Нужно выбрать векторный слой!')
-            # self.iface.messageBar().pushMessage('Ошибка', 'Необходимо выбрать один слой в таблице содержания, содержащий геометрию обработанной сейсмики',
-            #                                     level=Qgis.Warning, duration=3)
-            self.display_selected_geometry_count()
+                # self.iface.messageBar().pushMessage('Ошибка', 'Необходимо выбрать один слой в таблице содержания, содержащий геометрию обработанной сейсмики',
+                #                                     level=Qgis.Warning, duration=3)
+                self.display_selected_geometry_count()
 
 
     def add_company(self):
@@ -1406,15 +1458,9 @@ class GeoDM:
             self.updatesurveydlg.refreshAuthorsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
             self.updatesurveydlg.refreshContractsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
             self.updatesurveydlg.refreshReportsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
-
             self.updatesurveydlg.selected_survey_row = selected_survey_rows[0]
             self.updatesurveydlg.setWindowTitle('Изменить съемку')
             self.updatesurveydlg.insertSurveyButton.setText('Изменить съемку')
-            ##################################################################
-            # fill_with_selected_survey()
-            # generate_and_execute_sql()
-
-            ##################################################################
             self.updatesurveydlg.reports_to_link = []
 
             def reload_survey_name():
@@ -1529,7 +1575,6 @@ class GeoDM:
                 header = self.updatesurveydlg.surveyReportsTableWidget.horizontalHeader()
                 header.resizeSection(0, 100)
                 header.resizeSection(1, 255)
-                # selected_survey_id = self.surveys_view_list[self.updatesurveydlg.selected_survey_row]['survey_id']
                 if self.updatesurveydlg.reports_to_link:
                     for i, report in enumerate(self.updatesurveydlg.reports_to_link):
                         self.updatesurveydlg.surveyReportsTableWidget.insertRow(i)
@@ -1546,7 +1591,6 @@ class GeoDM:
                 filter_string = self.updatesurveydlg.reportFilterInput.text().strip().lower().replace("'", "''")
                 self.updatesurveydlg.surveyReportsInput.clear()
                 self.updatesurveydlg.surveyReportsTableWidget.clearContents()
-
                 sql = f"select * from {self.reports_view}"
                 if filter_string:
                     sql += f" where LOWER(name) like '%{filter_string}%' " \
@@ -1601,20 +1645,8 @@ class GeoDM:
                 if selected_report_index >= 0 and self.updatesurveydlg.all_reports_list[selected_report_index]['report_id'] not in \
                         [x['report_id'] for x in self.updatesurveydlg.reports_to_link]:
                     self.updatesurveydlg.reports_to_link.append(self.updatesurveydlg.all_reports_list[selected_report_index])
-                    # i = self.updatesurveydlg.surveyReportsTableWidget.rowCount()
-                    # self.updatesurveydlg.surveyReportsTableWidget.insertRow(i)
-                    # citem = QTableWidgetItem(self.updatesurveydlg.all_reports_list[selected_report_index]['report_type'])
-                    # citem.setToolTip(self.updatesurveydlg.all_reports_list[selected_report_index]['report_type'])
-                    # citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                    # self.updatesurveydlg.surveyReportsTableWidget.setItem(i, 0, citem)
-                    # citem = QTableWidgetItem(self.updatesurveydlg.all_reports_list[selected_report_index]['shortname'])
-                    # citem.setToolTip(self.updatesurveydlg.all_reports_list[selected_report_index]['name'])
-                    # citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                    # self.updatesurveydlg.surveyReportsTableWidget.setItem(i, 1, citem)
                     reload_linked_reports()
                 self.updatesurveydlg.surveyReportsInput.setCurrentIndex(0)
-
-
 
             def unlink_existing_report():
                 selected_reports_rows = list(set([x.row() for x in self.updatesurveydlg.surveyReportsTableWidget.selectedItems()]))
@@ -1623,8 +1655,6 @@ class GeoDM:
                                                                self.updatesurveydlg.reports_to_link.index(
                                                                    x) not in selected_reports_rows]
                     reload_linked_reports()
-                    # [self.updatesurveydlg.reports_to_link.pop(x) for x in selected_reports_rows]
-                    # [self.updatesurveydlg.surveyReportsTableWidget.removeRow(x) for x in selected_reports_rows]
 
             def generate_and_execute_sql():
                 selected_survey_id = self.surveys_view_list[self.updatesurveydlg.selected_survey_row]['survey_id']
@@ -1648,7 +1678,6 @@ class GeoDM:
                     fields_to_update.append('acquisition_contract_id')
                     selected_contract_id = self.updatesurveydlg.contracts_list[selected_contract_index]['contract_id']
                     values_to_update.append(str(selected_contract_id))
-
                 fields_values = ', '.join([a[0] + ' = ' + a[1] for a in zip(fields_to_update, values_to_update)])
                 self.sql = f"update {self.surveys} set {fields_values} where survey_id = {selected_survey_id};"
                 self.sql += f" delete from {self.reports_to_surveys} where survey_id = {selected_survey_id};"
@@ -1681,8 +1710,6 @@ class GeoDM:
             self.updatesurveydlg.surveyReportsInput.activated.connect(link_existing_report)
             self.updatesurveydlg.unlinkSelectedReportButton.clicked.connect(unlink_existing_report)
             self.updatesurveydlg.insertSurveyButton.clicked.connect(generate_and_execute_sql)
-            # self.updatesurveydlg.insertSurveyButton.clicked.connect(self.refresh_surveys)
-
             self.updatesurveydlg.show()
 
         else:
@@ -1852,7 +1879,6 @@ class GeoDM:
                     sql = f"select * from nextval('{self.survey_id_seq}'::regclass)"
                     cur.execute(sql)
                     new_survey_id = cur.fetchall()[0][0]
-
             new_survey_name = self.addsurveydlg.surveyNameInput.text().replace("'", "''")
             selected_loc_type_index = self.addsurveydlg.surveyLocTypeInput.currentIndex()
             selected_loc_type_id = self.addsurveydlg.location_types_list[selected_loc_type_index]['location_type_id']
@@ -1873,7 +1899,6 @@ class GeoDM:
                 fields_to_update += ', acquisition_contract_id'
                 selected_contract_id = self.addsurveydlg.contracts_list[selected_contract_index]['contract_id']
                 values_to_insert += f", {str(selected_contract_id)}"
-
             self.sql = f"insert into {self.surveys}({fields_to_update}) values({values_to_insert})"
             for i, report in enumerate(self.addsurveydlg.reports_to_link):
                 if i == 0:
@@ -1881,7 +1906,6 @@ class GeoDM:
                 elif i > 0:
                     self.sql += f", ({str(report['report_id'])}, {str(new_survey_id)})"
             self.sql += ';'
-
             # self.iface.messageBar().pushMessage('sql', self.sql, level=Qgis.Success, duration=5)
             mwidget = self.iface.messageBar().createMessage(
                 f"Добавить в базу съемку {str(new_survey_name)}?")
@@ -1892,7 +1916,6 @@ class GeoDM:
             mwidget.layout().addWidget(mbutton)
             self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
             self.addsurveydlg.accept()
-
         self.addsurveydlg.addProjectButton.clicked.connect(self.add_project)
         self.addsurveydlg.refreshProjButton.clicked.connect(reload_projects)
         self.addsurveydlg.addCompanyButton.clicked.connect(self.add_company)
@@ -1907,8 +1930,6 @@ class GeoDM:
         self.addsurveydlg.surveyReportsInput.activated.connect(link_existing_report)
         self.addsurveydlg.unlinkSelectedReportButton.clicked.connect(unlink_existing_report)
         self.addsurveydlg.insertSurveyButton.clicked.connect(generate_and_execute_sql)
-        # self.addsurveydlg.insertSurveyButton.clicked.connect(self.refresh_surveys)
-
         self.addsurveydlg.show()
 
 
@@ -1985,8 +2006,6 @@ class GeoDM:
             self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить сведения о наборах данных из базы ' + sql,
                                                 level=Qgis.Critical, duration=5)
             return False
-        # else:
-        #     return False
 
     def refresh_datasets(self):
         self.dockwind.datasetTableWidget.clear()
@@ -3276,7 +3295,6 @@ class GeoDM:
             else:
                 self.iface.messageBar().pushMessage('Ошибка', 'Нужно указать Тип, Номер, Дату, Отправителя и Получателя акта', level=Qgis.Warning,
                                                     duration=3)
-
         self.addtransmittaldlg.transmittalFromCompanyFilterLineEdit.textEdited.connect(reload_from_companies)
         self.addtransmittaldlg.transmittalToCompanyFilterLineEdit.textEdited.connect(reload_to_companies)
         self.addtransmittaldlg.transmittalNewCompanyPushButton.clicked.connect(self.add_company)
@@ -3290,6 +3308,10 @@ class GeoDM:
         """Run method that performs all the real work"""
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
+        try:
+            self.dockwindfield.close()
+        except:
+            pass
         if self.first_start == True:
             self.first_start = False
             # self.dlg = GeoDMDialogProc()
@@ -3297,6 +3319,10 @@ class GeoDM:
         else:
             # self.dlg = GeoDMDialogProc()
             self.dockwind = GeoDMDockWidgetProc()
+
+        self.mode = 'proc'
+        self.wind = self.dockwind
+
         self.dockwind.selectProcForSelectedGeometryButton.setIcon(QIcon(':/plugins/geo_dm/spreadsheet.png'))
         self.dockwind.selectGeometryForSelectedProcButton.setIcon(QIcon(':/plugins/geo_dm/geometry.png'))
         self.dockwind.refreshProcButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
@@ -3351,28 +3377,49 @@ class GeoDM:
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwind)
             self.dockwind.adjustSize()
         else:
-            self.iface.messageBar().pushMessage('Ошибка', 'Необходимо добавить в проект слои с геометрией сейсмики', level=Qgis.Warning, duration=3)
+            self.iface.messageBar().pushMessage('Ошибка', 'Необходимо добавить в проекте слой с геометрией сейсмики', level=Qgis.Warning, duration=3)
 
 
     def run_mfs(self):
         """Run method that performs all the real work"""
-
-        # Create the dialog with elements (after translation) and keep reference
-        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
+        try:
+            self.dockwind.close()
+        except:
+            pass
         if self.first_start == True:
             self.first_start = False
-            self.dockwind = GeoDMDialogField()
+            self.dockwindfield = GeoDMDockWidgetField()
         else:
-            self.dockwind = GeoDMDialogField()
+            self.dockwindfield = GeoDMDockWidgetField()
 
-        # self.iface.setAttribute(Qt.AA_Use96Dpi)
-        # show the dialog
-        self.dockwind.show()
-        # self.dockwind.adjustSize()
-        # Run the dialog event loop
-        result = self.dockwind.exec_()
-        # See if OK was pressed
-        if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
-            pass
+        self.mode = 'field'
+        self.wind = self.dockwindfield
+
+        self.dockwindfield.selectSurveyForSelectedGeometryButton.setIcon(QIcon(':/plugins/geo_dm/spreadsheet.png'))
+        self.dockwindfield.selectGeometryForSelectedSurveyButton.setIcon(QIcon(':/plugins/geo_dm/geometry.png'))
+        self.dockwindfield.refreshSurveyButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.dockwindfield.refreshDatasetButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.dockwindfield.selectDatasetForSelectedGeometryButton.setIcon(QIcon(':/plugins/geo_dm/spreadsheet.png'))
+        self.dockwindfield.selectGeometryForSelectedDatasetButton.setIcon(QIcon(':/plugins/geo_dm/geometry.png'))
+
+        ltreenode = QgsProject.instance().layerTreeRoot().children()
+        layers = list(filter(lambda x: x.type() == QgsMapLayerType.VectorLayer and x.isSpatial(),
+                             QgsLayerTreeUtils().collectMapLayersRecursive(ltreenode)))
+        if layers:
+            self.set_selected_field_features_list()
+            self.display_selected_field_geometry_count()
+            self.iface.mapCanvas().selectionChanged.connect(self.set_selected_field_features_list)
+            self.iface.layerTreeView().currentLayerChanged.connect(self.set_selected_field_features_list)
+
+            self.refresh_surveys()
+            self.dockwindfield.refreshSurveyButton.clicked.connect(self.refresh_surveys)
+            self.dockwindfield.surveyFilterLineEdit.textEdited.connect(self.refresh_surveys)
+            self.dockwindfield.selectSurveyForSelectedGeometryButton.clicked.connect(self.select_surveys_by_geometry)
+
+
+            self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwindfield)
+            self.dockwindfield.adjustSize()
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', 'Необходимо добавить в проект слой с геометрией сейсмики',
+                                                level=Qgis.Warning, duration=3)
+

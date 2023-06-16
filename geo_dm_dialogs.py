@@ -173,3 +173,13 @@ class AddTransmittalDialog(QtWidgets.QDialog, FORM_CLASS_ADD_TRANSMITTAL):
         """Constructor."""
         super(AddTransmittalDialog, self).__init__(parent)
         self.setupUi(self)
+
+
+FORM_CLASS_DOCK_FIELD, _ = uic.loadUiType(os.path.join(
+    os.path.dirname(__file__), 'geo_dm_dockwidget_seis_field.ui'))
+
+class GeoDMDockWidgetField(QtWidgets.QDockWidget, FORM_CLASS_DOCK_FIELD):
+    def __init__(self, parent=None):
+        """Constructor."""
+        super(GeoDMDockWidgetField, self).__init__(parent)
+        self.setupUi(self)
