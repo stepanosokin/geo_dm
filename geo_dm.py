@@ -461,9 +461,10 @@ class GeoDM:
         # selected_cells = self.dockwind.surveyTableWidget.selectedItems()
         if self.mode in ('proc', 'field'):
             selected_cells = self.wind.surveyTableWidget.selectedItems()
+            selected_rows = list(set([x.row() for x in selected_cells]))
         else:
             selected_cells = None
-        selected_rows = list(set([x.row() for x in selected_cells]))
+            selected_rows = None
         if not selected_rows:
             self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одну или несколько съемок', level=Qgis.Warning, duration=3)
         else:
@@ -531,37 +532,62 @@ class GeoDM:
 
 
     def unlink_selected_surveys_from_geometry(self):
-        selected_cells = self.dockwind.surveyTableWidget.selectedItems()
-        selected_rows = list(set([x.row() for x in selected_cells]))
-        if len(selected_rows) < 1:
+        if self.mode in ('proc', 'field'):
+            selected_cells = self.wind.surveyTableWidget.selectedItems()
+            selected_rows = list(set([x.row() for x in selected_cells]))
+        else:
+            selected_cells = None
+            selected_rows = None
+        if not selected_rows:
             self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одну или несколько съемок', level=Qgis.Warning, duration=3)
         else:
             survey_ids = [self.surveys_view_list[i]['survey_id'] for i in selected_rows]
-            if self.selectedProcLayer != None and len(self.selectedProcFeaturesList) > 0 and \
-                    any(['line_id' in [f.name() for f in self.selectedProcLayer.fields()],
+            sql = None
+
+            if all([self.mode == 'proc', self.selectedProcLayer, self.selectedProcFeaturesList]):
+                if any(['line_id' in [f.name() for f in self.selectedProcLayer.fields()],
                          'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]]):
-                if 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
-                    gfield = 'line_id'
-                    table = self.seismic_lines_processed_2d
-                else:
-                    gfield = 'pol_id'
-                    table = self.seismic_pols_processed_3d
-                geom_ids = [x[gfield] for x in self.selectedProcFeaturesList]
-                sql = f"delete from {self.proc_geom_to_surveys} where "
-                # sql += ', '.join['(' + str(g) + ', ' + str(s) + ')' for g, s in geom_ids, survey_ids]
-                values_to_delete = []
-                for geom_id in geom_ids:
-                    for survey_id in survey_ids:
-                        values_to_delete.append(f"(processed_geom_id = {str(geom_id)} and survey_id = {str(survey_id)})")
-                sql += ' or '.join(values_to_delete)
-                self.sql = sql
-                # self.iface.messageBar().pushMessage('sql', sql, level=Qgis.Success, duration=5)
-                mwidget = self.iface.messageBar().createMessage(f"Удалить связь {str(len(survey_ids))} съемок и {str(len(geom_ids))} объектов в активном слое?")
-                mbutton = QPushButton(mwidget)
-                mbutton.setText('Подтвердить')
-                mbutton.pressed.connect(self.execute_sql)
-                mwidget.layout().addWidget(mbutton)
-                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+                    if 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                        gfield = 'line_id'
+                        table = self.seismic_lines_processed_2d
+                    else:
+                        gfield = 'pol_id'
+                        table = self.seismic_pols_processed_3d
+                    geom_ids = [x[gfield] for x in self.selectedProcFeaturesList]
+                    sql = f"delete from {self.proc_geom_to_surveys} where "
+                    # sql += ', '.join['(' + str(g) + ', ' + str(s) + ')' for g, s in geom_ids, survey_ids]
+                    values_to_delete = []
+                    for geom_id in geom_ids:
+                        for survey_id in survey_ids:
+                            values_to_delete.append(f"(processed_geom_id = {str(geom_id)} and survey_id = {str(survey_id)})")
+                    sql += ' or '.join(values_to_delete)
+                    self.sql = sql
+                    # self.iface.messageBar().pushMessage('sql', sql, level=Qgis.Success, duration=5)
+                    mwidget = self.iface.messageBar().createMessage(f"Удалить связь {str(len(survey_ids))} съемок и {str(len(geom_ids))} объектов в активном слое?")
+                    mbutton = QPushButton(mwidget)
+                    mbutton.setText('Подтвердить')
+                    mbutton.pressed.connect(self.execute_sql)
+                    mwidget.layout().addWidget(mbutton)
+                    self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+            elif all([self.mode == 'field', self.selectedFieldLayer, self.selectedFieldFeaturesList]):
+                if any(['field_line_id' in [f.name() for f in self.selectedFieldLayer.fields()],
+                        'pol_id' in [f.name() for f in self.selectedFieldLayer.fields()]]):
+                    if 'field_line_id' in [f.name() for f in self.selectedFieldLayer.fields()]:
+                        gfield = 'field_line_id'
+                        table = self.seismic_lines_field_2d
+                    else:
+                        gfield = 'pol_id'
+                        table = self.seismic_pols_field_3d
+                    geom_ids = [x[gfield] for x in self.selectedFieldFeaturesList]
+                    sql = f"update {table} set survey_id = NULL where {gfield} in ({', '.join([str(x) for x in geom_ids])}) and survey_id in ({', '.join([str(y) for y in survey_ids])});"
+                    self.sql = sql
+                    mwidget = self.iface.messageBar().createMessage(
+                        f"Удалить связь {str(len(survey_ids))} съемок и {str(len(geom_ids))} объектов в активном слое?")
+                    mbutton = QPushButton(mwidget)
+                    mbutton.setText('Подтвердить')
+                    mbutton.pressed.connect(self.execute_sql)
+                    mwidget.layout().addWidget(mbutton)
+                    self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
             else:
                 self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы одну геометрию',
                                                     level=Qgis.Warning,
@@ -1514,7 +1540,7 @@ class GeoDM:
 
 
     def update_survey(self):
-        selected_survey_rows = list(set([x.row() for x in self.dockwind.surveyTableWidget.selectedItems()]))
+        selected_survey_rows = list(set([x.row() for x in self.wind.surveyTableWidget.selectedItems()]))
         if len(selected_survey_rows) == 1:
             self.updatesurveydlg = AddSurveyDialog()
             self.updatesurveydlg.refreshProjButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
@@ -1997,7 +2023,7 @@ class GeoDM:
 
 
     def delete_survey(self):
-        selected_cells = self.dockwind.surveyTableWidget.selectedItems()
+        selected_cells = self.wind.surveyTableWidget.selectedItems()
         selected_rows = list(set([x.row() for x in selected_cells]))
         if selected_rows:
             selected_survey_ids_list = [self.surveys_view_list[i]['survey_id'] for i in selected_rows]
@@ -3480,9 +3506,10 @@ class GeoDM:
             self.dockwindfield.selectSurveyForSelectedGeometryButton.clicked.connect(self.select_surveys_by_geometry)
             self.dockwindfield.selectGeometryForSelectedSurveyButton.clicked.connect(self.select_geometry_by_surveys)
             self.dockwindfield.linkSurveyToGeometryButton.clicked.connect(self.link_selected_surveys_to_geometry)
-
+            self.dockwindfield.unlinkSurveyFromGeometryButton.clicked.connect(self.unlink_selected_surveys_from_geometry)
             self.dockwindfield.addSurveyPushButton.clicked.connect(self.add_survey)
             self.dockwindfield.updateSurveyPushButton.clicked.connect(self.update_survey)
+            self.dockwindfield.deleteSurveyPushButton.clicked.connect(self.delete_survey)
 
 
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwindfield)
