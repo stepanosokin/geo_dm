@@ -150,6 +150,7 @@ class GeoDM:
         self.sql = ''
 
         self.show_datasets_for_selected_proc = True
+        self.show_datasets_for_selected_surveys = True
 
         self.mode = None
         self.wind = None
@@ -2043,40 +2044,84 @@ class GeoDM:
 
 
     def get_datasets_from_postgres(self):
-        selected_proc_rows = list(set([x.row() for x in self.dockwind.procTableWidget.selectedItems()]))
-
-        # if selected_proc_rows:
-        if selected_proc_rows:
-            selected_proc_ids_string = ', '.join([str(self.proc_list[x]['proc_id']) for x in selected_proc_rows])
-        sql = f"select * from {self.seismic_datasets_view}"
-        if self.show_datasets_for_selected_proc:
+        if self.mode == 'proc':
+            selected_proc_rows = list(set([x.row() for x in self.wind.procTableWidget.selectedItems()]))
+    
+            # if selected_proc_rows:
             if selected_proc_rows:
-                sql += f" where dataset_id in " \
-                       f"(select dataset_id from {self.datasets_to_geometries} " \
-                        f"where geometry_id in (select line_id from {self.seismic_lines_processed_2d} where proc_id in ({selected_proc_ids_string})) " \
-                        f" or geometry_id in (select pol_id from {self.seismic_pols_processed_3d} where proc_id in ({selected_proc_ids_string})))"
-            else:
-                return False
-        filter_str = self.dockwind.datasetFilterLineEdit.text().lower().strip()
-        if filter_str:
+                selected_proc_ids_string = ', '.join([str(self.proc_list[x]['proc_id']) for x in selected_proc_rows])
+            sql = f"select * from {self.seismic_datasets_view}"
             if self.show_datasets_for_selected_proc:
                 if selected_proc_rows:
-                    sql += f" and (LOWER(datasource_type) like '%{filter_str}%'"
+                    sql += f" where dataset_id in " \
+                           f"(select dataset_id from {self.datasets_to_geometries} " \
+                            f"where geometry_id in (select line_id from {self.seismic_lines_processed_2d} where proc_id in ({selected_proc_ids_string})) " \
+                            f" or geometry_id in (select pol_id from {self.seismic_pols_processed_3d} where proc_id in ({selected_proc_ids_string})))"
                 else:
                     return False
+            filter_str = self.wind.datasetFilterLineEdit.text().lower().strip()
+            if filter_str:
+                if self.show_datasets_for_selected_proc:
+                    if selected_proc_rows:
+                        sql += f" and (LOWER(datasource_type) like '%{filter_str}%'"
+                    else:
+                        return False
+                else:
+                    sql += f" where (LOWER(datasource_type) like '%{filter_str}%'"
+                sql += f" or LOWER(shortname) like '%{filter_str}%'" \
+                   f" or LOWER(name) like '%{filter_str}%'" \
+                   f" or LOWER(seismic_type) like '%{filter_str}%'" \
+                   f" or LOWER(format) like '%{filter_str}%'" \
+                   f" or LOWER(data_quality) like '%{filter_str}%')"
+            if self.dataset_id_filter:
+                if self.show_datasets_for_selected_proc:
+                    sql += f" and dataset_id in ({', '.join([str(x) for x in self.dataset_id_filter])})"
+                else:
+                    sql += f" where dataset_id in ({', '.join([str(x) for x in self.dataset_id_filter])})"
+            if any([self.dataset_id_filter, filter_str, self.show_datasets_for_selected_proc]):
+                sql += ' and'
             else:
-                sql += f" where (LOWER(datasource_type) like '%{filter_str}%'"
-            sql += f" or LOWER(shortname) like '%{filter_str}%'" \
-               f" or LOWER(name) like '%{filter_str}%'" \
-               f" or LOWER(seismic_type) like '%{filter_str}%'" \
-               f" or LOWER(format) like '%{filter_str}%'" \
-               f" or LOWER(data_quality) like '%{filter_str}%')"
-        if self.dataset_id_filter:
-            if self.show_datasets_for_selected_proc:
-                sql += f" and dataset_id in ({', '.join([str(x) for x in self.dataset_id_filter])})"
+                sql += ' where'
+            sql += f" dataset_id in (select dataset_id from {self.datasets_to_geometries} where geometry_id in (select line_id from {self.seismic_lines_processed_2d}) or geometry_id in (select pol_id from {self.seismic_pols_processed_3d}))"
+            sql += ' order by dataset_id;'
+        elif self.mode == 'field':
+            selected_survey_rows = list(set([x.row() for x in self.wind.surveyTableWidget.selectedItems()]))
+            if selected_survey_rows:
+                selected_survey_ids_string = ', '.join([str(self.surveys_view_list[x]['survey_id']) for x in selected_survey_rows])
+            sql = f"select * from {self.seismic_datasets_view}"
+            if self.show_datasets_for_selected_surveys:
+                if selected_survey_rows:
+                    sql += f" where dataset_id in " \
+                           f"(select dataset_id from {self.datasets_to_geometries} " \
+                           f"where geometry_id in (select field_line_id from {self.seismic_lines_field_2d} where survey_id in ({selected_survey_ids_string})) " \
+                           f" or geometry_id in (select pol_id from {self.seismic_pols_field_3d} where survey_id in ({selected_survey_ids_string})))"
+                else:
+                    return False
+            filter_str = self.wind.datasetFilterLineEdit.text().lower().strip()
+            if filter_str:
+                if self.show_datasets_for_selected_surveys:
+                    if selected_survey_rows:
+                        sql += f" and (LOWER(datasource_type) like '%{filter_str}%'"
+                    else:
+                        return False
+                else:
+                    sql += f" where (LOWER(datasource_type) like '%{filter_str}%'"
+                sql += f" or LOWER(shortname) like '%{filter_str}%'" \
+                       f" or LOWER(name) like '%{filter_str}%'" \
+                       f" or LOWER(seismic_type) like '%{filter_str}%'" \
+                       f" or LOWER(format) like '%{filter_str}%'" \
+                       f" or LOWER(data_quality) like '%{filter_str}%')"
+            if self.dataset_id_filter:
+                if self.show_datasets_for_selected_surveys:
+                    sql += f" and dataset_id in ({', '.join([str(x) for x in self.dataset_id_filter])})"
+                else:
+                    sql += f" where dataset_id in ({', '.join([str(x) for x in self.dataset_id_filter])})"
+            if any([self.show_datasets_for_selected_surveys, filter_str, self.dataset_id_filter]):
+                sql += ' and'
             else:
-                sql += f" where dataset_id in ({', '.join([str(x) for x in self.dataset_id_filter])})"
-        sql += ' order by dataset_id'
+                sql += ' where'
+            sql += f" dataset_id in (select dataset_id from {self.datasets_to_geometries} where geometry_id in (select field_line_id from {self.seismic_lines_field_2d}) or geometry_id in (select pol_id from {self.seismic_pols_field_3d}))"
+            sql += ' order by dataset_id;'
         try:
             with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
                 if pgconn:
@@ -2097,66 +2142,77 @@ class GeoDM:
             return False
 
     def refresh_datasets(self):
-        self.dockwind.datasetTableWidget.clear()
-        self.dockwind.datasetTableWidget.setRowCount(0)
-        self.dockwind.datasetTableWidget.setColumnCount(3)
-        self.dockwind.datasetTableWidget.setHorizontalHeaderLabels(['Название', 'Тип', 'формат'])
-        header = self.dockwind.datasetTableWidget.horizontalHeader()
+        self.wind.datasetTableWidget.clear()
+        self.wind.datasetTableWidget.setRowCount(0)
+        self.wind.datasetTableWidget.setColumnCount(3)
+        self.wind.datasetTableWidget.setHorizontalHeaderLabels(['Название', 'Тип', 'формат'])
+        header = self.wind.datasetTableWidget.horizontalHeader()
         header.resizeSection(0, 100)
         header.resizeSection(1, 200)
         header.resizeSection(2, 50)
         if self.get_datasets_from_postgres():
             for i, dataset_row in enumerate(self.seismic_datasets_view_list):
-                self.dockwind.datasetTableWidget.insertRow(i)
+                self.wind.datasetTableWidget.insertRow(i)
                 citem = QTableWidgetItem(dataset_row['shortname'])
                 citem.setToolTip(str(dataset_row['name']))
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                self.dockwind.datasetTableWidget.setItem(i, 0, citem)
+                self.wind.datasetTableWidget.setItem(i, 0, citem)
                 citem = QTableWidgetItem(dataset_row['seismic_type'])
                 citem.setToolTip(str(dataset_row['seismic_type']))
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                self.dockwind.datasetTableWidget.setItem(i, 1, citem)
+                self.wind.datasetTableWidget.setItem(i, 1, citem)
                 citem = QTableWidgetItem(dataset_row['format'])
                 citem.setToolTip(str(dataset_row['format']))
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                self.dockwind.datasetTableWidget.setItem(i, 2, citem)
+                self.wind.datasetTableWidget.setItem(i, 2, citem)
         else:
-            self.dockwind.datasetTableWidget.clear()
+            self.wind.datasetTableWidget.clear()
 
 
     def select_datasets_by_geometry(self):
-        if self.selectedProcLayer != None and len(self.selectedProcFeaturesList) > 0:
-            if 'proc_id' in [f.name() for f in self.selectedProcLayer.fields()]:
-                if 'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]:
-                    selected_features_ids_list = list(set([f.attribute('pol_id') for f in self.selectedProcFeaturesList]))
-                elif 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
-                    selected_features_ids_list = list(set([f.attribute('line_id') for f in self.selectedProcFeaturesList]))
-                else:
-                    selected_features_ids_list = []
-                if self.datasets_to_geometries_list and self.seismic_datasets_view_list:
-                    selected_features_dataset_ids = [y['dataset_id'] for y in self.datasets_to_geometries_list if y['geometry_id'] in selected_features_ids_list]
-                    [x.setSelected(False) for x in self.dockwind.datasetTableWidget.selectedItems()]
-                    self.dockwind.datasetTableWidget.clear()
-                    self.dockwind.datasetTableWidget.setRowCount(0)
-                    self.dockwind.datasetTableWidget.setColumnCount(3)
-                    self.dockwind.datasetTableWidget.setHorizontalHeaderLabels(['Название', 'Тип', 'формат'])
-                    header = self.dockwind.datasetTableWidget.horizontalHeader()
-                    header.resizeSection(0, 100)
-                    header.resizeSection(1, 200)
-                    header.resizeSection(2, 50)
-                    if selected_features_dataset_ids:
-                        self.dataset_id_filter = selected_features_dataset_ids
+        selected_features_ids_list = None
+        if self.mode == 'proc':
+            if self.selectedProcLayer != None and len(self.selectedProcFeaturesList) > 0:
+                if 'proc_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                    if 'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                        selected_features_ids_list = list(set([f.attribute('pol_id') for f in self.selectedProcFeaturesList]))
+                    elif 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                        selected_features_ids_list = list(set([f.attribute('line_id') for f in self.selectedProcFeaturesList]))
                     else:
-                        self.dataset_id_filter = [-1]
-                    self.refresh_datasets()
-                    self.dataset_id_filter = None
-                else:
-                    self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать Проект по обработке, содержащий наборы данных",
-                                                        level=Qgis.Warning,
-                                                        duration=5)
+                        selected_features_ids_list = []
+        elif self.mode == 'field':
+            if self.selectedFieldLayer and self.selectedFieldFeaturesList:
+                if 'survey_id' in [f.name() for f in self.selectedFieldLayer.fields()]:
+                    if 'pol_id' in [f.name() for f in self.selectedFieldLayer.fields()]:
+                        selected_features_ids_list = list(set([f.attribute('pol_id') for f in self.selectedFieldFeaturesList]))
+                    elif 'field_line_id' in [f.name() for f in self.selectedFieldLayer.fields()]:
+                        selected_features_ids_list = list(set([f.attribute('field_line_id') for f in self.selectedFieldFeaturesList]))
+                    else:
+                        selected_features_ids_list = []
+        if self.datasets_to_geometries_list and self.seismic_datasets_view_list and selected_features_ids_list:
+            selected_features_dataset_ids = [y['dataset_id'] for y in self.datasets_to_geometries_list if y['geometry_id'] in selected_features_ids_list]
+            [x.setSelected(False) for x in self.wind.datasetTableWidget.selectedItems()]
+            self.wind.datasetTableWidget.clear()
+            self.wind.datasetTableWidget.setRowCount(0)
+            self.wind.datasetTableWidget.setColumnCount(3)
+            self.wind.datasetTableWidget.setHorizontalHeaderLabels(['Название', 'Тип', 'формат'])
+            header = self.wind.datasetTableWidget.horizontalHeader()
+            header.resizeSection(0, 100)
+            header.resizeSection(1, 200)
+            header.resizeSection(2, 50)
+            if selected_features_dataset_ids:
+                self.dataset_id_filter = selected_features_dataset_ids
+            else:
+                self.dataset_id_filter = [-1]
+            self.refresh_datasets()
+            self.dataset_id_filter = None
         else:
-            self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать слой и объекты в нем", level=Qgis.Warning,
+            self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать Проект по обработке, содержащий наборы данных",
+                                                level=Qgis.Warning,
                                                 duration=5)
+        # else:
+        #     self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать слой и объекты в нем", level=Qgis.Warning,
+        #                                         duration=5)
 
 
     def select_geometry_by_datasets(self):
@@ -2273,6 +2329,14 @@ class GeoDM:
 
     def check_show_datasets_for_selected_proc(self):
         self.show_datasets_for_selected_proc = True
+        self.refresh_datasets()
+
+    def check_show_datasets_for_all_surveys(self):
+        self.show_datasets_for_selected_surveys = False
+        self.refresh_datasets()
+
+    def check_show_datasets_for_selected_surveys(self):
+        self.show_datasets_for_selected_surveys = True
         self.refresh_datasets()
 
 
@@ -3455,6 +3519,7 @@ class GeoDM:
             self.dockwind.showAllProcDatasetsRadioButton.clicked.connect(self.check_show_datasets_for_all_proc)
             self.dockwind.procTableWidget.itemSelectionChanged.connect(self.refresh_datasets)
             self.dockwind.datasetFilterLineEdit.textEdited.connect(self.refresh_datasets)
+            self.dockwind.refreshDatasetButton.clicked.connect(self.refresh_datasets)
             self.dockwind.selectDatasetForSelectedGeometryButton.clicked.connect(self.select_datasets_by_geometry)
             self.dockwind.selectGeometryForSelectedDatasetButton.clicked.connect(self.select_geometry_by_datasets)
             self.dockwind.linkDatasetToGeometryButton.clicked.connect(self.link_selected_datasets_to_geometry)
@@ -3511,10 +3576,21 @@ class GeoDM:
             self.dockwindfield.updateSurveyPushButton.clicked.connect(self.update_survey)
             self.dockwindfield.deleteSurveyPushButton.clicked.connect(self.delete_survey)
 
+            self.dockwindfield.showSelectedSurveyDatasetsRadioButton.clicked.connect(self.check_show_datasets_for_selected_surveys)
+            self.dockwindfield.showAllSurveyDatasetsRadioButton.clicked.connect(self.check_show_datasets_for_all_surveys)
+            self.dockwindfield.surveyTableWidget.itemSelectionChanged.connect(self.refresh_datasets)
+            self.dockwindfield.datasetFilterLineEdit.textEdited.connect(self.refresh_datasets)
+            self.dockwindfield.refreshDatasetButton.clicked.connect(self.refresh_datasets)
+            self.dockwindfield.selectDatasetForSelectedGeometryButton.clicked.connect(self.select_datasets_by_geometry)
+            self.dockwindfield.selectGeometryForSelectedDatasetButton.clicked.connect(self.select_geometry_by_datasets)
+            self.dockwindfield.linkDatasetToGeometryButton.clicked.connect(self.link_selected_datasets_to_geometry)
+            self.dockwindfield.unlinkDatasetFromGeometryButton.clicked.connect(self.unlink_selected_datasets_from_geometry)
+            self.dockwindfield.addDatasetPushButton.clicked.connect(self.add_dataset)
+            self.dockwindfield.updateDatasetPushButton.clicked.connect(self.update_dataset)
+            self.dockwindfield.deleteDatasetPushButton.clicked.connect(self.delete_dataset)
 
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwindfield)
             self.dockwindfield.adjustSize()
         else:
             self.iface.messageBar().pushMessage('Ошибка', 'Необходимо добавить в проект слой с геометрией сейсмики',
                                                 level=Qgis.Warning, duration=3)
-
