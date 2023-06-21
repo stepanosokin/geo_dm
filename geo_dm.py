@@ -2216,53 +2216,94 @@ class GeoDM:
 
 
     def select_geometry_by_datasets(self):
+        if self.mode == 'proc':
+            geom_layer = self.selectedProcLayer
+            line_id_fname = 'line_id'
+            pol_id_fname = 'pol_id'
+            message1 = f"Нужно выбрать наборы данных и слой с геометрией обработанной сейсмики"
+            message2 = f"Нужно выбрать Обработку, содержащую наборы данных"
+        elif self.mode == 'field':
+            geom_layer = self.selectedFieldLayer
+            line_id_fname = 'field_line_id'
+            pol_id_fname = 'pol_id'
+            message1 = f"Нужно выбрать наборы данных и слой с геометрией полевой сейсмики"
+            message2 = f"Нужно выбрать Съемку, содержащую наборы данных"
+        else:
+            geom_layer = None
+            line_id_fname = None
+            pol_id_fname = None
+            message1 = None
+            message2 = None
         if self.datasets_to_geometries_list and self.seismic_datasets_view_list:
-            selected_dataset_rows = list(set([x.row() for x in self.dockwind.datasetTableWidget.selectedItems()]))
+            selected_dataset_rows = list(set([x.row() for x in self.wind.datasetTableWidget.selectedItems()]))
             selected_dataset_ids = [self.seismic_datasets_view_list[i]['dataset_id'] for i in selected_dataset_rows]
-            if selected_dataset_ids and self.selectedProcLayer and \
-                any(['line_id' in [f.name() for f in self.selectedProcLayer.fields()],
-                     'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]]):
-                proc_geom_string = ', '.join([str(x['geometry_id']) for x in self.datasets_to_geometries_list if x['dataset_id'] in selected_dataset_ids])
-                self.selectedProcLayer.removeSelection()
-                if 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
-                    gfield = 'line_id'
+            if selected_dataset_ids and geom_layer and \
+                any([line_id_fname in [f.name() for f in geom_layer.fields()],
+                     pol_id_fname in [f.name() for f in geom_layer.fields()]]):
+                geom_string = ', '.join([str(x['geometry_id']) for x in self.datasets_to_geometries_list if x['dataset_id'] in selected_dataset_ids])
+                geom_layer.removeSelection()
+                if line_id_fname in [f.name() for f in geom_layer.fields()]:
+                    gfield = line_id_fname
                 else:
-                    gfield = 'pol_id'
-                query = f'"{gfield}" in ({proc_geom_string})'
-                # self.iface.messageBar().pushMessage('query', query, level=Qgis.Success, duration=5)
-                self.selectedProcLayer.selectByExpression(query)
-                if self.selectedProcLayer.selectedFeatures():
+                    gfield = pol_id_fname
+                query = f'"{gfield}" in ({geom_string})'
+                geom_layer.selectByExpression(query)
+                if geom_layer.selectedFeatures():
                     project_crs = QgsCoordinateReferenceSystem(QgsProject.instance().crs())
-                    layer_crs = self.selectedProcLayer.crs()
+                    layer_crs = geom_layer.crs()
                     lyr2proj = QgsCoordinateTransform(layer_crs, project_crs, QgsProject.instance())
-                    box = lyr2proj.transformBoundingBox(self.selectedProcLayer.boundingBoxOfSelected())
+                    box = lyr2proj.transformBoundingBox(geom_layer.boundingBoxOfSelected())
                     self.iface.mapCanvas().setExtent(box)
                     self.iface.mapCanvas().refresh()
             else:
-                self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать наборы данных и слой с геометрией обработанной сейсмики",
-                                                    level=Qgis.Warning,
-                                                    duration=5)
+                self.iface.messageBar().pushMessage('Ошибка', message1, level=Qgis.Warning, duration=5)
         else:
-            self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать Обработку, содержащую наборы данных", level=Qgis.Warning,
-                                                duration=5)
+            self.iface.messageBar().pushMessage('Ошибка', message2, level=Qgis.Warning, duration=5)
 
 
     def link_selected_datasets_to_geometry(self):
+        if self.mode == 'proc':
+            geom_layer = self.selectedProcLayer
+            selected_features_list = self.selectedProcFeaturesList
+            table_2d = self.seismic_lines_processed_2d
+            table_3d = self.seismic_pols_processed_3d
+            line_id_fname = 'line_id'
+            pol_id_fname = 'pol_id'
+            message1 = 'Нужно выбрать хотя бы один Набор данных'
+            message2 = f"Нужно выбрать хотя бы одну Обработку и хотя бы один Набор данных"
+        elif self.mode == 'field':
+            geom_layer = self.selectedFieldLayer
+            selected_features_list = self.selectedFieldFeaturesList
+            table_2d = self.seismic_lines_field_2d
+            table_3d = self.seismic_pols_field_3d
+            line_id_fname = 'field_line_id'
+            pol_id_fname = 'pol_id'
+            message1 = 'Нужно выбрать хотя бы один Набор данных'
+            message2 = f"Нужно выбрать хотя бы одну Съемку и хотя бы один Набор данных"
+        else:
+            geom_layer = None
+            selected_features_list = None
+            table_2d = None
+            table_3d = None
+            line_id_fname = None
+            pol_id_fname = None
+            message1 = None
+            message2 = None
         if self.datasets_to_geometries_list and self.seismic_datasets_view_list:
-            selected_cells = self.dockwind.datasetTableWidget.selectedItems()
+            selected_cells = self.wind.datasetTableWidget.selectedItems()
             selected_rows = list(set([x.row() for x in selected_cells]))
             if selected_rows:
                 dataset_ids = [self.seismic_datasets_view_list[i]['dataset_id'] for i in selected_rows]
-                if self.selectedProcLayer and self.selectedProcFeaturesList and \
-                        any(['line_id' in[f.name() for f in self.selectedProcLayer.fields()],
-                             'pol_id' in[f.name() for f in self.selectedProcLayer.fields()]]):
-                    if 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
-                        gfield = 'line_id'
-                        table = self.seismic_lines_processed_2d
+                if geom_layer and selected_features_list and \
+                        any([line_id_fname in[f.name() for f in geom_layer.fields()],
+                             pol_id_fname in[f.name() for f in geom_layer.fields()]]):
+                    if line_id_fname in [f.name() for f in geom_layer.fields()]:
+                        gfield = line_id_fname
+                        table = table_2d
                     else:
-                        gfield = 'pol_id'
-                        table = self.seismic_pols_processed_3d
-                    geom_ids = [x[gfield] for x in self.selectedProcFeaturesList]
+                        gfield = pol_id_fname
+                        table = table_3d
+                    geom_ids = [x[gfield] for x in selected_features_list]
                     sql = f"insert into {self.datasets_to_geometries}(dataset_id, geometry_id) values"
                     values_to_insert = []
                     for geom_id in geom_ids:
@@ -2278,28 +2319,47 @@ class GeoDM:
                     mwidget.layout().addWidget(mbutton)
                     self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
             else:
-                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один Набор данных', level=Qgis.Warning, duration=3)
+                self.iface.messageBar().pushMessage('Ошибка', message1, level=Qgis.Warning, duration=3)
         else:
-            self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать хотя бы одну Обработку и хотя бы один Набор данных",
-                                                level=Qgis.Warning,
-                                                duration=5)
+            self.iface.messageBar().pushMessage('Ошибка', message2, level=Qgis.Warning, duration=5)
 
 
     def unlink_selected_datasets_from_geometry(self):
-        selected_cells = self.dockwind.datasetTableWidget.selectedItems()
+        if self.mode == 'proc':
+            geom_layer = self.selectedProcLayer
+            selected_features_list = self.selectedProcFeaturesList
+            table_2d = self.seismic_lines_processed_2d
+            table_3d = self.seismic_pols_processed_3d
+            line_id_fname = 'line_id'
+            pol_id_fname = 'pol_id'
+        elif self.mode == 'field':
+            geom_layer = self.selectedFieldLayer
+            selected_features_list = self.selectedFieldFeaturesList
+            table_2d = self.seismic_lines_field_2d
+            table_3d = self.seismic_pols_field_3d
+            line_id_fname = 'field_line_id'
+            pol_id_fname = 'pol_id'
+        else:
+            geom_layer = None
+            selected_features_list = None
+            table_2d = None
+            table_3d = None
+            line_id_fname = None
+            pol_id_fname = None
+        selected_cells = self.wind.datasetTableWidget.selectedItems()
         selected_rows = list(set([x.row() for x in selected_cells]))
         if selected_rows:
             dataset_ids = [self.seismic_datasets_view_list[i]['dataset_id'] for i in selected_rows]
-            if self.selectedProcLayer and self.selectedProcFeaturesList and \
-                any(['line_id' in [f.name() for f in self.selectedProcLayer.fields()],
-                         'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]]):
-                if 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
-                    gfield = 'line_id'
-                    table = self.seismic_lines_processed_2d
+            if geom_layer and selected_features_list and \
+                any([line_id_fname in [f.name() for f in geom_layer.fields()],
+                     pol_id_fname in [f.name() for f in geom_layer.fields()]]):
+                if line_id_fname in [f.name() for f in geom_layer.fields()]:
+                    gfield = line_id_fname
+                    table = table_2d
                 else:
-                    gfield = 'pol_id'
-                    table = self.seismic_pols_processed_3d
-                geom_ids = [x[gfield] for x in self.selectedProcFeaturesList]
+                    gfield = pol_id_fname
+                    table = table_3d
+                geom_ids = [x[gfield] for x in selected_features_list]
                 sql = f"delete from {self.datasets_to_geometries} where "
                 values_to_delete = []
                 for geom_id in geom_ids:
@@ -2346,6 +2406,34 @@ class GeoDM:
         self.adddatasetdlg.datasetRefreshDrivesButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
         self.adddatasetdlg.datasetRefreshTransmittalsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
 
+        if self.mode == 'proc':
+            geom_layer = self.selectedProcLayer
+            selected_features_list = self.selectedProcFeaturesList
+            table_2d = self.seismic_lines_processed_2d
+            table_3d = self.seismic_pols_processed_3d
+            line_id_fname = 'line_id'
+            pol_id_fname = 'pol_id'
+            message1 = 'Нужно указать все обязательные поля и выбрать геометрию обработанной сейсмики'
+            message2 = 'Нужно выбрать слой и геометрию обработанной сейсмики'
+        elif self.mode == 'field':
+            geom_layer = self.selectedFieldLayer
+            selected_features_list = self.selectedFieldFeaturesList
+            table_2d = self.seismic_lines_field_2d
+            table_3d = self.seismic_pols_field_3d
+            line_id_fname = 'field_line_id'
+            pol_id_fname = 'pol_id'
+            message1 = 'Нужно указать все обязательные поля и выбрать геометрию полевой сейсмики'
+            message2 = 'Нужно выбрать слой и геометрию полевой сейсмики'
+        else:
+            geom_layer = None
+            selected_features_list = None
+            table_2d = None
+            table_3d = None
+            line_id_fname = None
+            pol_id_fname = None
+            message1 = None
+            message2 = None
+            
         self.adddatasetdlg.new_dataset_id = None
         self.adddatasetdlg.datasource_types_list = None
         self.adddatasetdlg.drives_view_list = None
@@ -2621,10 +2709,10 @@ class GeoDM:
                                                     duration=5)
 
         def refresh_datasets_and_select_new():
-            self.dockwind.showAllProcDatasetsRadioButton.setChecked(True)
+            self.wind.showAllProcDatasetsRadioButton.setChecked(True)
             self.check_show_datasets_for_all_proc()
             new_dataset_row = self.seismic_datasets_view_list.index([x for x in self.seismic_datasets_view_list if x['dataset_id'] == self.adddatasetdlg.new_dataset_id][0])
-            self.dockwind.datasetTableWidget.selectRow(new_dataset_row)
+            self.wind.datasetTableWidget.selectRow(new_dataset_row)
 
         def generate_and_execute_sql():
             drive_ids_to_insert = None
@@ -2638,7 +2726,7 @@ class GeoDM:
             selected_format_index = self.adddatasetdlg.datasetFormatComboBoxInput.currentIndex()
             selected_quality_index = self.adddatasetdlg.datasetQualityComboBoxInput.currentIndex() - 1
             new_sizegb = self.adddatasetdlg.datasetSizeGbSpinBoxInput.value()
-            if all([new_shortname, new_name, self.selectedProcFeaturesList]):
+            if all([new_shortname, new_name, selected_features_list]):
                 selected_datasource_type_id = self.adddatasetdlg.datasource_types_list[selected_datasource_type_index]['datasource_type_id']
                 selected_type_id = self.adddatasetdlg.seismic_types_list[selected_type_index]['seismic_type_id']
                 selected_format_id = self.adddatasetdlg.formats_list[selected_format_index]['format_id']
@@ -2651,13 +2739,15 @@ class GeoDM:
                     link_ids_to_insert = [x['link_id'] for x in self.adddatasetdlg.links_to_link]
                 if self.adddatasetdlg.transmittals_to_link:
                     transmittal_ids_to_insert = [x['transmittal_id'] for x in self.adddatasetdlg.transmittals_to_link]
-                if 'proc_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                if any(['proc_id' in [f.name() for f in geom_layer.fields()], 'survey_id' in [f.name() for f in geom_layer.fields()]]):
+
+
                     geom_field = ''
-                    if 'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]:
-                        geom_field = 'pol_id'
-                    elif 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
-                        geom_field = 'line_id'
-                    geom_ids_to_link = [f.attribute(geom_field) for f in self.selectedProcFeaturesList]
+                    if pol_id_fname in [f.name() for f in geom_layer.fields()]:
+                        geom_field = pol_id_fname
+                    elif line_id_fname in [f.name() for f in geom_layer.fields()]:
+                        geom_field = line_id_fname
+                    geom_ids_to_link = [f.attribute(geom_field) for f in selected_features_list]
                 else:
                     geom_ids_to_link = None
                 with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
@@ -2704,10 +2794,7 @@ class GeoDM:
                 self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
                 self.adddatasetdlg.accept()
             else:
-                self.iface.messageBar().pushMessage('Ошибка',
-                                                    'Нужно указать все обязательные поля и выбрать геометрию обработанной сейсмики',
-                                                    level=Qgis.Warning,
-                                                    duration=5)
+                self.iface.messageBar().pushMessage('Ошибка', message1, level=Qgis.Warning, duration=5)
 
         self.adddatasetdlg.datasetRefreshDrivesButton.clicked.connect(reload_drives)
         self.adddatasetdlg.datasetAllDrivesFilterLineEditInput.textEdited.connect(reload_drives)
@@ -2726,23 +2813,42 @@ class GeoDM:
         self.adddatasetdlg.datasetNewTransmittalButton.clicked.connect(self.add_transmittal)
         self.adddatasetdlg.insertDatasetButton.clicked.connect(generate_and_execute_sql)
 
-        if self.selectedProcFeaturesList:
+        if selected_features_list:
             self.adddatasetdlg.show()
         else:
-            self.iface.messageBar().pushMessage('Ошибка',
-                                                'Нужно выбрать слой и геометрию обработанной сейсмики',
-                                                level=Qgis.Warning,
-                                                duration=5)
+            self.iface.messageBar().pushMessage('Ошибка', message2, level=Qgis.Warning, duration=5)
 
 
     def update_dataset(self):
-        selected_dataset_rows = list(set([x.row() for x in self.dockwind.datasetTableWidget.selectedItems()]))
+        selected_dataset_rows = list(set([x.row() for x in self.wind.datasetTableWidget.selectedItems()]))
         if len(selected_dataset_rows) == 1:
             self.updatedatasetdlg = AddDatasetDialog()
             self.updatedatasetdlg.datasetRefreshLinksButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
             self.updatedatasetdlg.datasetRefreshDrivesButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
             self.updatedatasetdlg.datasetRefreshTransmittalsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
 
+            if self.mode == 'proc':
+                geom_layer = self.selectedProcLayer
+                selected_features_list = self.selectedProcFeaturesList
+                table_2d = self.seismic_lines_processed_2d
+                table_3d = self.seismic_pols_processed_3d
+                line_id_fname = 'line_id'
+                pol_id_fname = 'pol_id'
+            elif self.mode == 'field':
+                geom_layer = self.selectedFieldLayer
+                selected_features_list = self.selectedFieldFeaturesList
+                table_2d = self.seismic_lines_field_2d
+                table_3d = self.seismic_pols_field_3d
+                line_id_fname = 'field_line_id'
+                pol_id_fname = 'pol_id'
+            else:
+                geom_layer = None
+                selected_features_list = None
+                table_2d = None
+                table_3d = None
+                line_id_fname = None
+                pol_id_fname = None
+            
             self.updatedatasetdlg.new_dataset_id = None
             self.updatedatasetdlg.datasource_types_list = None
             self.updatedatasetdlg.drives_view_list = None
@@ -3126,7 +3232,7 @@ class GeoDM:
                 selected_format_index = self.updatedatasetdlg.datasetFormatComboBoxInput.currentIndex()
                 selected_quality_index = self.updatedatasetdlg.datasetQualityComboBoxInput.currentIndex() - 1
                 new_sizegb = self.updatedatasetdlg.datasetSizeGbSpinBoxInput.value()
-                if all([new_shortname, new_name, self.selectedProcFeaturesList]):
+                if all([new_shortname, new_name, selected_features_list]):
                     selected_datasource_type_id = \
                     self.updatedatasetdlg.datasource_types_list[selected_datasource_type_index]['datasource_type_id']
                     selected_type_id = self.updatedatasetdlg.seismic_types_list[selected_type_index]['seismic_type_id']
@@ -3142,13 +3248,13 @@ class GeoDM:
                     if self.updatedatasetdlg.transmittals_to_link:
                         transmittal_ids_to_insert = [x['transmittal_id'] for x in
                                                      self.updatedatasetdlg.transmittals_to_link]
-                    if 'proc_id' in [f.name() for f in self.selectedProcLayer.fields()]:
+                    if any(['proc_id' in [f.name() for f in geom_layer.fields()], 'survey_id' in [f.name() for f in geom_layer.fields()]]):
                         geom_field = ''
-                        if 'pol_id' in [f.name() for f in self.selectedProcLayer.fields()]:
-                            geom_field = 'pol_id'
-                        elif 'line_id' in [f.name() for f in self.selectedProcLayer.fields()]:
-                            geom_field = 'line_id'
-                        geom_ids_to_link = [f.attribute(geom_field) for f in self.selectedProcFeaturesList]
+                        if pol_id_fname in [f.name() for f in geom_layer.fields()]:
+                            geom_field = pol_id_fname
+                        elif line_id_fname in [f.name() for f in geom_layer.fields()]:
+                            geom_field = line_id_fname
+                        geom_ids_to_link = [f.attribute(geom_field) for f in selected_features_list]
                     else:
                         geom_ids_to_link = None
 
@@ -3179,14 +3285,6 @@ class GeoDM:
                         sql += f" insert into {self.seismic_datasets_to_transmittals}(transmittal_id, seismic_dataset_id) " \
                                f"values{', '.join(['(' + str(x) + ', ' + str(selected_dataset_id) + ')' for x in transmittal_ids_to_insert])}" \
                                f";"
-                    # if geom_ids_to_link:
-                    #     sql += f" insert into {self.datasets_to_geometries}(geometry_id, dataset_id) " \
-                    #            f"values{', '.join(['(' + str(x) + ', ' + str(self.updatedatasetdlg.new_dataset_id) + ')' for x in geom_ids_to_link])}" \
-                    #            f";"
-                    # self.iface.messageBar().pushMessage('sql',
-                    #                                     sql,
-                    #                                     level=Qgis.Success,
-                    #                                     duration=5)
                     self.sql = sql
                     mwidget = self.iface.messageBar().createMessage(f"Изменить набор данных {str(new_name)}?")
                     mbutton = QPushButton(mwidget)
@@ -3236,8 +3334,9 @@ class GeoDM:
         else:
             self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один набор данных', level=Qgis.Warning, duration=3)
 
+
     def delete_dataset(self):
-        selected_cells = self.dockwind.datasetTableWidget.selectedItems()
+        selected_cells = self.wind.datasetTableWidget.selectedItems()
         selected_rows = list(set([x.row() for x in selected_cells]))
         if selected_rows:
             selected_dataset_ids_list = [self.seismic_datasets_view_list[i]['dataset_id'] for i in selected_rows]
@@ -3254,6 +3353,7 @@ class GeoDM:
             # mbutton.pressed.connect(self.refresh_datasets)
             mwidget.layout().addWidget(mbutton)
             self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+
 
     def add_drive(self):
         self.adddrivedlg = AddDriveDialog()
