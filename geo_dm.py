@@ -1159,17 +1159,46 @@ class GeoDM:
                         cur.execute(sql)
                         self.addprocdlg.projects = list(cur.fetchall())
                         self.addprocdlg.projectInput.addItems([row['name_ru'] for row in self.addprocdlg.projects])
-                        sql = f"select * from {self.companies} order by name"
+                        filter_str = self.addprocdlg.authorFilterInput.text().strip().lower().replace("'", "''")
+                        sql = f"select * from {self.companies}"
+                        if filter_str:
+                            sql += f" where LOWER(name) like '%{filter_str}%' " \
+                                   f"or LOWER(shortname) like '%{filter_str}%'"
+                        sql += f" order by name;"
                         cur.execute(sql)
                         self.addprocdlg.companies = list(cur.fetchall())
                         self.addprocdlg.procAuthorInput.addItem('')
                         self.addprocdlg.procAuthorInput.addItems([row['name'] for row in self.addprocdlg.companies])
-                        sql = f"select * from {self.contracts_view} order by date DESC"
+                        filter_str = self.addprocdlg.contractFilterInput.text().strip().lower().replace("'", "''")
+                        sql = f"select * from {self.contracts_view}"
+                        if filter_str:
+                            sql += f" where LOWER(number) like '%{filter_str}%' " \
+                                   f"or LOWER(name) like '%{filter_str}%' " \
+                                   f"or date::text like '%{filter_str}%' " \
+                                   f"or LOWER(customer) like '%{filter_str}%' " \
+                                   f"or LOWER(customer_short) like '%{filter_str}%' " \
+                                   f"or LOWER(contractor) like '%{filter_str}%' " \
+                                   f"or LOWER(contractor_short) like '%{filter_str}%'"
+                        sql += f" order by date DESC"
                         cur.execute(sql)
                         self.addprocdlg.contracts = cur.fetchall()
                         self.addprocdlg.procContractInput.addItem('')
                         self.addprocdlg.procContractInput.addItems([row['number'] + ' от ' + str(row['date']) + ' ' + row['customer_short'] + '-' + row['contractor_short'] for row in self.addprocdlg.contracts])
-                        sql = f"select * from {self.reports_view} order by shortname DESC"
+                        filter_string = self.addprocdlg.reportFilterInput.text().strip().lower().replace("'", "''")
+                        sql = f"select * from {self.reports_view}"
+                        if filter_string:
+                            sql += f" where LOWER(name) like '%{filter_string}%' " \
+                                   f"or LOWER(shortname) like '%{filter_string}%' " \
+                                   f"or LOWER(company_name) like '%{filter_string}%' " \
+                                   f"or LOWER(company_shortname) like '%{filter_string}%' " \
+                                   f"or LOWER(contract_number) like '%{filter_string}%' " \
+                                   f"or LOWER(contract_name) like '%{filter_string}%' " \
+                                   f"or year::text like '%{filter_string}%' " \
+                                   f"or LOWER(conf) like '%{filter_string}%' " \
+                                   f"or LOWER(conf_shortname) like '%{filter_string}%' " \
+                                   f"or LOWER(conf_limit) like '%{filter_string}%' " \
+                                   f"or LOWER(report_type) like '%{filter_string}%'"
+                        sql += ' order by shortname DESC'
                         cur.execute(sql)
                         self.addprocdlg.reports = cur.fetchall()
                         self.addprocdlg.procReportInput.addItem('')
@@ -1233,6 +1262,9 @@ class GeoDM:
             self.addprocdlg.refreshAuthorsButton.clicked.connect(reload_proc_data)
             self.addprocdlg.refreshContractsButton.clicked.connect(reload_proc_data)
             self.addprocdlg.refreshReportsButton.clicked.connect(reload_proc_data)
+            self.addprocdlg.authorFilterInput.textEdited.connect(reload_proc_data)
+            self.addprocdlg.contractFilterInput.textEdited.connect(reload_proc_data)
+            self.addprocdlg.reportFilterInput.textEdited.connect(reload_proc_data)
             self.addprocdlg.addContractButton.clicked.connect(self.add_contract)
             self.addprocdlg.addReportButton.clicked.connect(self.add_report)
 

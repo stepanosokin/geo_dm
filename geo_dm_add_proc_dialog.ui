@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>583</width>
-    <height>267</height>
+    <height>365</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -98,7 +98,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>130</y>
+     <y>150</y>
      <width>121</width>
      <height>19</height>
     </rect>
@@ -111,7 +111,7 @@
    <property name="geometry">
     <rect>
      <x>120</x>
-     <y>130</y>
+     <y>150</y>
      <width>281</width>
      <height>25</height>
     </rect>
@@ -126,7 +126,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>160</y>
+     <y>200</y>
      <width>101</width>
      <height>19</height>
     </rect>
@@ -139,7 +139,7 @@
    <property name="geometry">
     <rect>
      <x>120</x>
-     <y>160</y>
+     <y>200</y>
      <width>281</width>
      <height>25</height>
     </rect>
@@ -154,7 +154,7 @@
    <property name="geometry">
     <rect>
      <x>440</x>
-     <y>130</y>
+     <y>150</y>
      <width>131</width>
      <height>27</height>
     </rect>
@@ -172,7 +172,7 @@
    <property name="geometry">
     <rect>
      <x>440</x>
-     <y>160</y>
+     <y>200</y>
      <width>131</width>
      <height>27</height>
     </rect>
@@ -190,7 +190,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>190</y>
+     <y>250</y>
      <width>121</width>
      <height>19</height>
     </rect>
@@ -203,7 +203,7 @@
    <property name="geometry">
     <rect>
      <x>120</x>
-     <y>190</y>
+     <y>250</y>
      <width>281</width>
      <height>25</height>
     </rect>
@@ -218,7 +218,7 @@
    <property name="geometry">
     <rect>
      <x>440</x>
-     <y>190</y>
+     <y>250</y>
      <width>131</width>
      <height>27</height>
     </rect>
@@ -312,7 +312,7 @@
    <property name="geometry">
     <rect>
      <x>120</x>
-     <y>220</y>
+     <y>280</y>
      <width>451</width>
      <height>41</height>
     </rect>
@@ -338,7 +338,7 @@
    <property name="geometry">
     <rect>
      <x>410</x>
-     <y>130</y>
+     <y>150</y>
      <width>31</width>
      <height>27</height>
     </rect>
@@ -351,7 +351,7 @@
    <property name="geometry">
     <rect>
      <x>410</x>
-     <y>160</y>
+     <y>200</y>
      <width>31</width>
      <height>27</height>
     </rect>
@@ -364,13 +364,82 @@
    <property name="geometry">
     <rect>
      <x>410</x>
-     <y>190</y>
+     <y>250</y>
      <width>31</width>
      <height>27</height>
     </rect>
    </property>
    <property name="text">
     <string/>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="authorFilterInput">
+   <property name="geometry">
+    <rect>
+     <x>170</x>
+     <y>130</y>
+     <width>231</width>
+     <height>20</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="contractFilterInput">
+   <property name="geometry">
+    <rect>
+     <x>170</x>
+     <y>180</y>
+     <width>231</width>
+     <height>20</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="reportFilterInput">
+   <property name="geometry">
+    <rect>
+     <x>170</x>
+     <y>230</y>
+     <width>231</width>
+     <height>20</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="authorFilterLabel">
+   <property name="geometry">
+    <rect>
+     <x>130</x>
+     <y>130</y>
+     <width>41</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>фильтр</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="contractFilterLabel">
+   <property name="geometry">
+    <rect>
+     <x>130</x>
+     <y>180</y>
+     <width>41</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>фильтр</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="reportFilterLabel">
+   <property name="geometry">
+    <rect>
+     <x>130</x>
+     <y>230</y>
+     <width>41</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>фильтр</string>
    </property>
   </widget>
  </widget>
