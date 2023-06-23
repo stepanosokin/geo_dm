@@ -133,13 +133,22 @@ class GeoDM:
         self.transmittals_view = 'dm.transmittals_view'
         self.drive_types = 'dm.drive_types'
         self.transmittal_types = 'dm.transmittal_types'
+        self.wells = 'dm.wells'
+        self.wells_view = 'dm.wells_view'
+        self.well_attributes = 'dm.well_attributes'
+        self.well_attributes_view = 'dm.well_attributes_view'
+        self.well_attribute_names = 'dm.well_attribute_names'
 
         self.datasets_to_geometries_list = None
         self.seismic_datasets_view_list = None
+        self.wells_view_list = None
+        self.well_attributes_view_list = None
+        self.well_attributes_names_list = None
 
         self.survey_id_filter = None
         self.proc_id_filter = None
         self.dataset_id_filter = None
+        self.well_id_filter = None
 
         self.selectedProcLayer = None
         self.selectedFieldLayer = None
@@ -261,6 +270,12 @@ class GeoDM:
             callback=self.run_mfs,
             parent=self.iface.mainWindow())
 
+        self.add_action(
+            ':/plugins/geo_dm/oil-rig.png',
+            text=self.tr(u'Manage Wells'),
+            callback=self.run_mwd,
+            parent=self.iface.mainWindow())
+
         # will be set False in run()
         self.first_start = True
 
@@ -274,18 +289,53 @@ class GeoDM:
             self.iface.removeToolBarIcon(action)
 
 
+    def get_wells_from_postgres(self):
+        sql = f"select * from {self.wells_view}"
+        filter_str = self.wind.wellsFilterLineEdit.text().lower().strip().replace("'", "''")
+        if filter_str:
+            sql += f" where (" \
+                   f"LOWER(name_ru) like '%{filter_str}%'" \
+                   f" or LOWER(name_en) like '%{filter_str}%'" \
+                   f" or LOWER(well_type) like '%{filter_str}%'" \
+                   f" or LOWER(area_name_ru) like '%{filter_str}%'" \
+                   f" or LOWER(area_name_en) like '%{filter_str}%'" \
+                   f" or LOWER(well_uwi::text) like '%{filter_str}%'" \
+                   f")"
+        if self.well_id_filter:
+            if filter_str:
+                sql += ' and'
+            else:
+                sql += ' where'
+            sql += f" well_id in ({', '.join([str(x) for x in self.well_id_filter])})"
+        sql += ' order by name_ru'
+        try:
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                if pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.wells_view_list = list(cur.fetchall())
+                        return True
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить данные о скважинах из базы', level=Qgis.Critical, duration=5)
+                    return False
+        except:
+            self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить данные о скважинах из базы ' + sql,
+                                                level=Qgis.Critical, duration=5)
+            return False
+                        
+
     def get_surveys_from_postgres(self):
         sql = f"select * from {self.surveys_view}"
 
         # filter_str = self.dockwind.surveyFilterLineEdit.text().lower().strip()
         filter_str = self.wind.surveyFilterLineEdit.text().lower().strip()
-        if filter_str not in ['', None]:
+        if filter_str:
             sql += f" where (LOWER(name) like '%{filter_str}%' or LOWER(survey_type) like '%{filter_str}%' or year::text = '{filter_str}' " \
                    f"or LOWER(acquisition_company) like '%{filter_str}%' or LOWER(acquisition_company_shortname) like '%{filter_str}%' " \
                    f"or LOWER(acquisition_contract_number) like '%{filter_str}%' or LOWER(acquisition_contract_name) like '%{filter_str}%' " \
                    f"or LOWER(location_type) like '%{filter_str}%')"
         if self.survey_id_filter:
-            if filter_str not in ['', None]:
+            if filter_str:
                 sql += ' and'
             else:
                 sql += ' where'
@@ -311,6 +361,32 @@ class GeoDM:
             return False
 
 
+    def refresh_wells(self):
+        self.wind.wellsTableWidget.clear()
+        self.wind.wellsTableWidget.setRowCount(0)
+        self.wind.wellsTableWidget.setColumnCount(3)
+        self.wind.wellsTableWidget.setHorizontalHeaderLabels(['Название', 'Name', 'Тип'])
+        header = self.wind.wellsTableWidget.horizontalHeader()
+        header.resizeSection(0, 125)
+        header.resizeSection(1, 125)
+        header.resizeSection(2, 75)
+        if self.get_wells_from_postgres():
+            for i, well_row in enumerate(self.wells_view_list):
+                self.wind.wellsTableWidget.insertRow(i)
+                citem = QTableWidgetItem(well_row['name_ru'])
+                citem.setToolTip(str(well_row['name_ru']))
+                citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                self.wind.wellsTableWidget.setItem(i, 0, citem)
+                citem = QTableWidgetItem(well_row['name_en'])
+                citem.setToolTip(str(well_row['name_en']))
+                citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                self.wind.wellsTableWidget.setItem(i, 1, citem)
+                citem = QTableWidgetItem(well_row['well_type'])
+                citem.setToolTip(str(well_row['well_type']))
+                citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                self.wind.wellsTableWidget.setItem(i, 2, citem)
+
+
     def refresh_surveys(self):
         # self.dockwind.surveyTableWidget.clear()
         # self.dockwind.surveyTableWidget.setRowCount(0)
@@ -327,27 +403,8 @@ class GeoDM:
         header.resizeSection(1, 5)
         header.resizeSection(2, 100)
         header.resizeSection(3, 20)
-        # if index_list == None:
-        #     index_list = []
         if self.get_surveys_from_postgres():
             for i, survey_row in enumerate(self.surveys_view_list):
-                # self.dockwind.surveyTableWidget.insertRow(i)
-                # citem = QTableWidgetItem(survey_row['name'])
-                # citem.setToolTip(str(survey_row['name']))
-                # citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                # self.dockwind.surveyTableWidget.setItem(i, 0, citem)
-                # citem = QTableWidgetItem(survey_row['survey_type'])
-                # citem.setToolTip(str(survey_row['survey_type']))
-                # citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                # self.dockwind.surveyTableWidget.setItem(i, 1, citem)
-                # citem = QTableWidgetItem(survey_row['acquisition_company_shortname'])
-                # citem.setToolTip(str(survey_row['acquisition_company']))
-                # citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                # self.dockwind.surveyTableWidget.setItem(i, 2, citem)
-                # citem = QTableWidgetItem(str(survey_row['year']))
-                # citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                # self.dockwind.surveyTableWidget.setItem(i, 3, citem)
-
                 self.wind.surveyTableWidget.insertRow(i)
                 citem = QTableWidgetItem(survey_row['name'])
                 citem.setToolTip(str(survey_row['name']))
@@ -364,6 +421,30 @@ class GeoDM:
                 citem = QTableWidgetItem(str(survey_row['year']))
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                 self.wind.surveyTableWidget.setItem(i, 3, citem)
+
+
+    def select_wells_by_geometry(self):
+        if all([self.mode == 'wells', self.selectedWellsLayer, self.selectedWellFeaturesList]):
+            if 'well_id' in [f.name() for f in self.selectedWellsLayer.fields()]:
+                selected_features_well_ids_list = list(set([f.attribute('well_id') for f in self.selectedWellFeaturesList]))
+            else:
+                selected_features_well_ids_list = []
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать слой и объекты в нем",
+                                            level=Qgis.Warning,
+                                            duration=5)
+            selected_features_well_ids_list = []
+        [x.setSelected(False) for x in self.wind.wellsTableWidget.selectedItems()]
+        self.wind.wellsTableWidget.clear()
+        self.wind.wellsTableWidget.setHorizontalHeaderLabels(['Название', 'Name', 'Тип'])
+        self.wind.wellsTableWidget.setRowCount(0)
+
+        if selected_features_well_ids_list:
+            self.well_id_filter = selected_features_well_ids_list
+        else:
+            self.well_id_filter = [-1]
+        self.refresh_wells()
+        self.well_id_filter = None
 
 
     def select_surveys_by_geometry(self):
@@ -787,9 +868,14 @@ class GeoDM:
         # if self.selectedProcFeaturesList:
         self.dockwind.selectedGeometryLabel.setText(f"Выбрано объектов: {len(self.selectedProcFeaturesList)}")
 
+
     def display_selected_field_geometry_count(self):
         # if self.selectedProcFeaturesList:
         self.dockwindfield.selectedGeometryLabel.setText(f"Выбрано объектов: {len(self.selectedFieldFeaturesList)}")
+
+
+    def display_selected_wells_geometry_count(self):
+        self.dockwindwells.selectedGeometryLabel.setText(f"Выбрано объектов: {len(self.selectedWellFeaturesList)}")
 
 
     def set_selected_field_features_list(self):
@@ -812,6 +898,28 @@ class GeoDM:
                 # self.iface.messageBar().pushMessage('Ошибка', 'Необходимо выбрать один слой в таблице содержания, содержащий геометрию обработанной сейсмики',
                 #                                     level=Qgis.Warning, duration=3)
                 self.display_selected_field_geometry_count()
+
+
+    def set_selected_well_features_list(self):
+        selectedLayer = self.iface.layerTreeView().currentLayer()
+        if selectedLayer:
+            if selectedLayer.type() == QgsMapLayerType.VectorLayer:
+                if all(['well_id' in [f.name() for f in selectedLayer.fields()], selectedLayer.isSpatial()]):
+                    self.selectedWellsLayer = selectedLayer
+                    self.dockwindwells.selectedLayerLabel.setText(selectedLayer.name())
+                    self.selectedWellFeaturesList = self.selectedWellsLayer.selectedFeatures()
+                    self.display_selected_wells_geometry_count()
+                else:
+                    self.selectedWellsLayer = None
+                    self.selectedWellFeaturesList = []
+                    self.dockwindwells.selectedLayerLabel.setText('Нужно выбрать векторный слой!')
+            else:
+                self.selectedWellsLayer = None
+                self.selectedWellFeaturesList = []
+                self.dockwindwells.selectedLayerLabel.setText('Нужно выбрать векторный слой!')
+                # self.iface.messageBar().pushMessage('Ошибка', 'Необходимо выбрать один слой в таблице содержания, содержащий геометрию обработанной сейсмики',
+                #                                     level=Qgis.Warning, duration=3)
+                self.display_selected_wells_geometry_count()
 
 
     def set_selected_proc_features_list(self):
@@ -3725,4 +3833,46 @@ class GeoDM:
             self.dockwindfield.adjustSize()
         else:
             self.iface.messageBar().pushMessage('Ошибка', 'Необходимо добавить в проект слой с геометрией сейсмики',
+                                                level=Qgis.Warning, duration=3)
+
+
+    def run_mwd(self):
+        """Run method that performs all the real work"""
+        try:
+            self.dockwind.close()
+            self.dockwindfield.close()
+        except:
+            pass
+        if self.first_start == True:
+            self.first_start = False
+            self.dockwindwells = GeoDMDockWidgetWells()
+        else:
+            self.dockwindwells = GeoDMDockWidgetWells()
+
+        self.mode = 'wells'
+        self.wind = self.dockwindwells
+
+        self.dockwindwells.selectWellsForSelectedGeometryButton.setIcon(QIcon(':/plugins/geo_dm/spreadsheet.png'))
+        self.dockwindwells.selectGeometryForSelectedWellsButton.setIcon(QIcon(':/plugins/geo_dm/geometry.png'))
+        self.dockwindwells.refreshWellsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.dockwindwells.refreshWellAttrsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+
+        ltreenode = QgsProject.instance().layerTreeRoot().children()
+        layers = list(filter(lambda x: x.type() == QgsMapLayerType.VectorLayer and x.isSpatial(),
+                             QgsLayerTreeUtils().collectMapLayersRecursive(ltreenode)))
+        if layers:
+            self.set_selected_well_features_list()
+            self.display_selected_wells_geometry_count()
+            self.iface.mapCanvas().selectionChanged.connect(self.set_selected_well_features_list)
+            self.iface.layerTreeView().currentLayerChanged.connect(self.set_selected_well_features_list)
+
+            self.refresh_wells()
+            self.dockwindwells.refreshWellsButton.clicked.connect(self.refresh_wells)
+            self.dockwindwells.wellsFilterLineEdit.textEdited.connect(self.refresh_wells)
+            self.dockwindwells.selectWellsForSelectedGeometryButton.clicked.connect(self.select_wells_by_geometry)
+
+            self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwindwells)
+            self.dockwindwells.adjustSize()
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', 'Необходимо добавить в проект слой с точками скважин',
                                                 level=Qgis.Warning, duration=3)

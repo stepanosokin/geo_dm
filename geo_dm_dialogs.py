@@ -183,3 +183,13 @@ class GeoDMDockWidgetField(QtWidgets.QDockWidget, FORM_CLASS_DOCK_FIELD):
         """Constructor."""
         super(GeoDMDockWidgetField, self).__init__(parent)
         self.setupUi(self)
+
+
+FORM_CLASS_DOCK_WELLS, _ = uic.loadUiType(os.path.join(
+    os.path.dirname(__file__), 'geo_dm_dockwidget_wells.ui'))
+
+class GeoDMDockWidgetWells(QtWidgets.QDockWidget, FORM_CLASS_DOCK_WELLS):
+    def __init__(self, parent=None):
+        """Constructor."""
+        super(GeoDMDockWidgetWells, self).__init__(parent)
+        self.setupUi(self)
