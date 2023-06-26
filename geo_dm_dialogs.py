@@ -193,3 +193,13 @@ class GeoDMDockWidgetWells(QtWidgets.QDockWidget, FORM_CLASS_DOCK_WELLS):
         """Constructor."""
         super(GeoDMDockWidgetWells, self).__init__(parent)
         self.setupUi(self)
+
+
+FORM_CLASS_UPDATE_WELL, _ = uic.loadUiType(os.path.join(
+    os.path.dirname(__file__), 'geo_dm_update_well_dialog.ui'))
+
+class UpdateWellDialog(QtWidgets.QDockWidget, FORM_CLASS_UPDATE_WELL):
+    def __init__(self, parent=None):
+        """Constructor."""
+        super(UpdateWellDialog, self).__init__(parent)
+        self.setupUi(self)

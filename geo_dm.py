@@ -23,7 +23,7 @@
 """
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 # from PyQt5.QtWebEngineWidgets import QWebEngineView
-from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtCore import Qt, QDate
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QTableWidgetItem, QTableWidget, QPushButton, QAbstractItemView
 from qgis.core import \
@@ -37,7 +37,7 @@ from qgis.core import \
     QgsCoordinateTransform
 import psycopg2
 from psycopg2.extras import *
-from datetime import datetime
+from datetime import datetime, date
 
 
 # Initialize Qt resources from file resources.py
@@ -138,6 +138,7 @@ class GeoDM:
         self.well_attributes = 'dm.well_attributes'
         self.well_attributes_view = 'dm.well_attributes_view'
         self.well_attribute_names = 'dm.well_attribute_names'
+        self.well_types = 'dm.well_types'
 
         self.datasets_to_geometries_list = None
         self.seismic_datasets_view_list = None
@@ -149,6 +150,7 @@ class GeoDM:
         self.proc_id_filter = None
         self.dataset_id_filter = None
         self.well_id_filter = None
+        self.well_attr_id_filter = None
 
         self.selectedProcLayer = None
         self.selectedFieldLayer = None
@@ -490,6 +492,39 @@ class GeoDM:
         #     self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать слой и объекты в нем",
         #                                     level=Qgis.Warning,
         #                                     duration=5)
+
+
+    def select_geometry_by_wells(self):
+        if self.mode == 'wells':
+            selected_well_rows = list(set([x.row() for x in self.wind.wellsTableWidget.selectedItems()]))
+            geom_lyr = self.selectedWellsLayer
+        else:
+            selected_well_rows = None
+            geom_lyr = None
+        if selected_well_rows and geom_lyr:
+            selected_well_ids = [self.wells_view_list[i]['well_id'] for i in selected_well_rows]
+            if all([self.mode == 'wells',
+                    selected_well_ids,
+                    geom_lyr,
+                    'well_id' in [f.name() for f in geom_lyr.fields()]]):
+                geom_str = ', '.join([str(x) for x in selected_well_ids])
+                query = f'"well_id" in ({geom_str})'
+            else:
+                query = None
+            geom_lyr.removeSelection()
+            # self.iface.messageBar().pushMessage('query', query, level=Qgis.Success, duration=5)
+            if query:
+                geom_lyr.selectByExpression(query)
+                if geom_lyr.selectedFeatures():
+                    project_crs = QgsCoordinateReferenceSystem(QgsProject.instance().crs())
+                    layer_crs = geom_lyr.crs()
+                    lyr2proj = QgsCoordinateTransform(layer_crs, project_crs, QgsProject.instance())
+                    box = lyr2proj.transformBoundingBox(geom_lyr.boundingBoxOfSelected())
+                    self.iface.mapCanvas().setExtent(box)
+                    self.iface.mapCanvas().refresh()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать скважины и слой с геометрией",
+                                                    level=Qgis.Warning, duration=5)
 
 
     def select_geometry_by_surveys(self):
@@ -1680,6 +1715,177 @@ class GeoDM:
             self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать обработку(и) и слой с геометрией", level=Qgis.Warning, duration=5)
 
 
+    def update_well(self):
+        selected_well_rows = list(set([x.row() for x in self.wind.wellsTableWidget.selectedItems()]))
+
+        if len(selected_well_rows) == 1:
+            self.updatewelldlg = UpdateWellDialog()
+            self.updatewelldlg.selected_well_row = None
+            self.updatewelldlg.well_types_list = None
+            self.updatewelldlg.data_quality_list = None
+
+            self.updatewelldlg.selected_well_row = selected_well_rows[0]
+
+            def reload_well_name_ru():
+                self.updatewelldlg.wellNameRuLineEdit.clear()
+                self.updatewelldlg.wellNameRuLineEdit.setText(
+                    self.wells_view_list[self.updatewelldlg.selected_well_row]['name_ru'])
+
+            def reload_well_name_en():
+                self.updatewelldlg.wellNameEnLineEdit.clear()
+                self.updatewelldlg.wellNameEnLineEdit.setText(
+                    self.wells_view_list[self.updatewelldlg.selected_well_row]['name_en'])
+
+            def reload_well_types():
+                self.updatewelldlg.wellTypeComboBox.clear()
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        sql = f"select * from {self.well_types};"
+                        cur.execute(sql)
+                        self.updatewelldlg.well_types_list = cur.fetchall()
+                        self.updatewelldlg.wellTypeComboBox.addItem('')
+                        self.updatewelldlg.wellTypeComboBox.addItems([row['well_type_name_ru'] for row in self.updatewelldlg.well_types_list])
+                selected_well_type = self.wells_view_list[self.updatewelldlg.selected_well_row]['well_type']
+                if selected_well_type:
+                    self.updatewelldlg.wellTypeComboBox.setCurrentText(selected_well_type)
+
+            def reload_well_number():
+                self.updatewelldlg.wellNumberLineEdit.clear()
+                self.updatewelldlg.wellNumberLineEdit.setText(
+                    self.wells_view_list[self.updatewelldlg.selected_well_row]['well_number'])
+
+            def reload_well_uwi():
+                self.updatewelldlg.wellUWILineEdit.clear()
+                self.updatewelldlg.wellUWILineEdit.setText(
+                    self.wells_view_list[self.updatewelldlg.selected_well_row]['well_uwi'])
+
+            def reload_well_area_ru():
+                self.updatewelldlg.wellAreaRuLineEdit.clear()
+                self.updatewelldlg.wellAreaRuLineEdit.setText(
+                    self.wells_view_list[self.updatewelldlg.selected_well_row]['area_name_ru'])
+
+            def reload_well_area_en():
+                self.updatewelldlg.wellAreaEnLineEdit.clear()
+                self.updatewelldlg.wellAreaEnLineEdit.setText(
+                    self.wells_view_list[self.updatewelldlg.selected_well_row]['area_name_en'])
+
+            def reload_well_source():
+                self.updatewelldlg.wellSourcePlainTextEdit.clear()
+                self.updatewelldlg.wellSourcePlainTextEdit.setPlainText(
+                    self.wells_view_list[self.updatewelldlg.selected_well_row]['source'])
+
+            def reload_well_quality():
+                self.updatewelldlg.wellQualityComboBox.clear()
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        sql = f"select * from {self.data_quality};"
+                        cur.execute(sql)
+                        self.updatewelldlg.data_quality_list = cur.fetchall()
+                        self.updatewelldlg.wellQualityComboBox.addItem('')
+                        self.updatewelldlg.wellQualityComboBox.addItems([row['name_ru'] for row in self.updatewelldlg.data_quality_list])
+                selected_quality_type = self.wells_view_list[self.updatewelldlg.selected_well_row]['data_quality']
+                if selected_quality_type:
+                    self.updatewelldlg.wellQualityComboBox.setCurrentText(selected_quality_type)
+
+            def reload_well_datestamp():
+                selected_well_datestamp = self.wells_view_list[self.updatewelldlg.selected_well_row]['datestamp']
+                if selected_well_datestamp:
+                    self.updatewelldlg.wellDatestampCalendarWidget.setSelectedDate(QDate(selected_well_datestamp.year, selected_well_datestamp.month, selected_well_datestamp.day))
+                else:
+                    self.updatewelldlg.wellDatestampCalendarWidget.setSelectedDate(QDate(1970, 1, 1))
+
+            def reload_well_geotransf():
+                self.updatewelldlg.wellGeotransfPlainTextEdit.clear()
+                self.updatewelldlg.wellGeotransfPlainTextEdit.setPlainText(
+                    self.wells_view_list[self.updatewelldlg.selected_well_row]['geo_transf_applied'])
+
+            def reload_well_data():
+                reload_well_name_ru()
+                reload_well_name_en()
+                reload_well_types()
+                reload_well_number()
+                reload_well_uwi()
+                reload_well_area_ru()
+                reload_well_area_en()
+                reload_well_source()
+                reload_well_quality()
+                reload_well_datestamp()
+                reload_well_geotransf()
+
+            reload_well_data()
+
+            def generate_and_execute_sql():
+                selected_well_id = self.wells_view_list[self.updatewelldlg.selected_well_row]['well_id']
+                new_well_name_ru = self.updatewelldlg.wellNameRuLineEdit.text().replace("'", "''")
+                new_well_name_en = self.updatewelldlg.wellNameEnLineEdit.text().replace("'", "''")
+                selected_well_type_index = self.updatewelldlg.wellTypeComboBox.currentIndex() - 1
+                new_well_number = self.updatewelldlg.wellNumberLineEdit.text().replace("'", "''")
+                new_well_uwi = self.updatewelldlg.wellUWILineEdit.text().replace("'", "''")
+                new_well_area_ru = self.updatewelldlg.wellAreaRuLineEdit.text().replace("'", "''")
+                new_well_area_en = self.updatewelldlg.wellAreaEnLineEdit.text().replace("'", "''")
+                new_well_source = self.updatewelldlg.wellSourcePlainTextEdit.toPlainText().replace("'", "''")
+                selected_well_quality_index = self.updatewelldlg.wellQualityComboBox.currentIndex() - 1
+                new_well_datestamp = self.updatewelldlg.wellDatestampCalendarWidget.selectedDate()
+                new_well_geotransf = self.updatewelldlg.wellGeotransfPlainTextEdit.toPlainText().replace("'", "''")
+                fields_to_update = []
+                values_to_insert = []
+                if new_well_name_ru:
+                    fields_to_update.append('name_ru')
+                    values_to_insert.append(f"'{new_well_name_ru}'")
+                if new_well_name_en:
+                    fields_to_update.append('name_en')
+                    values_to_insert.append(f"'{new_well_name_en}'")
+                if selected_well_type_index >= 0:
+                    fields_to_update.append('type_id')
+                    selected_well_type_id = self.updatewelldlg.well_types_list[selected_well_type_index]['well_type_id']
+                    values_to_insert.append(str(selected_well_type_id))
+                if new_well_number:
+                    fields_to_update.append('well_number')
+                    values_to_insert.append(f"'{new_well_number}'")
+                if new_well_uwi:
+                    fields_to_update.append('well_uwi')
+                    values_to_insert.append(f"'{new_well_uwi}'")
+                if new_well_area_ru:
+                    fields_to_update.append('area_name_ru')
+                    values_to_insert.append(f"'{new_well_area_ru}'")
+                if new_well_area_en:
+                    fields_to_update.append('area_name_en')
+                    values_to_insert.append(f"'{new_well_area_en}'")
+                if new_well_source:
+                    fields_to_update.append('source')
+                    values_to_insert.append(f"'{new_well_source}'")
+                if selected_well_quality_index >= 0:
+                    fields_to_update.append('data_quality_id')
+                    selected_data_quality_id = self.updatewelldlg.data_quality_list[selected_well_quality_index]['data_quality_id']
+                    values_to_insert.append(str(selected_data_quality_id))
+                if new_well_datestamp:
+                    if new_well_datestamp != QDate(1970, 1, 1):
+                        fields_to_update.append('datestamp')
+                        values_to_insert.append(f"'{new_well_datestamp.toString('yyyy-MM-dd')}'")
+                if new_well_geotransf:
+                    fields_to_update.append('geo_transf_applied')
+                    values_to_insert.append(f"'{new_well_geotransf}'")
+                if all([fields_to_update, values_to_insert]):
+                    fields_values = ', '.join([a[0] + ' = ' + a[1] for a in zip(fields_to_update, values_to_insert)])
+                    self.sql = f"update {self.wells} set {fields_values} where well_id = {str(selected_well_id)}"
+                    mwidget = self.iface.messageBar().createMessage(
+                        f"Изменить данные скважины {new_well_name_ru or new_well_name_en or new_well_number or new_well_uwi or str(selected_well_id)}?")
+                    mbutton = QPushButton(mwidget)
+                    mbutton.setText('Подтвердить')
+                    mbutton.pressed.connect(self.execute_sql)
+                    mbutton.pressed.connect(self.refresh_wells)
+                    mwidget.layout().addWidget(mbutton)
+                    self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+                    self.updatewelldlg.close()
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Введите данные скважины', level=Qgis.Warning,
+                                                        duration=3)
+            self.updatewelldlg.updateWellButton.clicked.connect(generate_and_execute_sql)
+            self.updatewelldlg.show()
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одну скважину', level=Qgis.Warning, duration=3)
+
+
     def update_survey(self):
         selected_survey_rows = list(set([x.row() for x in self.wind.surveyTableWidget.selectedItems()]))
         if len(selected_survey_rows) == 1:
@@ -2199,7 +2405,7 @@ class GeoDM:
                             f" or geometry_id in (select pol_id from {self.seismic_pols_processed_3d} where proc_id in ({selected_proc_ids_string})))"
                 else:
                     return False
-            filter_str = self.wind.datasetFilterLineEdit.text().lower().strip()
+            filter_str = self.wind.datasetFilterLineEdit.text().lower().strip().replace("'", "''")
             if filter_str:
                 if self.show_datasets_for_selected_proc:
                     if selected_proc_rows:
@@ -2280,6 +2486,68 @@ class GeoDM:
             self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить сведения о наборах данных из базы ' + sql,
                                                 level=Qgis.Critical, duration=5)
             return False
+
+
+    def get_well_attrs_from_postgres(self):
+        selected_well_rows = list(set([x.row() for x in self.wind.wellsTableWidget.selectedItems()]))
+        if selected_well_rows:
+            selected_well_ids_string = ', '.join([str(self.wells_view_list[x]['well_id']) for x in selected_well_rows])
+            sql = f"select * from {self.well_attributes_view} where well_id in ({selected_well_ids_string})"
+            filter_str = self.wind.wellAttrsFilterLineEdit.text().lower().strip().replace("'", "''")
+            if filter_str:
+                sql += f" and (LOWER(well_name_ru) like '%{filter_str}%'" \
+                       f" or LOWER(well_name_en) like '%{filter_str}%'" \
+                       f" or LOWER(well_attribute_name) like '%{filter_str}%'" \
+                       f" or LOWER(well_attribute_value) like '%{filter_str}%'" \
+                       f" or LOWER(source) like '%{filter_str}%'" \
+                       f" or LOWER(comments) like '%{filter_str}%'" \
+                       f" or LOWER(data_quality) like '%{filter_str}%'" \
+                       f" or LOWER(link) like '%{filter_str}%'"\
+                       f")"
+            if self.well_attr_id_filter:
+                sql += f" and well_attribute_id in ({', '.join([str(x) for x in self.well_attr_id_filter])})"
+            sql += ';'
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    if pgconn:
+                        with pgconn.cursor() as cur:
+                            cur.execute(sql)
+                            self.well_attributes_view_list = list(cur.fetchall())
+                            return True
+                    else:
+                        self.iface.messageBar().pushMessage('Ошибка',
+                                                'Не удалось загрузить сведения об атрибутах скважин из базы ' + sql,
+                                                level=Qgis.Critical, duration=5)
+                        return False
+            except:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Не удалось загрузить сведения об атрибутах скважин из базы ' + sql,
+                                                    level=Qgis.Critical, duration=5)
+                return False
+
+
+    def refresh_well_attrs(self):
+        self.wind.wellAttrTableWidget.clear()
+        self.wind.wellAttrTableWidget.setRowCount(0)
+        self.wind.wellAttrTableWidget.setColumnCount(2)
+        self.wind.wellAttrTableWidget.setHorizontalHeaderLabels(['Название', 'Значение'])
+        header = self.wind.wellAttrTableWidget.horizontalHeader()
+        header.resizeSection(0, 175)
+        header.resizeSection(1, 175)
+        if self.get_well_attrs_from_postgres():
+            for i, well_attr in enumerate(self.well_attributes_view_list):
+                self.wind.wellAttrTableWidget.insertRow(i)
+                citem = QTableWidgetItem(well_attr['well_attribute_name'])
+                citem.setToolTip(well_attr['well_attribute_name'])
+                citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                self.wind.wellAttrTableWidget.setItem(i, 0, citem)
+                citem = QTableWidgetItem(well_attr['well_attribute_value'])
+                citem.setToolTip(well_attr['well_attribute_value'])
+                citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                self.wind.wellAttrTableWidget.setItem(i, 1, citem)
+        else:
+            self.wind.wellAttrTableWidget.clear()
+
 
     def refresh_datasets(self):
         self.wind.datasetTableWidget.clear()
@@ -3870,9 +4138,16 @@ class GeoDM:
             self.dockwindwells.refreshWellsButton.clicked.connect(self.refresh_wells)
             self.dockwindwells.wellsFilterLineEdit.textEdited.connect(self.refresh_wells)
             self.dockwindwells.selectWellsForSelectedGeometryButton.clicked.connect(self.select_wells_by_geometry)
+            self.dockwindwells.selectWellsForSelectedGeometryButton.clicked.connect(self.refresh_well_attrs)
+            self.dockwindwells.selectGeometryForSelectedWellsButton.clicked.connect(self.select_geometry_by_wells)
+            self.dockwindwells.updateWellPushButton.clicked.connect(self.update_well)
+            self.dockwindwells.wellsTableWidget.itemSelectionChanged.connect(self.refresh_well_attrs)
+            self.dockwindwells.wellAttrsFilterLineEdit.textEdited.connect(self.refresh_well_attrs)
+            self.dockwindwells.refreshWellAttrsButton.clicked.connect(self.refresh_well_attrs)
 
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwindwells)
             self.dockwindwells.adjustSize()
         else:
             self.iface.messageBar().pushMessage('Ошибка', 'Необходимо добавить в проект слой с точками скважин',
                                                 level=Qgis.Warning, duration=3)
+
