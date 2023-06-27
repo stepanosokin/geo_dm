@@ -198,8 +198,28 @@ class GeoDMDockWidgetWells(QtWidgets.QDockWidget, FORM_CLASS_DOCK_WELLS):
 FORM_CLASS_UPDATE_WELL, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'geo_dm_update_well_dialog.ui'))
 
-class UpdateWellDialog(QtWidgets.QDockWidget, FORM_CLASS_UPDATE_WELL):
+class UpdateWellDialog(QtWidgets.QDialog, FORM_CLASS_UPDATE_WELL):
     def __init__(self, parent=None):
         """Constructor."""
         super(UpdateWellDialog, self).__init__(parent)
+        self.setupUi(self)
+
+
+FORM_CLASS_ADD_WELL_ATTR, _ = uic.loadUiType(os.path.join(
+    os.path.dirname(__file__), 'geo_dm_add_well_attr_dialog.ui'))
+
+class AddWellAttrDialog(QtWidgets.QDialog, FORM_CLASS_ADD_WELL_ATTR):
+    def __init__(self, parent=None):
+        """Constructor."""
+        super(AddWellAttrDialog, self).__init__(parent)
+        self.setupUi(self)
+
+
+FORM_CLASS_ADD_WELL_ATTR_NAME, _ = uic.loadUiType(os.path.join(
+    os.path.dirname(__file__), 'geo_dm_add_well_attr_name_dialog.ui'))
+
+class AddWellAttrNameDialog(QtWidgets.QDialog, FORM_CLASS_ADD_WELL_ATTR_NAME):
+    def __init__(self, parent=None):
+        """Constructor."""
+        super(AddWellAttrNameDialog, self).__init__(parent)
         self.setupUi(self)
