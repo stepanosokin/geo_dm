@@ -2861,7 +2861,7 @@ class GeoDM:
                     if selected_well_attrs[0]['nda_id']:
                         a_nda_id = selected_well_attrs[0]['nda_id']
                         a_nda = [x for x in self.updatewellattrdlg.nda_view_list if x['nda_id'] == a_nda_id][0]
-                        self.updatewellattrdlg.wellAttrNdaComboBox.setCurrentIndex(self.updatewellattrdlg.nda_view_list.index(a_nda))
+                        self.updatewellattrdlg.wellAttrNdaComboBox.setCurrentIndex(self.updatewellattrdlg.nda_view_list.index(a_nda) + 1)
                 except:
                     self.iface.messageBar().pushMessage('Ошибка',
                                                         'Не удалось загрузить данные о качестве данных из базы ' + sql,
@@ -4611,7 +4611,7 @@ class GeoDM:
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         try:
-            self.dockwindfield.close()
+            self.wind.close()
         except:
             pass
         if self.first_start == True:
@@ -4686,7 +4686,7 @@ class GeoDM:
     def run_mfs(self):
         """Run method that performs all the real work"""
         try:
-            self.dockwind.close()
+            self.wind.close()
         except:
             pass
         if self.first_start == True:
@@ -4748,8 +4748,7 @@ class GeoDM:
     def run_mwd(self):
         """Run method that performs all the real work"""
         try:
-            self.dockwind.close()
-            self.dockwindfield.close()
+            self.wind.close()
         except:
             pass
         if self.first_start == True:
