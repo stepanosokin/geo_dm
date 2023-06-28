@@ -2574,6 +2574,392 @@ class GeoDM:
         self.addwellattrnamedlg.show()
 
 
+    def add_nda(self):
+        self.addndadlg = AddNdaDialog()
+        self.addndadlg.ndaRefreshCompaniesButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.addndadlg.companies_a_list = None
+        self.addndadlg.companies_b_list = None
+        self.addndadlg.active_list = None
+        self.addndadlg.conf_list = None
+
+        def reload_companies_a():
+            self.addndadlg.ndaCompanyAComboBox.clear()
+            filter_str = self.addndadlg.ndaCompanyAFilterLineEdit.text().strip().lower().replace("'", "''")
+            sql = f"select * from {self.companies}"
+            if filter_str:
+                sql += f" where (LOWER(name) like '%{filter_str}%'" \
+                       f" or LOWER(shortname) like '%{filter_str}%'" \
+                       f")"
+            sql += ' order by name;'
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.addndadlg.companies_a_list = list(cur.fetchall())
+                self.addndadlg.ndaCompanyAComboBox.addItem('--Выберите Компанию А--')
+                self.addndadlg.ndaCompanyAComboBox.addItems([x['name'] for x in self.addndadlg.companies_a_list])
+            except:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Не удалось загрузить данные о компаниях из базы ' + sql,
+                                                    level=Qgis.Critical,
+                                                    duration=3)
+
+        def reload_companies_b():
+            self.addndadlg.ndaCompanyBComboBox.clear()
+            filter_str = self.addndadlg.ndaCompanyBFilterLineEdit.text().strip().lower().replace("'", "''")
+            sql = f"select * from {self.companies}"
+            if filter_str:
+                sql += f" where (LOWER(name) like '%{filter_str}%'" \
+                       f" or LOWER(shortname) like '%{filter_str}%'" \
+                       f")"
+            sql += ' order by name;'
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.addndadlg.companies_b_list = list(cur.fetchall())
+                self.addndadlg.ndaCompanyBComboBox.addItem('--Выберите Компанию B--')
+                self.addndadlg.ndaCompanyBComboBox.addItems([x['name'] for x in self.addndadlg.companies_b_list])
+            except:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Не удалось загрузить данные о компаниях из базы ' + sql,
+                                                    level=Qgis.Critical,
+                                                    duration=3)
+
+        def reload_active():
+            self.addndadlg.ndaActiveComboBox.clear()
+            self.addndadlg.active_list = ['YES', 'NO']
+            self.addndadlg.ndaActiveComboBox.addItem('--Выберите акуальность--')
+            self.addndadlg.ndaActiveComboBox.addItems(self.addndadlg.active_list)
+
+        def reload_conf():
+            self.addndadlg.ndaConfComboBox.clear()
+            sql = f"select * from {self.conf};"
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.addndadlg.conf_list = list(cur.fetchall())
+                self.addndadlg.ndaConfComboBox.addItem('--Выберите конфиденциальность--')
+                self.addndadlg.ndaConfComboBox.addItems([x['conf_name'] for x in self.addndadlg.conf_list])
+            except:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Не удалось загрузить данные о конфиденциальности ' + sql,
+                                                    level=Qgis.Critical,
+                                                    duration=3)
+
+        def generate_and_execute_sql():
+            new_nda_name = self.addndadlg.ndaNameLineEdit.text().strip().replace("'", "''")
+            selected_company_a_index = self.addndadlg.ndaCompanyAComboBox.currentIndex() - 1
+            selected_company_b_index = self.addndadlg.ndaCompanyBComboBox.currentIndex() - 1
+            new_subject = self.addndadlg.ndaSubjectPlainTextEdit.toPlainText().strip().replace("'", "''")
+            new_nda_date = self.addndadlg.ndaDateSignedCalendarWidget.selectedDate()
+            new_source = self.addndadlg.ndaSourcePlainTextEdit.toPlainText().strip().replace("'", "''")
+            new_comments = self.addndadlg.ndaSourcePlainTextEdit.toPlainText().strip().replace("'", "''")
+            selected_active_index = self.addndadlg.ndaActiveComboBox.currentIndex() - 1
+            new_scan_link = self.addndadlg.ndaScalLinkPlainTextEdit.toPlainText().strip().replace("'", "''")
+            selected_conf_index = self.addndadlg.ndaConfComboBox.currentIndex() - 1
+            if all([new_nda_name, selected_company_a_index >= 0, selected_company_b_index >= 0]):
+                selected_company_a_id = self.addndadlg.companies_a_list[selected_company_a_index]['company_id']
+                selected_company_b_id = self.addndadlg.companies_b_list[selected_company_b_index]['company_id']
+                fields_to_update = ['name', 'company_a_id', 'company_b_id']
+                values_to_insert = [f"'{new_nda_name}'", str(selected_company_a_id), str(selected_company_b_id)]
+                if new_subject:
+                    fields_to_update.append('subject')
+                    values_to_insert.append(f"'{new_subject}'")
+                if new_nda_date:
+                    fields_to_update.append('date_signed')
+                    values_to_insert.append(f"'{new_nda_date.toString('yyyy-MM-dd')}'")
+                if new_source:
+                    fields_to_update.append('source')
+                    values_to_insert.append(f"'{new_source}'")
+                if new_comments:
+                    fields_to_update.append('comments')
+                    values_to_insert.append(f"'{new_comments}'")
+                if selected_active_index >= 0:
+                    fields_to_update.append('active')
+                    values_to_insert.append(f"'{self.addndadlg.active_list[selected_active_index]}'")
+                if new_scan_link:
+                    fields_to_update.append('scan_link')
+                    values_to_insert.append(f"'{new_scan_link}'")
+                if selected_conf_index >= 0:
+                    fields_to_update.append('conf_id')
+                    values_to_insert.append(str(self.addndadlg.conf_list[selected_conf_index]['conf_id']))
+                sql = f"insert into {self.nda}({', '.join(fields_to_update)}) values({', '.join(values_to_insert)});"
+                self.sql = sql
+                mwidget = self.iface.messageBar().createMessage(f"Добавить в базу NDA '{new_nda_name}'?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                self.addndadlg.accept()
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+            else:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Нужно ввести Название, выбрать Компанию А и Компанию B',
+                                                    level=Qgis.Warning,
+                                                    duration=5)
+        reload_companies_a()
+        reload_companies_b()
+        reload_active()
+        reload_conf()
+        self.addndadlg.ndaCompanyAFilterLineEdit.textEdited.connect(reload_companies_a)
+        self.addndadlg.ndaCompanyBFilterLineEdit.textEdited.connect(reload_companies_b)
+        self.addndadlg.ndaRefreshCompaniesButton.clicked.connect(reload_companies_a)
+        self.addndadlg.ndaRefreshCompaniesButton.clicked.connect(reload_companies_b)
+        self.addndadlg.ndaAddCompanyButton.clicked.connect(self.add_company)
+        self.addndadlg.insertNdaButton.clicked.connect(generate_and_execute_sql)
+        self.addndadlg.show()
+
+
+    def delete_well_attrs(self):
+        selected_well_attr_rows = list(set([x.row() for x in self.wind.wellAttrTableWidget.selectedItems()]))
+        if selected_well_attr_rows:
+            selected_well_attr_ids = [y['well_attribute_id'] for y in [self.well_attributes_view_list[x] for x in selected_well_attr_rows]]
+            sql = f"delete from {self.well_attributes} where well_attribute_id in ({', '.join([str(x) for x in selected_well_attr_ids])});"
+            self.sql = sql
+            mwidget = self.iface.messageBar().createMessage(f"Удалить {str(len(selected_well_attr_ids))} выбранных атрибутов?")
+            mbutton = QPushButton(mwidget)
+            mbutton.setText('Подтвердить')
+            mbutton.pressed.connect(self.execute_sql)
+            mwidget.layout().addWidget(mbutton)
+            self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один атрибут скважин',
+                                                level=Qgis.Warning,
+                                                duration=3)
+
+
+    def update_well_attr(self):
+        selected_well_attr_rows = list(set([x.row() for x in self.wind.wellAttrTableWidget.selectedItems()]))
+        if selected_well_attr_rows:
+            self.updatewellattrdlg = AddWellAttrDialog()
+            self.updatewellattrdlg.wellAttrRefreshAttrTypesButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+            self.updatewellattrdlg.wellAttrRefreshLinksButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+            self.updatewellattrdlg.wellAttrRefreshNdaButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+            self.updatewellattrdlg.setWindowTitle('Изменить атрибуты скважин')
+            self.updatewellattrdlg.insertWellAttrButton.setText('Изменить атрибуты скважин')
+            
+            selected_well_attrs = [self.well_attributes_view_list[x] for x in selected_well_attr_rows]
+            self.updatewellattrdlg.selected_well_attrs_ids = [x['well_attribute_id'] for x in selected_well_attrs]
+
+            self.updatewellattrdlg.well_attr_types_list = None
+            self.updatewellattrdlg.links_list = None
+            self.updatewellattrdlg.data_quality_list = None
+            self.updatewellattrdlg.nda_view_list = None
+            
+            def reload_well_attr_types():
+                self.updatewellattrdlg.wellAttrTypeComboBox.clear()
+                filter_str = self.updatewellattrdlg.wellAttrTypeFilterLineEdit.text().strip().lower().replace("'", "''")
+                sql = f"select * from {self.well_attribute_names}"
+                if filter_str:
+                    sql += f" where (LOWER(well_attribute_name_ru) like '%{filter_str}%'" \
+                           f" or LOWER(well_attribute_name_en) like '%{filter_str}%'" \
+                           f")"
+                sql += ';'
+                try:
+                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                        with pgconn.cursor() as cur:
+                            cur.execute(sql)
+                            self.updatewellattrdlg.well_attr_types_list = list(cur.fetchall())
+                            self.updatewellattrdlg.wellAttrTypeComboBox.addItem('--Выберите тип--')
+                            self.updatewellattrdlg.wellAttrTypeComboBox.addItems([x['well_attribute_name_ru'] for x in self.updatewellattrdlg.well_attr_types_list])
+                            self.updatewellattrdlg.wellAttrTypeComboBox.setCurrentText(selected_well_attrs[0]['well_attribute_name'])
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Не удалось загрузить данные о типах атрибутов скважин из базы ' + sql,
+                                                        level=Qgis.Critical,
+                                                        duration=3)
+
+            def reload_well_attr_value():
+                if selected_well_attrs[0]['well_attribute_value']:
+                    self.updatewellattrdlg.wellAttrValuePlainTextEdit.setPlainText(selected_well_attrs[0]['well_attribute_value'])
+
+            def reload_links():
+                self.updatewellattrdlg.wellAttrLinkComboBox.clear()
+                filter_str = self.updatewellattrdlg.wellAttrLinkLineEdit.text().strip().lower().replace("'", "''")
+                sql = f"select * from {self.links}"
+                if filter_str:
+                    sql += f" where LOWER(link) like '%{filter_str}%'"
+                sql += ';'
+                try:
+                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                        with pgconn.cursor() as cur:
+                            cur.execute(sql)
+                            self.updatewellattrdlg.links_list = list(cur.fetchall())
+                            self.updatewellattrdlg.wellAttrLinkComboBox.addItem('--Выберите ссылку--')
+                            self.updatewellattrdlg.wellAttrLinkComboBox.addItems([x['link'] for x in self.updatewellattrdlg.links_list])
+                    if selected_well_attrs[0]['link']:
+                        self.updatewellattrdlg.wellAttrLinkComboBox.setCurrentText(selected_well_attrs[0]['link'])
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Не удалось загрузить данные о ссылках из базы ' + sql,
+                                                        level=Qgis.Critical,
+                                                        duration=3)
+
+            def reload_well_attr_source():
+                if selected_well_attrs[0]['source']:
+                    self.updatewellattrdlg.wellAttrSourcePlainTextEdit.setPlainText(selected_well_attrs[0]['source'])
+
+            def reload_well_attr_date():
+                if selected_well_attrs[0]['datestamp']:
+                    a_date = selected_well_attrs[0]['datestamp']
+                    self.updatewellattrdlg.wellAttrDateCalendarWidget.setSelectedDate(QDate(a_date.year, a_date.month, a_date.day))
+            
+            def reload_data_quality():
+                self.updatewellattrdlg.wellAttrDataQualityComboBox.clear()
+                sql = f"select * from {self.data_quality} order by quality_range DESC"
+                sql += ';'
+                try:
+                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                        with pgconn.cursor() as cur:
+                            cur.execute(sql)
+                            self.updatewellattrdlg.data_quality_list = list(cur.fetchall())
+                            self.updatewellattrdlg.wellAttrDataQualityComboBox.addItem('--Выберите качество данных--')
+                            self.updatewellattrdlg.wellAttrDataQualityComboBox.addItems([x['name_ru'] for x in self.updatewellattrdlg.data_quality_list])
+                    if selected_well_attrs[0]['data_quality']:
+                        self.updatewellattrdlg.wellAttrDataQualityComboBox.setCurrentText(selected_well_attrs[0]['data_quality'])
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Не удалось загрузить данные о качестве данных из базы ' + sql,
+                                                        level=Qgis.Critical,
+                                                        duration=3)
+            
+            def reload_nda():
+                self.updatewellattrdlg.wellAttrNdaComboBox.clear()
+                sql = f"select * from {self.nda_view}"
+                filter_str = self.updatewellattrdlg.wellAttrNdaFilterLineEdit.text().strip().lower().replace("'", "''")
+                if filter_str:
+                    sql += f" where (LOWER(name) like '%{filter_str}%'" \
+                           f" or LOWER(number) like '%{filter_str}%'" \
+                           f" or LOWER(company_a_name) like '%{filter_str}%'" \
+                           f" or LOWER(company_a_shortname) like '%{filter_str}%'" \
+                           f" or LOWER(company_b_name) like '%{filter_str}%'" \
+                           f" or LOWER(company_b_shortname) like '%{filter_str}%'" \
+                           f" or LOWER(date_signed::text) like '%{filter_str}%'" \
+                           f")"
+                sql += ' order by date_signed DESC;'
+                try:
+                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                        with pgconn.cursor() as cur:
+                            cur.execute(sql)
+                            self.updatewellattrdlg.nda_view_list = list(cur.fetchall())
+                            self.updatewellattrdlg.wellAttrNdaComboBox.addItem('--Выберите NDA--')
+                            nda_combo_values = []
+                            for nda in self.updatewellattrdlg.nda_view_list:
+                                nda_str = ''
+                                if nda['company_a_shortname']:
+                                    nda_str += nda['company_a_shortname']
+                                if nda['company_b_shortname']:
+                                    if nda['company_a_shortname']:
+                                        nda_str += ' - '
+                                    nda_str += nda['company_b_shortname']
+                                if nda['date_signed']:
+                                    nda_str += f" от {str(nda['date_signed'])}"
+                                nda_combo_values.append(nda_str)
+                            self.updatewellattrdlg.wellAttrNdaComboBox.addItems(nda_combo_values)
+                    if selected_well_attrs[0]['nda_id']:
+                        a_nda_id = selected_well_attrs[0]['nda_id']
+                        a_nda = [x for x in self.updatewellattrdlg.nda_view_list if x['nda_id'] == a_nda_id][0]
+                        self.updatewellattrdlg.wellAttrNdaComboBox.setCurrentIndex(self.updatewellattrdlg.nda_view_list.index(a_nda))
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Не удалось загрузить данные о качестве данных из базы ' + sql,
+                                                        level=Qgis.Critical,
+                                                        duration=3)
+
+            def reload_well_attr_comments():
+                if selected_well_attrs[0]['comments']:
+                    self.updatewellattrdlg.wellAttrCommentsPlainTextEdit.setPlainText(selected_well_attrs[0]['comments'])
+            
+            def generate_and_execute_sql():
+                # selected_well_rows = list(set([x.row() for x in self.wind.wellsTableWidget.selectedItems()]))
+                # selected_well_index = self.updatewellattrdlg.wellAttrWellComboBox.currentIndex()
+                # selected_well_id = self.updatewellattrdlg.wells_view_list[selected_well_index]['well_id']
+                # selected_well_ids = [str(self.wells_view_list[x]['well_id']) for x in selected_well_rows]
+                selected_well_attr_name_index = self.updatewellattrdlg.wellAttrTypeComboBox.currentIndex() - 1
+                new_well_attr_value = self.updatewellattrdlg.wellAttrValuePlainTextEdit.toPlainText().strip().replace("'", "''")
+                selected_link_index = self.updatewellattrdlg.wellAttrLinkComboBox.currentIndex() - 1
+                new_source = self.updatewellattrdlg.wellAttrSourcePlainTextEdit.toPlainText().strip().replace("'", "''")
+                new_datestamp = self.updatewellattrdlg.wellAttrDateCalendarWidget.selectedDate().toString('yyyy-MM-dd')
+                selected_data_quality_index = self.updatewellattrdlg.wellAttrDataQualityComboBox.currentIndex() - 1
+                selected_nda_index = self.updatewellattrdlg.wellAttrNdaComboBox.currentIndex() - 1
+                new_comments = self.updatewellattrdlg.wellAttrSourcePlainTextEdit.toPlainText().strip().replace("'", "''")
+                if selected_well_attr_name_index >= 0 and new_well_attr_value:
+                    selected_well_attr_name_id = self.updatewellattrdlg.well_attr_types_list[selected_well_attr_name_index]['well_attribute_name_id']
+                    # fields_to_update = ['well_id', 'well_attribute_name_id', 'well_attribute_value']
+                    fields_to_update = ['well_attribute_name_id', 'well_attribute_value']
+                    # values_to_insert = [str(selected_well_id), str(selected_well_attr_name_id), new_well_attr_value]
+                    values_to_insert = [str(selected_well_attr_name_id), new_well_attr_value]
+                    if selected_link_index >= 0:
+                        selected_link_id = self.updatewellattrdlg.links_list[selected_link_index]['link_id']
+                        fields_to_update.append('link_id')
+                        values_to_insert.append(str(selected_link_id))
+                    if new_source:
+                        fields_to_update.append('source')
+                        values_to_insert.append(f"'{new_source}'")
+                    if new_datestamp != '1970-01-01':
+                        fields_to_update.append('datestamp')
+                        values_to_insert.append(f"'{new_datestamp}'")
+                    if selected_data_quality_index >= 0:
+                        selected_data_quality_id = self.updatewellattrdlg.data_quality_list[selected_data_quality_index]['data_quality_id']
+                        fields_to_update.append('data_quality_id')
+                        values_to_insert.append(str(selected_data_quality_id))
+                    if selected_nda_index >= 0:
+                        selected_nda_id = self.updatewellattrdlg.nda_view_list[selected_nda_index]['nda_id']
+                        fields_to_update.append('nda_id')
+                        values_to_insert.append(str(selected_nda_id))
+                    if new_comments:
+                        fields_to_update.append('comments')
+                        values_to_insert.append(f"'{new_comments}'")
+                    # sql = f"insert into {self.well_attributes}({', '.join(fields_to_update)}) values({', '.join(values_to_insert)});"
+                    # sql = f"insert into {self.well_attributes}(well_id, {', '.join(fields_to_update)}) values{', '.join(['(' + x + ', ' + ', '.join([y for y in values_to_insert]) + ')' for x in selected_well_ids])};"
+                    sql = f"update {self.well_attributes} set {', '.join([x[0] + ' = ' + x[1] for x in zip(fields_to_update, values_to_insert)])}" \
+                          f" where well_attribute_id in ({', '.join([str(x) for x in self.updatewellattrdlg.selected_well_attrs_ids])});"
+                    self.sql = sql
+                    # mwidget = self.iface.messageBar().createMessage(f"Добавить в базу атрибут "
+                    #                                                 f"{self.updatewellattrdlg.well_attr_types_list[selected_well_attr_name_index]['well_attribute_name_ru']}"
+                    #                                                 f" для скважины {self.updatewellattrdlg.wells_view_list[selected_well_index]['name_ru']}?")
+                    mwidget = self.iface.messageBar().createMessage(f"Изменить {str(len(self.updatewellattrdlg.selected_well_attrs_ids))} выбранных атрибутов?"
+                                                                    f" Внимание! указанные значение будут присвоены всем выбранным атрибутам!")
+                    mbutton = QPushButton(mwidget)
+                    mbutton.setText('Подтвердить')
+                    mbutton.pressed.connect(self.execute_sql)
+                    self.updatewellattrdlg.accept()
+                    mwidget.layout().addWidget(mbutton)
+                    self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Укажите тип и значение атрибута',
+                                                        level=Qgis.Critical,
+                                                        duration=3)
+
+            reload_well_attr_types()
+            reload_well_attr_value()
+            reload_links()
+            reload_well_attr_source()
+            reload_well_attr_date()
+            reload_data_quality()
+            reload_nda()
+            reload_well_attr_comments()
+
+            self.updatewellattrdlg.wellAttrTypeFilterLineEdit.textEdited.connect(reload_well_attr_types)
+            self.updatewellattrdlg.wellAttrRefreshAttrTypesButton.clicked.connect(reload_well_attr_types)
+            self.updatewellattrdlg.wellAttrNewAttrTypeButton.clicked.connect(self.add_well_attr_name)
+            self.updatewellattrdlg.wellAttrLinkLineEdit.textEdited.connect(reload_links)
+            self.updatewellattrdlg.wellAttrRefreshLinksButton.clicked.connect(reload_links)
+            self.updatewellattrdlg.wellAttrNewLinkButton.clicked.connect(self.add_link)
+            self.updatewellattrdlg.wellAttrNdaFilterLineEdit.textEdited.connect(reload_nda)
+            self.updatewellattrdlg.wellAttrRefreshNdaButton.clicked.connect(reload_nda)
+            self.updatewellattrdlg.wellAttrNewNdaButton.clicked.connect(self.add_nda)
+            self.updatewellattrdlg.insertWellAttrButton.clicked.connect(generate_and_execute_sql)
+
+            self.updatewellattrdlg.show()
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один набор данных скважин', level=Qgis.Warning,
+                                                duration=3)
+
+
     def add_well_attr(self):
         selected_well_rows = list(set([x.row() for x in self.wind.wellsTableWidget.selectedItems()]))
         if selected_well_rows:
@@ -2796,6 +3182,7 @@ class GeoDM:
             self.addwellattrdlg.wellAttrNdaFilterLineEdit.textEdited.connect(reload_nda)
             self.addwellattrdlg.wellAttrRefreshNdaButton.clicked.connect(reload_nda)
             self.addwellattrdlg.insertWellAttrButton.clicked.connect(generate_and_execute_sql)
+            self.addwellattrdlg.wellAttrNewNdaButton.clicked.connect(self.add_nda)
 
             self.addwellattrdlg.show()
         else:
@@ -4399,6 +4786,8 @@ class GeoDM:
             self.dockwindwells.wellAttrsFilterLineEdit.textEdited.connect(self.refresh_well_attrs)
             self.dockwindwells.refreshWellAttrsButton.clicked.connect(self.refresh_well_attrs)
             self.dockwindwells.addWellAttrPushButton.clicked.connect(self.add_well_attr)
+            self.dockwindwells.updateWellAttrPushButton.clicked.connect(self.update_well_attr)
+            self.dockwindwells.deleteWellAttrPushButton.clicked.connect(self.delete_well_attrs)
 
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwindwells)
             self.dockwindwells.adjustSize()

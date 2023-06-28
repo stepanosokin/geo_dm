@@ -223,3 +223,13 @@ class AddWellAttrNameDialog(QtWidgets.QDialog, FORM_CLASS_ADD_WELL_ATTR_NAME):
         """Constructor."""
         super(AddWellAttrNameDialog, self).__init__(parent)
         self.setupUi(self)
+
+
+FORM_CLASS_ADD_NDA, _ = uic.loadUiType(os.path.join(
+    os.path.dirname(__file__), 'geo_dm_add_nda_dialog.ui'))
+
+class AddNdaDialog(QtWidgets.QDialog, FORM_CLASS_ADD_NDA):
+    def __init__(self, parent=None):
+        """Constructor."""
+        super(AddNdaDialog, self).__init__(parent)
+        self.setupUi(self)
