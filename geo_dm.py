@@ -799,8 +799,16 @@ class GeoDM:
                     # Это чтобы обновить атрибуты выбранных объектов
                     if self.mode == 'proc':
                         self.set_selected_proc_features_list()
+                        self.refresh_processings()
+                        self.refresh_surveys()
+                        self.refresh_datasets()
                     elif self.mode == 'field':
                         self.set_selected_field_features_list()
+                        self.refresh_surveys()
+                        self.refresh_datasets()
+                    elif self.mode == 'wells':
+                        self.refresh_wells()
+                        self.refresh_well_attrs()
 
                     # Это чтобы убрать лишние уведомления
                     [self.iface.messageBar().popWidget(x) for x in self.iface.messageBar().items()]
@@ -2884,34 +2892,46 @@ class GeoDM:
                 new_datestamp = self.updatewellattrdlg.wellAttrDateCalendarWidget.selectedDate().toString('yyyy-MM-dd')
                 selected_data_quality_index = self.updatewellattrdlg.wellAttrDataQualityComboBox.currentIndex() - 1
                 selected_nda_index = self.updatewellattrdlg.wellAttrNdaComboBox.currentIndex() - 1
-                new_comments = self.updatewellattrdlg.wellAttrSourcePlainTextEdit.toPlainText().strip().replace("'", "''")
+                new_comments = self.updatewellattrdlg.wellAttrCommentsPlainTextEdit.toPlainText().strip().replace("'", "''")
                 if selected_well_attr_name_index >= 0 and new_well_attr_value:
                     selected_well_attr_name_id = self.updatewellattrdlg.well_attr_types_list[selected_well_attr_name_index]['well_attribute_name_id']
                     # fields_to_update = ['well_id', 'well_attribute_name_id', 'well_attribute_value']
                     fields_to_update = ['well_attribute_name_id', 'well_attribute_value']
                     # values_to_insert = [str(selected_well_id), str(selected_well_attr_name_id), new_well_attr_value]
-                    values_to_insert = [str(selected_well_attr_name_id), new_well_attr_value]
+                    values_to_insert = [str(selected_well_attr_name_id), f"'{new_well_attr_value}'"]
                     if selected_link_index >= 0:
                         selected_link_id = self.updatewellattrdlg.links_list[selected_link_index]['link_id']
-                        fields_to_update.append('link_id')
-                        values_to_insert.append(str(selected_link_id))
+                    else:
+                        selected_link_id = 'NULL'
+                    fields_to_update.append('link_id')
+                    values_to_insert.append(str(selected_link_id))
+                    fields_to_update.append('source')
                     if new_source:
-                        fields_to_update.append('source')
                         values_to_insert.append(f"'{new_source}'")
+                    else:
+                        values_to_insert.append('NULL')
+                    fields_to_update.append('datestamp')
                     if new_datestamp != '1970-01-01':
-                        fields_to_update.append('datestamp')
                         values_to_insert.append(f"'{new_datestamp}'")
+                    else:
+                        values_to_insert.append('NULL')
+                    fields_to_update.append('data_quality_id')
                     if selected_data_quality_index >= 0:
                         selected_data_quality_id = self.updatewellattrdlg.data_quality_list[selected_data_quality_index]['data_quality_id']
-                        fields_to_update.append('data_quality_id')
-                        values_to_insert.append(str(selected_data_quality_id))
+                    else:
+                        selected_data_quality_id = 'NULL'
+                    values_to_insert.append(str(selected_data_quality_id))
+                    fields_to_update.append('nda_id')
                     if selected_nda_index >= 0:
                         selected_nda_id = self.updatewellattrdlg.nda_view_list[selected_nda_index]['nda_id']
-                        fields_to_update.append('nda_id')
-                        values_to_insert.append(str(selected_nda_id))
+                    else:
+                        selected_nda_id = 'NULL'
+                    values_to_insert.append(str(selected_nda_id))
+                    fields_to_update.append('comments')
                     if new_comments:
-                        fields_to_update.append('comments')
                         values_to_insert.append(f"'{new_comments}'")
+                    else:
+                        values_to_insert.append('NULL')
                     # sql = f"insert into {self.well_attributes}({', '.join(fields_to_update)}) values({', '.join(values_to_insert)});"
                     # sql = f"insert into {self.well_attributes}(well_id, {', '.join(fields_to_update)}) values{', '.join(['(' + x + ', ' + ', '.join([y for y in values_to_insert]) + ')' for x in selected_well_ids])};"
                     sql = f"update {self.well_attributes} set {', '.join([x[0] + ' = ' + x[1] for x in zip(fields_to_update, values_to_insert)])}" \
@@ -3117,13 +3137,13 @@ class GeoDM:
                 new_datestamp = self.addwellattrdlg.wellAttrDateCalendarWidget.selectedDate().toString('yyyy-MM-dd')
                 selected_data_quality_index = self.addwellattrdlg.wellAttrDataQualityComboBox.currentIndex() - 1
                 selected_nda_index = self.addwellattrdlg.wellAttrNdaComboBox.currentIndex() - 1
-                new_comments = self.addwellattrdlg.wellAttrSourcePlainTextEdit.toPlainText().strip().replace("'", "''")
+                new_comments = self.addwellattrdlg.wellAttrCommentsPlainTextEdit.toPlainText().strip().replace("'", "''")
                 if selected_well_attr_name_index >= 0 and new_well_attr_value:
                     selected_well_attr_name_id = self.addwellattrdlg.well_attr_types_list[selected_well_attr_name_index]['well_attribute_name_id']
                     # fields_to_update = ['well_id', 'well_attribute_name_id', 'well_attribute_value']
                     fields_to_update = ['well_attribute_name_id', 'well_attribute_value']
                     # values_to_insert = [str(selected_well_id), str(selected_well_attr_name_id), new_well_attr_value]
-                    values_to_insert = [str(selected_well_attr_name_id), new_well_attr_value]
+                    values_to_insert = [str(selected_well_attr_name_id), f"'{new_well_attr_value}'"]
                     if selected_link_index >= 0:
                         selected_link_id = self.addwellattrdlg.links_list[selected_link_index]['link_id']
                         fields_to_update.append('link_id')
