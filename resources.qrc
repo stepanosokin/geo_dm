@@ -8,5 +8,6 @@
 		<file>geometry.png</file>
 		<file>earthquake.png</file>
 		<file>oil-rig.png</file>
+		<file>document.png</file>
     </qresource>
 </RCC>

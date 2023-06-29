@@ -233,3 +233,13 @@ class AddNdaDialog(QtWidgets.QDialog, FORM_CLASS_ADD_NDA):
         """Constructor."""
         super(AddNdaDialog, self).__init__(parent)
         self.setupUi(self)
+
+
+FORM_CLASS_DOCK_AUX, _ = uic.loadUiType(os.path.join(
+    os.path.dirname(__file__), 'geo_dm_dockwidget_aux.ui'))
+
+class GeoDMDockWidgetAux(QtWidgets.QDockWidget, FORM_CLASS_DOCK_AUX):
+    def __init__(self, parent=None):
+        """Constructor."""
+        super(GeoDMDockWidgetAux, self).__init__(parent)
+        self.setupUi(self)

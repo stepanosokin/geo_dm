@@ -1,0 +1,1446 @@
+<!DOCTYPE qgis-layer-definition>
+<qlr>
+  <layer-tree-group name="" checked="Qt::Checked" expanded="1" groupLayer="">
+    <customproperties>
+      <Option/>
+    </customproperties>
+    <layer-tree-group name="Материалы по скважинам" checked="Qt::Checked" expanded="1" groupLayer="">
+      <customproperties>
+        <Option/>
+      </customproperties>
+      <layer-tree-layer name="Точки скважин" legend_exp="" legend_split_behavior="0" patch_size="-1,-1" source="dbname='vgdb' host=192.168.117.3 port=5432 sslmode=disable key='gid' srid=4326 type=Point checkPrimaryKeyUnicity='1' table=&quot;dm&quot;.&quot;wells_view&quot; (geom)" providerKey="postgres" checked="Qt::Checked" expanded="1" id="______________8fa128ac_dd8a_41c8_a30a_9cecc48ffc7e">
+        <customproperties>
+          <Option/>
+        </customproperties>
+      </layer-tree-layer>
+      <layer-tree-group name="Вспомогательные таблицы" checked="Qt::Unchecked" expanded="1" groupLayer="">
+        <customproperties>
+          <Option/>
+        </customproperties>
+        <layer-tree-layer name="well_attributes_view" legend_exp="" legend_split_behavior="0" patch_size="-1,-1" source="dbname='vgdb' host=192.168.117.3 port=5432 sslmode=disable key='gid' checkPrimaryKeyUnicity='1' table=&quot;dm&quot;.&quot;well_attributes_view&quot;" providerKey="postgres" checked="Qt::Checked" expanded="1" id="well_attributes_view_3bb32882_1928_4582_adef_d4a8d9a5836f">
+          <customproperties>
+            <Option/>
+          </customproperties>
+        </layer-tree-layer>
+      </layer-tree-group>
+    </layer-tree-group>
+  </layer-tree-group>
+  <maplayers>
+    <maplayer refreshOnNotifyMessage="" maxScale="0" simplifyMaxScale="1" minScale="100000000" hasScaleBasedVisibilityFlag="0" simplifyLocal="1" wkbType="Point" readOnly="0" simplifyAlgorithm="0" styleCategories="AllStyleCategories" legendPlaceholderImage="" autoRefreshEnabled="0" type="vector" autoRefreshTime="0" geometry="Point" refreshOnNotifyEnabled="0" simplifyDrawingHints="0" simplifyDrawingTol="1" labelsEnabled="1" symbologyReferenceScale="-1">
+      <extent>
+        <xmin>37.63300433783093268</xmin>
+        <ymin>38.19835721777318582</ymin>
+        <xmax>73.84336932715440582</xmax>
+        <ymax>66.33255768477540926</ymax>
+      </extent>
+      <wgs84extent>
+        <xmin>37.63300433783093268</xmin>
+        <ymin>38.19835721777318582</ymin>
+        <xmax>73.84336932715440582</xmax>
+        <ymax>66.33255768477540926</ymax>
+      </wgs84extent>
+      <id>______________8fa128ac_dd8a_41c8_a30a_9cecc48ffc7e</id>
+      <datasource>dbname='vgdb' host=192.168.117.3 port=5432 sslmode=disable key='gid' srid=4326 type=Point checkPrimaryKeyUnicity='1' table="dm"."wells_view" (geom)</datasource>
+      <keywordList>
+        <value></value>
+      </keywordList>
+      <layername>Точки скважин</layername>
+      <srs>
+        <spatialrefsys nativeFormat="Wkt">
+          <wkt>GEOGCRS["WGS 84",ENSEMBLE["World Geodetic System 1984 ensemble",MEMBER["World Geodetic System 1984 (Transit)"],MEMBER["World Geodetic System 1984 (G730)"],MEMBER["World Geodetic System 1984 (G873)"],MEMBER["World Geodetic System 1984 (G1150)"],MEMBER["World Geodetic System 1984 (G1674)"],MEMBER["World Geodetic System 1984 (G1762)"],MEMBER["World Geodetic System 1984 (G2139)"],ELLIPSOID["WGS 84",6378137,298.257223563,LENGTHUNIT["metre",1]],ENSEMBLEACCURACY[2.0]],PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.0174532925199433]],CS[ellipsoidal,2],AXIS["geodetic latitude (Lat)",north,ORDER[1],ANGLEUNIT["degree",0.0174532925199433]],AXIS["geodetic longitude (Lon)",east,ORDER[2],ANGLEUNIT["degree",0.0174532925199433]],USAGE[SCOPE["Horizontal component of 3D system."],AREA["World."],BBOX[-90,-180,90,180]],ID["EPSG",4326]]</wkt>
+          <proj4>+proj=longlat +datum=WGS84 +no_defs</proj4>
+          <srsid>3452</srsid>
+          <srid>4326</srid>
+          <authid>EPSG:4326</authid>
+          <description>WGS 84</description>
+          <projectionacronym>longlat</projectionacronym>
+          <ellipsoidacronym>EPSG:7030</ellipsoidacronym>
+          <geographicflag>true</geographicflag>
+        </spatialrefsys>
+      </srs>
+      <resourceMetadata>
+        <identifier></identifier>
+        <parentidentifier></parentidentifier>
+        <language></language>
+        <type>dataset</type>
+        <title></title>
+        <abstract></abstract>
+        <contact>
+          <name></name>
+          <organization></organization>
+          <position></position>
+          <voice></voice>
+          <fax></fax>
+          <email></email>
+          <role></role>
+        </contact>
+        <links/>
+        <fees></fees>
+        <encoding></encoding>
+        <crs>
+          <spatialrefsys nativeFormat="Wkt">
+            <wkt>GEOGCRS["WGS 84",ENSEMBLE["World Geodetic System 1984 ensemble",MEMBER["World Geodetic System 1984 (Transit)"],MEMBER["World Geodetic System 1984 (G730)"],MEMBER["World Geodetic System 1984 (G873)"],MEMBER["World Geodetic System 1984 (G1150)"],MEMBER["World Geodetic System 1984 (G1674)"],MEMBER["World Geodetic System 1984 (G1762)"],MEMBER["World Geodetic System 1984 (G2139)"],ELLIPSOID["WGS 84",6378137,298.257223563,LENGTHUNIT["metre",1]],ENSEMBLEACCURACY[2.0]],PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.0174532925199433]],CS[ellipsoidal,2],AXIS["geodetic latitude (Lat)",north,ORDER[1],ANGLEUNIT["degree",0.0174532925199433]],AXIS["geodetic longitude (Lon)",east,ORDER[2],ANGLEUNIT["degree",0.0174532925199433]],USAGE[SCOPE["Horizontal component of 3D system."],AREA["World."],BBOX[-90,-180,90,180]],ID["EPSG",4326]]</wkt>
+            <proj4>+proj=longlat +datum=WGS84 +no_defs</proj4>
+            <srsid>3452</srsid>
+            <srid>4326</srid>
+            <authid>EPSG:4326</authid>
+            <description>WGS 84</description>
+            <projectionacronym>longlat</projectionacronym>
+            <ellipsoidacronym>EPSG:7030</ellipsoidacronym>
+            <geographicflag>true</geographicflag>
+          </spatialrefsys>
+        </crs>
+        <extent>
+          <spatial maxx="0" crs="EPSG:4326" maxy="0" dimensions="2" minz="0" minx="0" miny="0" maxz="0"/>
+          <temporal>
+            <period>
+              <start></start>
+              <end></end>
+            </period>
+          </temporal>
+        </extent>
+      </resourceMetadata>
+      <provider encoding="">postgres</provider>
+      <vectorjoins/>
+      <layerDependencies/>
+      <dataDependencies/>
+      <expressionfields/>
+      <map-layer-style-manager current="default">
+        <map-layer-style name="default"/>
+      </map-layer-style-manager>
+      <auxiliaryLayer/>
+      <metadataUrls/>
+      <flags>
+        <Identifiable>1</Identifiable>
+        <Removable>1</Removable>
+        <Searchable>1</Searchable>
+        <Private>0</Private>
+      </flags>
+      <temporal endExpression="" fixedDuration="0" startExpression="" startField="" mode="0" endField="" durationUnit="min" durationField="" limitMode="0" accumulate="0" enabled="0">
+        <fixedRange>
+          <start></start>
+          <end></end>
+        </fixedRange>
+      </temporal>
+      <elevation extrusion="0" binding="Centroid" type="IndividualFeatures" respectLayerSymbol="1" extrusionEnabled="0" zoffset="0" zscale="1" clamping="Terrain" showMarkerSymbolInSurfacePlots="0" symbology="Line">
+        <data-defined-properties>
+          <Option type="Map">
+            <Option name="name" type="QString" value=""/>
+            <Option name="properties"/>
+            <Option name="type" type="QString" value="collection"/>
+          </Option>
+        </data-defined-properties>
+        <profileLineSymbol>
+          <symbol alpha="1" clip_to_extent="1" name="" type="line" force_rhr="0" is_animated="0" frame_rate="10">
+            <data_defined_properties>
+              <Option type="Map">
+                <Option name="name" type="QString" value=""/>
+                <Option name="properties"/>
+                <Option name="type" type="QString" value="collection"/>
+              </Option>
+            </data_defined_properties>
+            <layer locked="0" class="SimpleLine" enabled="1" pass="0">
+              <Option type="Map">
+                <Option name="align_dash_pattern" type="QString" value="0"/>
+                <Option name="capstyle" type="QString" value="square"/>
+                <Option name="customdash" type="QString" value="5;2"/>
+                <Option name="customdash_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="customdash_unit" type="QString" value="MM"/>
+                <Option name="dash_pattern_offset" type="QString" value="0"/>
+                <Option name="dash_pattern_offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="dash_pattern_offset_unit" type="QString" value="MM"/>
+                <Option name="draw_inside_polygon" type="QString" value="0"/>
+                <Option name="joinstyle" type="QString" value="bevel"/>
+                <Option name="line_color" type="QString" value="196,60,57,255"/>
+                <Option name="line_style" type="QString" value="solid"/>
+                <Option name="line_width" type="QString" value="0.6"/>
+                <Option name="line_width_unit" type="QString" value="MM"/>
+                <Option name="offset" type="QString" value="0"/>
+                <Option name="offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="offset_unit" type="QString" value="MM"/>
+                <Option name="ring_filter" type="QString" value="0"/>
+                <Option name="trim_distance_end" type="QString" value="0"/>
+                <Option name="trim_distance_end_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="trim_distance_end_unit" type="QString" value="MM"/>
+                <Option name="trim_distance_start" type="QString" value="0"/>
+                <Option name="trim_distance_start_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="trim_distance_start_unit" type="QString" value="MM"/>
+                <Option name="tweak_dash_pattern_on_corners" type="QString" value="0"/>
+                <Option name="use_custom_dash" type="QString" value="0"/>
+                <Option name="width_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+              </Option>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option name="name" type="QString" value=""/>
+                  <Option name="properties"/>
+                  <Option name="type" type="QString" value="collection"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </profileLineSymbol>
+        <profileFillSymbol>
+          <symbol alpha="1" clip_to_extent="1" name="" type="fill" force_rhr="0" is_animated="0" frame_rate="10">
+            <data_defined_properties>
+              <Option type="Map">
+                <Option name="name" type="QString" value=""/>
+                <Option name="properties"/>
+                <Option name="type" type="QString" value="collection"/>
+              </Option>
+            </data_defined_properties>
+            <layer locked="0" class="SimpleFill" enabled="1" pass="0">
+              <Option type="Map">
+                <Option name="border_width_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="color" type="QString" value="196,60,57,255"/>
+                <Option name="joinstyle" type="QString" value="bevel"/>
+                <Option name="offset" type="QString" value="0,0"/>
+                <Option name="offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="offset_unit" type="QString" value="MM"/>
+                <Option name="outline_color" type="QString" value="140,43,41,255"/>
+                <Option name="outline_style" type="QString" value="solid"/>
+                <Option name="outline_width" type="QString" value="0.2"/>
+                <Option name="outline_width_unit" type="QString" value="MM"/>
+                <Option name="style" type="QString" value="solid"/>
+              </Option>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option name="name" type="QString" value=""/>
+                  <Option name="properties"/>
+                  <Option name="type" type="QString" value="collection"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </profileFillSymbol>
+        <profileMarkerSymbol>
+          <symbol alpha="1" clip_to_extent="1" name="" type="marker" force_rhr="0" is_animated="0" frame_rate="10">
+            <data_defined_properties>
+              <Option type="Map">
+                <Option name="name" type="QString" value=""/>
+                <Option name="properties"/>
+                <Option name="type" type="QString" value="collection"/>
+              </Option>
+            </data_defined_properties>
+            <layer locked="0" class="SimpleMarker" enabled="1" pass="0">
+              <Option type="Map">
+                <Option name="angle" type="QString" value="0"/>
+                <Option name="cap_style" type="QString" value="square"/>
+                <Option name="color" type="QString" value="196,60,57,255"/>
+                <Option name="horizontal_anchor_point" type="QString" value="1"/>
+                <Option name="joinstyle" type="QString" value="bevel"/>
+                <Option name="name" type="QString" value="diamond"/>
+                <Option name="offset" type="QString" value="0,0"/>
+                <Option name="offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="offset_unit" type="QString" value="MM"/>
+                <Option name="outline_color" type="QString" value="140,43,41,255"/>
+                <Option name="outline_style" type="QString" value="solid"/>
+                <Option name="outline_width" type="QString" value="0.2"/>
+                <Option name="outline_width_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="outline_width_unit" type="QString" value="MM"/>
+                <Option name="scale_method" type="QString" value="diameter"/>
+                <Option name="size" type="QString" value="3"/>
+                <Option name="size_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="size_unit" type="QString" value="MM"/>
+                <Option name="vertical_anchor_point" type="QString" value="1"/>
+              </Option>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option name="name" type="QString" value=""/>
+                  <Option name="properties"/>
+                  <Option name="type" type="QString" value="collection"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </profileMarkerSymbol>
+      </elevation>
+      <renderer-v2 symbollevels="0" forceraster="0" enableorderby="0" type="singleSymbol" referencescale="-1">
+        <symbols>
+          <symbol alpha="1" clip_to_extent="1" name="0" type="marker" force_rhr="0" is_animated="0" frame_rate="10">
+            <data_defined_properties>
+              <Option type="Map">
+                <Option name="name" type="QString" value=""/>
+                <Option name="properties"/>
+                <Option name="type" type="QString" value="collection"/>
+              </Option>
+            </data_defined_properties>
+            <layer locked="0" class="SimpleMarker" enabled="1" pass="0">
+              <Option type="Map">
+                <Option name="angle" type="QString" value="0"/>
+                <Option name="cap_style" type="QString" value="square"/>
+                <Option name="color" type="QString" value="219,30,42,255"/>
+                <Option name="horizontal_anchor_point" type="QString" value="1"/>
+                <Option name="joinstyle" type="QString" value="bevel"/>
+                <Option name="name" type="QString" value="circle"/>
+                <Option name="offset" type="QString" value="0,0"/>
+                <Option name="offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="offset_unit" type="QString" value="MM"/>
+                <Option name="outline_color" type="QString" value="128,17,25,255"/>
+                <Option name="outline_style" type="QString" value="solid"/>
+                <Option name="outline_width" type="QString" value="0.4"/>
+                <Option name="outline_width_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="outline_width_unit" type="QString" value="MM"/>
+                <Option name="scale_method" type="QString" value="diameter"/>
+                <Option name="size" type="QString" value="4"/>
+                <Option name="size_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="size_unit" type="QString" value="MM"/>
+                <Option name="vertical_anchor_point" type="QString" value="1"/>
+              </Option>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option name="name" type="QString" value=""/>
+                  <Option name="properties"/>
+                  <Option name="type" type="QString" value="collection"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </symbols>
+        <rotation/>
+        <sizescale/>
+      </renderer-v2>
+      <labeling type="simple">
+        <settings calloutType="simple">
+          <text-style multilineHeight="1" fontLetterSpacing="0" fontSizeUnit="Point" isExpression="1" useSubstitutions="0" fontItalic="0" textColor="255,1,1,255" fontWordSpacing="0" fontSizeMapUnitScale="3x:0,0,0,0,0,0" forcedItalic="0" namedStyle="Обычный" textOrientation="horizontal" fontStrikeout="0" allowHtml="0" legendString="Aa" forcedBold="0" fontKerning="1" fontUnderline="0" previewBkgrdColor="255,255,255,255" blendMode="0" fontFamily="Arial" fontSize="10" capitalization="0" fontWeight="50" fieldName="if ( &quot;name_ru&quot; IS NOT NULL,  &quot;name_ru&quot; ,  &quot;name_en&quot;  )" multilineHeightUnit="Percentage" textOpacity="1">
+            <families/>
+            <text-buffer bufferJoinStyle="128" bufferBlendMode="0" bufferColor="250,250,250,255" bufferNoFill="1" bufferSizeUnits="Point" bufferDraw="1" bufferSizeMapUnitScale="3x:0,0,0,0,0,0" bufferOpacity="1" bufferSize="2"/>
+            <text-mask maskType="0" maskSizeMapUnitScale="3x:0,0,0,0,0,0" maskOpacity="1" maskJoinStyle="128" maskSize="0" maskEnabled="0" maskSizeUnits="MM" maskedSymbolLayers=""/>
+            <background shapeRadiiY="0" shapeSizeMapUnitScale="3x:0,0,0,0,0,0" shapeRadiiX="0" shapeOffsetMapUnitScale="3x:0,0,0,0,0,0" shapeSizeType="0" shapeBorderWidthMapUnitScale="3x:0,0,0,0,0,0" shapeOffsetUnit="Point" shapeBorderWidth="0" shapeSVGFile="" shapeBorderWidthUnit="Point" shapeBorderColor="128,128,128,255" shapeOffsetY="0" shapeSizeUnit="Point" shapeDraw="0" shapeType="0" shapeJoinStyle="64" shapeOpacity="1" shapeRotation="0" shapeSizeX="0" shapeFillColor="255,255,255,255" shapeOffsetX="0" shapeRotationType="0" shapeBlendMode="0" shapeRadiiUnit="Point" shapeSizeY="0" shapeRadiiMapUnitScale="3x:0,0,0,0,0,0">
+              <symbol alpha="1" clip_to_extent="1" name="markerSymbol" type="marker" force_rhr="0" is_animated="0" frame_rate="10">
+                <data_defined_properties>
+                  <Option type="Map">
+                    <Option name="name" type="QString" value=""/>
+                    <Option name="properties"/>
+                    <Option name="type" type="QString" value="collection"/>
+                  </Option>
+                </data_defined_properties>
+                <layer locked="0" class="SimpleMarker" enabled="1" pass="0">
+                  <Option type="Map">
+                    <Option name="angle" type="QString" value="0"/>
+                    <Option name="cap_style" type="QString" value="square"/>
+                    <Option name="color" type="QString" value="190,178,151,255"/>
+                    <Option name="horizontal_anchor_point" type="QString" value="1"/>
+                    <Option name="joinstyle" type="QString" value="bevel"/>
+                    <Option name="name" type="QString" value="circle"/>
+                    <Option name="offset" type="QString" value="0,0"/>
+                    <Option name="offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                    <Option name="offset_unit" type="QString" value="MM"/>
+                    <Option name="outline_color" type="QString" value="35,35,35,255"/>
+                    <Option name="outline_style" type="QString" value="solid"/>
+                    <Option name="outline_width" type="QString" value="0"/>
+                    <Option name="outline_width_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                    <Option name="outline_width_unit" type="QString" value="MM"/>
+                    <Option name="scale_method" type="QString" value="diameter"/>
+                    <Option name="size" type="QString" value="2"/>
+                    <Option name="size_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                    <Option name="size_unit" type="QString" value="MM"/>
+                    <Option name="vertical_anchor_point" type="QString" value="1"/>
+                  </Option>
+                  <data_defined_properties>
+                    <Option type="Map">
+                      <Option name="name" type="QString" value=""/>
+                      <Option name="properties"/>
+                      <Option name="type" type="QString" value="collection"/>
+                    </Option>
+                  </data_defined_properties>
+                </layer>
+              </symbol>
+              <symbol alpha="1" clip_to_extent="1" name="fillSymbol" type="fill" force_rhr="0" is_animated="0" frame_rate="10">
+                <data_defined_properties>
+                  <Option type="Map">
+                    <Option name="name" type="QString" value=""/>
+                    <Option name="properties"/>
+                    <Option name="type" type="QString" value="collection"/>
+                  </Option>
+                </data_defined_properties>
+                <layer locked="0" class="SimpleFill" enabled="1" pass="0">
+                  <Option type="Map">
+                    <Option name="border_width_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                    <Option name="color" type="QString" value="255,255,255,255"/>
+                    <Option name="joinstyle" type="QString" value="bevel"/>
+                    <Option name="offset" type="QString" value="0,0"/>
+                    <Option name="offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                    <Option name="offset_unit" type="QString" value="MM"/>
+                    <Option name="outline_color" type="QString" value="128,128,128,255"/>
+                    <Option name="outline_style" type="QString" value="no"/>
+                    <Option name="outline_width" type="QString" value="0"/>
+                    <Option name="outline_width_unit" type="QString" value="Point"/>
+                    <Option name="style" type="QString" value="solid"/>
+                  </Option>
+                  <data_defined_properties>
+                    <Option type="Map">
+                      <Option name="name" type="QString" value=""/>
+                      <Option name="properties"/>
+                      <Option name="type" type="QString" value="collection"/>
+                    </Option>
+                  </data_defined_properties>
+                </layer>
+              </symbol>
+            </background>
+            <shadow shadowOffsetGlobal="1" shadowRadius="1.5" shadowOpacity="0.69999999999999996" shadowScale="100" shadowBlendMode="6" shadowOffsetMapUnitScale="3x:0,0,0,0,0,0" shadowRadiusMapUnitScale="3x:0,0,0,0,0,0" shadowColor="0,0,0,255" shadowUnder="0" shadowDraw="0" shadowRadiusUnit="MM" shadowOffsetAngle="135" shadowRadiusAlphaOnly="0" shadowOffsetDist="1" shadowOffsetUnit="MM"/>
+            <dd_properties>
+              <Option type="Map">
+                <Option name="name" type="QString" value=""/>
+                <Option name="properties"/>
+                <Option name="type" type="QString" value="collection"/>
+              </Option>
+            </dd_properties>
+            <substitutions/>
+          </text-style>
+          <text-format wrapChar="" placeDirectionSymbol="0" formatNumbers="0" rightDirectionSymbol=">" useMaxLineLengthForAutoWrap="1" multilineAlign="3" decimals="3" reverseDirectionSymbol="0" plussign="0" autoWrapLength="0" addDirectionSymbol="0" leftDirectionSymbol="&lt;"/>
+          <placement dist="0" repeatDistanceUnits="MM" overrunDistanceUnit="MM" repeatDistance="0" predefinedPositionOrder="TR,TL,BR,BL,R,L,TSR,BSR" preserveRotation="1" overlapHandling="PreventOverlap" placementFlags="10" placement="6" fitInPolygonOnly="0" geometryGeneratorEnabled="0" lineAnchorType="0" rotationUnit="AngleDegrees" allowDegraded="0" geometryGeneratorType="PointGeometry" overrunDistanceMapUnitScale="3x:0,0,0,0,0,0" xOffset="0" rotationAngle="0" lineAnchorPercent="0.5" lineAnchorTextPoint="CenterOfText" maxCurvedCharAngleIn="25" labelOffsetMapUnitScale="3x:0,0,0,0,0,0" yOffset="0" polygonPlacementFlags="2" quadOffset="4" offsetType="1" priority="5" geometryGenerator="" distUnits="MM" layerType="PointGeometry" repeatDistanceMapUnitScale="3x:0,0,0,0,0,0" distMapUnitScale="3x:0,0,0,0,0,0" maxCurvedCharAngleOut="-25" offsetUnits="MM" lineAnchorClipping="0" centroidWhole="0" centroidInside="0" overrunDistance="0"/>
+          <rendering minFeatureSize="0" zIndex="0" scaleMin="0" drawLabels="1" obstacle="1" fontMaxPixelSize="10000" fontLimitPixelSize="0" maxNumLabels="2000" obstacleType="1" fontMinPixelSize="3" scaleMax="0" labelPerPart="0" scaleVisibility="0" unplacedVisibility="0" limitNumLabels="0" obstacleFactor="1" mergeLines="0" upsidedownLabels="0"/>
+          <dd_properties>
+            <Option type="Map">
+              <Option name="name" type="QString" value=""/>
+              <Option name="properties"/>
+              <Option name="type" type="QString" value="collection"/>
+            </Option>
+          </dd_properties>
+          <callout type="simple">
+            <Option type="Map">
+              <Option name="anchorPoint" type="QString" value="pole_of_inaccessibility"/>
+              <Option name="blendMode" type="int" value="0"/>
+              <Option name="ddProperties" type="Map">
+                <Option name="name" type="QString" value=""/>
+                <Option name="properties"/>
+                <Option name="type" type="QString" value="collection"/>
+              </Option>
+              <Option name="drawToAllParts" type="bool" value="false"/>
+              <Option name="enabled" type="QString" value="0"/>
+              <Option name="labelAnchorPoint" type="QString" value="point_on_exterior"/>
+              <Option name="lineSymbol" type="QString" value="&lt;symbol alpha=&quot;1&quot; clip_to_extent=&quot;1&quot; name=&quot;symbol&quot; type=&quot;line&quot; force_rhr=&quot;0&quot; is_animated=&quot;0&quot; frame_rate=&quot;10&quot;>&lt;data_defined_properties>&lt;Option type=&quot;Map&quot;>&lt;Option name=&quot;name&quot; type=&quot;QString&quot; value=&quot;&quot;/>&lt;Option name=&quot;properties&quot;/>&lt;Option name=&quot;type&quot; type=&quot;QString&quot; value=&quot;collection&quot;/>&lt;/Option>&lt;/data_defined_properties>&lt;layer locked=&quot;0&quot; class=&quot;SimpleLine&quot; enabled=&quot;1&quot; pass=&quot;0&quot;>&lt;Option type=&quot;Map&quot;>&lt;Option name=&quot;align_dash_pattern&quot; type=&quot;QString&quot; value=&quot;0&quot;/>&lt;Option name=&quot;capstyle&quot; type=&quot;QString&quot; value=&quot;square&quot;/>&lt;Option name=&quot;customdash&quot; type=&quot;QString&quot; value=&quot;5;2&quot;/>&lt;Option name=&quot;customdash_map_unit_scale&quot; type=&quot;QString&quot; value=&quot;3x:0,0,0,0,0,0&quot;/>&lt;Option name=&quot;customdash_unit&quot; type=&quot;QString&quot; value=&quot;MM&quot;/>&lt;Option name=&quot;dash_pattern_offset&quot; type=&quot;QString&quot; value=&quot;0&quot;/>&lt;Option name=&quot;dash_pattern_offset_map_unit_scale&quot; type=&quot;QString&quot; value=&quot;3x:0,0,0,0,0,0&quot;/>&lt;Option name=&quot;dash_pattern_offset_unit&quot; type=&quot;QString&quot; value=&quot;MM&quot;/>&lt;Option name=&quot;draw_inside_polygon&quot; type=&quot;QString&quot; value=&quot;0&quot;/>&lt;Option name=&quot;joinstyle&quot; type=&quot;QString&quot; value=&quot;bevel&quot;/>&lt;Option name=&quot;line_color&quot; type=&quot;QString&quot; value=&quot;60,60,60,255&quot;/>&lt;Option name=&quot;line_style&quot; type=&quot;QString&quot; value=&quot;solid&quot;/>&lt;Option name=&quot;line_width&quot; type=&quot;QString&quot; value=&quot;0.3&quot;/>&lt;Option name=&quot;line_width_unit&quot; type=&quot;QString&quot; value=&quot;MM&quot;/>&lt;Option name=&quot;offset&quot; type=&quot;QString&quot; value=&quot;0&quot;/>&lt;Option name=&quot;offset_map_unit_scale&quot; type=&quot;QString&quot; value=&quot;3x:0,0,0,0,0,0&quot;/>&lt;Option name=&quot;offset_unit&quot; type=&quot;QString&quot; value=&quot;MM&quot;/>&lt;Option name=&quot;ring_filter&quot; type=&quot;QString&quot; value=&quot;0&quot;/>&lt;Option name=&quot;trim_distance_end&quot; type=&quot;QString&quot; value=&quot;0&quot;/>&lt;Option name=&quot;trim_distance_end_map_unit_scale&quot; type=&quot;QString&quot; value=&quot;3x:0,0,0,0,0,0&quot;/>&lt;Option name=&quot;trim_distance_end_unit&quot; type=&quot;QString&quot; value=&quot;MM&quot;/>&lt;Option name=&quot;trim_distance_start&quot; type=&quot;QString&quot; value=&quot;0&quot;/>&lt;Option name=&quot;trim_distance_start_map_unit_scale&quot; type=&quot;QString&quot; value=&quot;3x:0,0,0,0,0,0&quot;/>&lt;Option name=&quot;trim_distance_start_unit&quot; type=&quot;QString&quot; value=&quot;MM&quot;/>&lt;Option name=&quot;tweak_dash_pattern_on_corners&quot; type=&quot;QString&quot; value=&quot;0&quot;/>&lt;Option name=&quot;use_custom_dash&quot; type=&quot;QString&quot; value=&quot;0&quot;/>&lt;Option name=&quot;width_map_unit_scale&quot; type=&quot;QString&quot; value=&quot;3x:0,0,0,0,0,0&quot;/>&lt;/Option>&lt;data_defined_properties>&lt;Option type=&quot;Map&quot;>&lt;Option name=&quot;name&quot; type=&quot;QString&quot; value=&quot;&quot;/>&lt;Option name=&quot;properties&quot;/>&lt;Option name=&quot;type&quot; type=&quot;QString&quot; value=&quot;collection&quot;/>&lt;/Option>&lt;/data_defined_properties>&lt;/layer>&lt;/symbol>"/>
+              <Option name="minLength" type="double" value="0"/>
+              <Option name="minLengthMapUnitScale" type="QString" value="3x:0,0,0,0,0,0"/>
+              <Option name="minLengthUnit" type="QString" value="MM"/>
+              <Option name="offsetFromAnchor" type="double" value="0"/>
+              <Option name="offsetFromAnchorMapUnitScale" type="QString" value="3x:0,0,0,0,0,0"/>
+              <Option name="offsetFromAnchorUnit" type="QString" value="MM"/>
+              <Option name="offsetFromLabel" type="double" value="0"/>
+              <Option name="offsetFromLabelMapUnitScale" type="QString" value="3x:0,0,0,0,0,0"/>
+              <Option name="offsetFromLabelUnit" type="QString" value="MM"/>
+            </Option>
+          </callout>
+        </settings>
+      </labeling>
+      <customproperties>
+        <Option type="Map">
+          <Option name="dualview/previewExpressions" type="List">
+            <Option type="QString" value="&quot;name_en&quot;"/>
+          </Option>
+          <Option name="embeddedWidgets/count" type="int" value="0"/>
+          <Option name="variableNames"/>
+          <Option name="variableValues"/>
+        </Option>
+      </customproperties>
+      <blendMode>0</blendMode>
+      <featureBlendMode>0</featureBlendMode>
+      <layerOpacity>1</layerOpacity>
+      <SingleCategoryDiagramRenderer diagramType="Histogram" attributeLegend="1">
+        <DiagramCategory width="15" direction="0" backgroundAlpha="255" spacing="5" scaleDependency="Area" minimumSize="0" labelPlacementMethod="XHeight" showAxis="1" lineSizeType="MM" spacingUnit="MM" opacity="1" height="15" penAlpha="255" enabled="0" penColor="#000000" sizeType="MM" minScaleDenominator="0" sizeScale="3x:0,0,0,0,0,0" barWidth="5" maxScaleDenominator="1e+08" penWidth="0" backgroundColor="#ffffff" lineSizeScale="3x:0,0,0,0,0,0" scaleBasedVisibility="0" diagramOrientation="Up" spacingUnitScale="3x:0,0,0,0,0,0" rotationOffset="270">
+          <fontProperties description="MS Shell Dlg 2,12,-1,5,50,0,0,0,0,0" bold="0" italic="0" strikethrough="0" style="" underline="0"/>
+          <attribute color="#000000" colorOpacity="1" label="" field=""/>
+          <axisSymbol>
+            <symbol alpha="1" clip_to_extent="1" name="" type="line" force_rhr="0" is_animated="0" frame_rate="10">
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option name="name" type="QString" value=""/>
+                  <Option name="properties"/>
+                  <Option name="type" type="QString" value="collection"/>
+                </Option>
+              </data_defined_properties>
+              <layer locked="0" class="SimpleLine" enabled="1" pass="0">
+                <Option type="Map">
+                  <Option name="align_dash_pattern" type="QString" value="0"/>
+                  <Option name="capstyle" type="QString" value="square"/>
+                  <Option name="customdash" type="QString" value="5;2"/>
+                  <Option name="customdash_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                  <Option name="customdash_unit" type="QString" value="MM"/>
+                  <Option name="dash_pattern_offset" type="QString" value="0"/>
+                  <Option name="dash_pattern_offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                  <Option name="dash_pattern_offset_unit" type="QString" value="MM"/>
+                  <Option name="draw_inside_polygon" type="QString" value="0"/>
+                  <Option name="joinstyle" type="QString" value="bevel"/>
+                  <Option name="line_color" type="QString" value="35,35,35,255"/>
+                  <Option name="line_style" type="QString" value="solid"/>
+                  <Option name="line_width" type="QString" value="0.26"/>
+                  <Option name="line_width_unit" type="QString" value="MM"/>
+                  <Option name="offset" type="QString" value="0"/>
+                  <Option name="offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                  <Option name="offset_unit" type="QString" value="MM"/>
+                  <Option name="ring_filter" type="QString" value="0"/>
+                  <Option name="trim_distance_end" type="QString" value="0"/>
+                  <Option name="trim_distance_end_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                  <Option name="trim_distance_end_unit" type="QString" value="MM"/>
+                  <Option name="trim_distance_start" type="QString" value="0"/>
+                  <Option name="trim_distance_start_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                  <Option name="trim_distance_start_unit" type="QString" value="MM"/>
+                  <Option name="tweak_dash_pattern_on_corners" type="QString" value="0"/>
+                  <Option name="use_custom_dash" type="QString" value="0"/>
+                  <Option name="width_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                </Option>
+                <data_defined_properties>
+                  <Option type="Map">
+                    <Option name="name" type="QString" value=""/>
+                    <Option name="properties"/>
+                    <Option name="type" type="QString" value="collection"/>
+                  </Option>
+                </data_defined_properties>
+              </layer>
+            </symbol>
+          </axisSymbol>
+        </DiagramCategory>
+      </SingleCategoryDiagramRenderer>
+      <DiagramLayerSettings showAll="1" linePlacementFlags="18" priority="0" dist="0" zIndex="0" placement="0" obstacle="0">
+        <properties>
+          <Option type="Map">
+            <Option name="name" type="QString" value=""/>
+            <Option name="properties"/>
+            <Option name="type" type="QString" value="collection"/>
+          </Option>
+        </properties>
+      </DiagramLayerSettings>
+      <geometryOptions removeDuplicateNodes="0" geometryPrecision="0">
+        <activeChecks/>
+        <checkConfiguration/>
+      </geometryOptions>
+      <legend type="default-vector" showLabelLegend="0"/>
+      <referencedLayers/>
+      <fieldConfiguration>
+        <field name="gid" configurationFlags="None">
+          <editWidget type="TextEdit">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="well_id" configurationFlags="None">
+          <editWidget type="Range">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="name_ru" configurationFlags="None">
+          <editWidget type="TextEdit">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="name_en" configurationFlags="None">
+          <editWidget type="TextEdit">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="well_type_id" configurationFlags="None">
+          <editWidget type="Range">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="well_type" configurationFlags="None">
+          <editWidget type="TextEdit">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="source" configurationFlags="None">
+          <editWidget type="TextEdit">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="geo_transf_applied" configurationFlags="None">
+          <editWidget type="TextEdit">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="datestamp" configurationFlags="None">
+          <editWidget type="DateTime">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="data_quality_id" configurationFlags="None">
+          <editWidget type="Range">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="data_quality" configurationFlags="None">
+          <editWidget type="TextEdit">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="area_name_ru" configurationFlags="None">
+          <editWidget type="TextEdit">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="area_name_en" configurationFlags="None">
+          <editWidget type="TextEdit">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="well_number" configurationFlags="None">
+          <editWidget type="TextEdit">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="well_uwi" configurationFlags="None">
+          <editWidget type="TextEdit">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="created_user" configurationFlags="None">
+          <editWidget type="TextEdit">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="date_created" configurationFlags="None">
+          <editWidget type="DateTime">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="last_edited_user" configurationFlags="None">
+          <editWidget type="TextEdit">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="date_edited" configurationFlags="None">
+          <editWidget type="DateTime">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+      </fieldConfiguration>
+      <aliases>
+        <alias name="" field="gid" index="0"/>
+        <alias name="" field="well_id" index="1"/>
+        <alias name="" field="name_ru" index="2"/>
+        <alias name="" field="name_en" index="3"/>
+        <alias name="" field="well_type_id" index="4"/>
+        <alias name="" field="well_type" index="5"/>
+        <alias name="" field="source" index="6"/>
+        <alias name="" field="geo_transf_applied" index="7"/>
+        <alias name="" field="datestamp" index="8"/>
+        <alias name="" field="data_quality_id" index="9"/>
+        <alias name="" field="data_quality" index="10"/>
+        <alias name="" field="area_name_ru" index="11"/>
+        <alias name="" field="area_name_en" index="12"/>
+        <alias name="" field="well_number" index="13"/>
+        <alias name="" field="well_uwi" index="14"/>
+        <alias name="" field="created_user" index="15"/>
+        <alias name="" field="date_created" index="16"/>
+        <alias name="" field="last_edited_user" index="17"/>
+        <alias name="" field="date_edited" index="18"/>
+      </aliases>
+      <defaults>
+        <default applyOnUpdate="0" field="gid" expression=""/>
+        <default applyOnUpdate="0" field="well_id" expression=""/>
+        <default applyOnUpdate="0" field="name_ru" expression=""/>
+        <default applyOnUpdate="0" field="name_en" expression=""/>
+        <default applyOnUpdate="0" field="well_type_id" expression=""/>
+        <default applyOnUpdate="0" field="well_type" expression=""/>
+        <default applyOnUpdate="0" field="source" expression=""/>
+        <default applyOnUpdate="0" field="geo_transf_applied" expression=""/>
+        <default applyOnUpdate="0" field="datestamp" expression=""/>
+        <default applyOnUpdate="0" field="data_quality_id" expression=""/>
+        <default applyOnUpdate="0" field="data_quality" expression=""/>
+        <default applyOnUpdate="0" field="area_name_ru" expression=""/>
+        <default applyOnUpdate="0" field="area_name_en" expression=""/>
+        <default applyOnUpdate="0" field="well_number" expression=""/>
+        <default applyOnUpdate="0" field="well_uwi" expression=""/>
+        <default applyOnUpdate="0" field="created_user" expression=""/>
+        <default applyOnUpdate="0" field="date_created" expression=""/>
+        <default applyOnUpdate="0" field="last_edited_user" expression=""/>
+        <default applyOnUpdate="0" field="date_edited" expression=""/>
+      </defaults>
+      <constraints>
+        <constraint unique_strength="1" notnull_strength="1" field="gid" constraints="3" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="well_id" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="name_ru" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="name_en" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="well_type_id" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="well_type" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="source" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="geo_transf_applied" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="datestamp" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="data_quality_id" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="data_quality" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="area_name_ru" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="area_name_en" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="well_number" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="well_uwi" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="created_user" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="date_created" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="last_edited_user" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="date_edited" constraints="0" exp_strength="0"/>
+      </constraints>
+      <constraintExpressions>
+        <constraint field="gid" desc="" exp=""/>
+        <constraint field="well_id" desc="" exp=""/>
+        <constraint field="name_ru" desc="" exp=""/>
+        <constraint field="name_en" desc="" exp=""/>
+        <constraint field="well_type_id" desc="" exp=""/>
+        <constraint field="well_type" desc="" exp=""/>
+        <constraint field="source" desc="" exp=""/>
+        <constraint field="geo_transf_applied" desc="" exp=""/>
+        <constraint field="datestamp" desc="" exp=""/>
+        <constraint field="data_quality_id" desc="" exp=""/>
+        <constraint field="data_quality" desc="" exp=""/>
+        <constraint field="area_name_ru" desc="" exp=""/>
+        <constraint field="area_name_en" desc="" exp=""/>
+        <constraint field="well_number" desc="" exp=""/>
+        <constraint field="well_uwi" desc="" exp=""/>
+        <constraint field="created_user" desc="" exp=""/>
+        <constraint field="date_created" desc="" exp=""/>
+        <constraint field="last_edited_user" desc="" exp=""/>
+        <constraint field="date_edited" desc="" exp=""/>
+      </constraintExpressions>
+      <expressionfields/>
+      <attributeactions>
+        <defaultAction key="Canvas" value="{00000000-0000-0000-0000-000000000000}"/>
+        <actionsetting notificationMessage="" name="Магнитное склонение" shortTitle="get_magnetic_declination" type="1" icon="" capture="0" isEnabledOnlyWhenEditable="0" action="import requests&#xd;&#xa;import json&#xd;&#xa;from qgis.core import Qgis&#xd;&#xa;from qgis.utils import iface&#xd;&#xa;lat_wgs84 = [% $y %]&#xd;&#xa;lon_wgs84 = [% $x %]&#xd;&#xa;day = str([% day( now() )%])&#xd;&#xa;month = str([% month( now() )%])&#xd;&#xa;year = str([% year( now() )%])&#xd;&#xa;key = 'zNEw7'   # key received to registered email at https://www.ngdc.noaa.gov/geomag&#xd;&#xa;format = 'json'&#xd;&#xa;model = 'IGRF'&#xd;&#xa;&#xd;&#xa;name = ''&#xd;&#xa;if '[%name_ru%]' != '' and '[%name_ru%]' is not NULL:&#xd;&#xa;    name = '[%name_ru%]'&#xd;&#xa;elif '[%name_en%]' != '' and '[%name_en%]' is not NULL:&#xd;&#xa;    name = '[%name_en%]'&#xd;&#xa;else:&#xd;&#xa;    name = f'{str([% $x %])}; {str([% $y %])}: '&#xd;&#xa;&#xd;&#xa;with requests.Session() as s:&#xd;&#xa;    url = 'https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination' \&#xd;&#xa;          '?browserRequest=true' \&#xd;&#xa;          '&amp;magneticComponent=d' \&#xd;&#xa;          f'&amp;key={key}' \&#xd;&#xa;          f'&amp;lat1={lat_wgs84}' \&#xd;&#xa;          '&amp;lat1Hemisphere=N' \&#xd;&#xa;          f'&amp;lon1={lon_wgs84}' \&#xd;&#xa;          '&amp;lon1Hemisphere=E' \&#xd;&#xa;          f'&amp;model={model}' \&#xd;&#xa;          f'&amp;startYear={year}' \&#xd;&#xa;          f'&amp;startMonth={month}' \&#xd;&#xa;          f'&amp;startDay={day}' \&#xd;&#xa;          f'&amp;resultFormat={format}'&#xd;&#xa;    result = s.get(url)&#xd;&#xa;    result_json = result.json()&#xd;&#xa;    iface.messageBar().pushMessage(name, f&quot;Current {model} magnetic declination = {result_json['result'][0]['declination']}&quot;, level=Qgis.Warning)&#xd;&#xa;    print(f'Current {model} magnetic declination =', result_json['result'][0]['declination'])&#xd;&#xa;    " id="{46e02ccf-4959-465a-b05c-aa46df698bfc}">
+          <actionScope id="Feature"/>
+          <actionScope id="Canvas"/>
+        </actionsetting>
+        <actionsetting notificationMessage="" name="Get Project Coordinates" shortTitle="" type="1" icon="" capture="0" isEnabledOnlyWhenEditable="0" action="from qgis.core import Qgis&#xd;&#xa;from qgis._core import *&#xd;&#xa;from qgis.utils import iface&#xd;&#xa;from math import floor&#xd;&#xa;point = QgsPointXY([% $x %], [% $y %])&#xd;&#xa;point_geom = QgsGeometry.fromPointXY(point)&#xd;&#xa;layer_crs = QgsCoordinateReferenceSystem('[% @layer_crs%]')&#xd;&#xa;proj_crs = QgsCoordinateReferenceSystem.fromWkt('[% @project_crs_wkt %]')&#xd;&#xa;point_geom.transform(QgsCoordinateTransform(layer_crs, proj_crs, QgsProject.instance()))&#xd;&#xa;&#xd;&#xa;# QgsCoordinateTransform(QgsCoordinateReferenceSystem(&quot;EPSG:3111&quot;), QgsCoordinateReferenceSystem(&quot;EPSG:4326&quot;), QgsProject.instance())&#xd;&#xa;x_dec = point_geom.centroid().asPoint().x()&#xd;&#xa;y_dec = point_geom.centroid().asPoint().y()&#xd;&#xa;x_dms = str(floor(x_dec)) + chr(176) + str(floor((x_dec - floor(x_dec)) * 60)) + chr(39) + str(round((x_dec - floor(x_dec) - floor((x_dec - floor(x_dec)) * 60) / 60) * 3600, 5)) + chr(34)&#xd;&#xa;if x_dec > 0:&#xd;&#xa;    x_dms += 'E'&#xd;&#xa;else:&#xd;&#xa;    x_dms += 'W'&#xd;&#xa;y_dms = str(floor(y_dec)) + chr(176) + str(floor((y_dec - floor(y_dec)) * 60)) + chr(39) + str(round((y_dec - floor(y_dec) - floor((y_dec - floor(y_dec)) * 60) / 60) * 3600, 5)) + chr(34)&#xd;&#xa;if y_dec > 0:&#xd;&#xa;    y_dms += 'N'&#xd;&#xa;else:&#xd;&#xa;    y_dms += 'S'&#xd;&#xa;new_line = '\n'&#xd;&#xa;iface.messageBar().pushMessage(f&quot;x = {point_geom.asPoint().x()}, y = {point_geom.asPoint().y()}; x = {x_dms}, y = {y_dms}&quot;, level=Qgis.Warning)" id="{5a8492c2-eb86-4b6a-8f54-a6085b786653}">
+          <actionScope id="Feature"/>
+        </actionsetting>
+        <actionsetting notificationMessage="" name="Карточка объекта" shortTitle="" type="1" icon="" capture="0" isEnabledOnlyWhenEditable="0" action="from qgis.core import (&#xd;&#xa;    QgsMessageLog,&#xd;&#xa;    QgsGeometry,&#xd;&#xa;)&#xd;&#xa;&#xd;&#xa;from qgis.gui import (&#xd;&#xa;    QgsMessageBar,&#xd;&#xa;)&#xd;&#xa;&#xd;&#xa;from qgis.PyQt.QtWidgets import (&#xd;&#xa;    QSizePolicy,&#xd;&#xa;    QPushButton,&#xd;&#xa;    QDialog,&#xd;&#xa;    QGridLayout,&#xd;&#xa;    QDialogButtonBox,&#xd;&#xa;)&#xd;&#xa;from qgis.core import Qgis&#xd;&#xa;&#xd;&#xa;from qgis.PyQt.QtWebKitWidgets import QWebView&#xd;&#xa;&#xd;&#xa;from qgis.PyQt.QtWebKit import QWebSettings&#xd;&#xa;import requests&#xd;&#xa;import json&#xd;&#xa;from qgis.core import Qgis&#xd;&#xa;from qgis.utils import iface&#xd;&#xa;from qgis._core import *&#xd;&#xa;from math import floor&#xd;&#xa;import pyproj&#xd;&#xa;&#xd;&#xa;def magnetic_declination():&#xd;&#xa;    &quot;&quot;&quot;&#xd;&#xa;    This function calculates the value of magnetic declination using NOAA's &#xd;&#xa;    online geomag calculator and IGRF model for the clicked point.&#xd;&#xa;    :return: [float] IGRF magnetic declination for the point&#xd;&#xa;    &quot;&quot;&quot;&#xd;&#xa;    # get the point's coordinates in layer's CRS&#xd;&#xa;    lat_wgs84 = [% $y %]&#xd;&#xa;    lon_wgs84 = [% $x %]&#xd;&#xa;    &#xd;&#xa;    # get the current date's day, month and year&#xd;&#xa;    day = str([% day( now() )%])&#xd;&#xa;    month = str([% month( now() )%])&#xd;&#xa;    year = str([% year( now() )%])&#xd;&#xa;    &#xd;&#xa;    # specify the key for the webservice&#xd;&#xa;    key = 'zNEw7'   # key received to registered email at https://www.ngdc.noaa.gov/geomag&#xd;&#xa;    &#xd;&#xa;    # specify the parameteres for the request&#xd;&#xa;    format = 'json'&#xd;&#xa;    model = 'IGRF'&#xd;&#xa;    &#xd;&#xa;    # get the well name from layer's attributes&#xd;&#xa;    name = ''&#xd;&#xa;    if '[%name_ru%]' != '' and '[%name_ru%]' is not NULL:&#xd;&#xa;        name = '[%name_ru%]'&#xd;&#xa;    elif '[%name_en%]' != '' and '[%name_en%]' is not NULL:&#xd;&#xa;        name = '[%name_en%]'&#xd;&#xa;    else:&#xd;&#xa;        name = f'{str([% $x %])}; {str([% $y %])}: '&#xd;&#xa;&#xd;&#xa;    # send a get http request to NOAA webservice to get the magnetic declination value&#xd;&#xa;    with requests.Session() as s:&#xd;&#xa;        # make an url for the get request using querystring&#xd;&#xa;        url = 'https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination' \&#xd;&#xa;              '?browserRequest=true' \&#xd;&#xa;              '&amp;magneticComponent=d' \&#xd;&#xa;              f'&amp;key={key}' \&#xd;&#xa;              f'&amp;lat1={lat_wgs84}' \&#xd;&#xa;              '&amp;lat1Hemisphere=N' \&#xd;&#xa;              f'&amp;lon1={lon_wgs84}' \&#xd;&#xa;              '&amp;lon1Hemisphere=E' \&#xd;&#xa;              f'&amp;model={model}' \&#xd;&#xa;              f'&amp;startYear={year}' \&#xd;&#xa;              f'&amp;startMonth={month}' \&#xd;&#xa;              f'&amp;startDay={day}' \&#xd;&#xa;              f'&amp;resultFormat={format}'&#xd;&#xa;        &#xd;&#xa;        # make a request&#xd;&#xa;        result = s.get(url)&#xd;&#xa;        &#xd;&#xa;        # convert the result to json&#xd;&#xa;        result_json = result.json()&#xd;&#xa;        &#xd;&#xa;        # return the declination value&#xd;&#xa;        return result_json['result'][0]['declination']&#xd;&#xa;&#xd;&#xa;def meridian_convergence():&#xd;&#xa;    &quot;&quot;&quot;&#xd;&#xa;    This function takes the clicked point's coordinates in layer's CRS, converts&#xd;&#xa;    them to project's GCS using the project's context, and returns the&#xd;&#xa;    meridian convergence at this point in project's CRS, calculated using proj.&#xd;&#xa;    Please be careful to configure the correct datum transformation in &#xd;&#xa;    project properties!&#xd;&#xa;    :return: [dictionary] {&quot;name&quot;:[str], &quot;convergence&quot;:[float]}&#xd;&#xa;    the function returns a dictionary with the project's CRS name&#xd;&#xa;    and meridian convergence value in degrees for the clicked point&#xd;&#xa;    in project's CRS using project's context &#xd;&#xa;    &quot;&quot;&quot;&#xd;&#xa;    # Get the clicked well point coordinates in layer's crs and create a QgsPointXY object from them&#xd;&#xa;    point = QgsPointXY([% $x %], [% $y %])&#xd;&#xa;&#xd;&#xa;    # Create a QgsGeometry oblect from that point&#xd;&#xa;    point_geom = QgsGeometry.fromPointXY(point)&#xd;&#xa;&#xd;&#xa;    # get the layer's CRS name from layer's variable @layer_crs and create a QgsCoordinateReferenceSystem object from that&#xd;&#xa;    layer_crs = QgsCoordinateReferenceSystem('[% @layer_crs%]')&#xd;&#xa;&#xd;&#xa;    # get the project's CRS name from project's variable @project_crs_wkt and create a QgsCoordinateReferenceSystem object from that&#xd;&#xa;    proj_crs = QgsCoordinateReferenceSystem.fromWkt('[% @project_crs_wkt %]')&#xd;&#xa;&#xd;&#xa;    # Use pyproj.CRS().geodetic_crs.to_wkt() to get the WKT of project's GCS and then create a QgsCoordinateReferenceSystem from that&#xd;&#xa;    proj_gcs = QgsCoordinateReferenceSystem.fromWkt(pyproj.CRS('[% @project_crs_wkt %]').geodetic_crs.to_wkt())&#xd;&#xa;&#xd;&#xa;    # transform point coordinates from layer's CRS to project's GCS using project's context&#xd;&#xa;    point_geom.transform(QgsCoordinateTransform(layer_crs, proj_gcs, QgsProject.instance()))&#xd;&#xa;&#xd;&#xa;    # create a pyproj CRS object from the project's CRS&#xd;&#xa;    pyproj_proj_crs = pyproj.CRS(proj_crs.toWkt())&#xd;&#xa;&#xd;&#xa;    # get point's x and y coordinates in project's GCS (as lon/lat)&#xd;&#xa;    x_dec = point_geom.centroid().asPoint().x()&#xd;&#xa;    y_dec = point_geom.centroid().asPoint().y()&#xd;&#xa;&#xd;&#xa;    # create a pyproj.Proj object from pyproj_proj_crs&#xd;&#xa;    p = pyproj.Proj(pyproj_proj_crs)&#xd;&#xa;&#xd;&#xa;    # get factors (named tuple with various geodetic parameters) for the point (lon/lat in project's GCS)&#xd;&#xa;    my_factors = p.get_factors(x_dec, y_dec)&#xd;&#xa;    &#xd;&#xa;    # return the project's CRS name and convergence value as a dictionary&#xd;&#xa;    return {&quot;crs&quot;: pyproj_proj_crs.name, &quot;convergence&quot;: round(my_factors.meridian_convergence, 6)}&#xd;&#xa;&#xd;&#xa;&#xd;&#xa;well_id = [%well_id%]&#xd;&#xa;source = r'[%source%]'&#xd;&#xa;&#xd;&#xa;html = ''&#xd;&#xa;html += '&lt;!doctype html>&lt;html lag=&quot;ru-RU&quot;>&lt;head>&lt;meta charset=&quot;utf-8&quot;/>'&#xd;&#xa;html += '&lt;style>'&#xd;&#xa;&#xd;&#xa;html += &quot;&quot;&quot;&#xd;&#xa;body {font-family: Arial}&#xd;&#xa;table {&#xd;&#xa;  border: 1px solid #69c;&#xd;&#xa;}&#xd;&#xa;th {&#xd;&#xa;  font-weight: normal;&#xd;&#xa;  color: #039;&#xd;&#xa;  border-bottom: 1px dashed #69c;&#xd;&#xa;  padding: 12px 17px;&#xd;&#xa;}&#xd;&#xa;td {&#xd;&#xa;  color: #669;&#xd;&#xa;  padding: 7px 17px;&#xd;&#xa;}&#xd;&#xa;tr:hover td {&#xd;&#xa;  background: #ccddff;&#xd;&#xa;}&#xd;&#xa;&quot;&quot;&quot;&#xd;&#xa;&#xd;&#xa;html += '&lt;/style>'&#xd;&#xa;&#xd;&#xa;html += &quot;&quot;&quot;&#xd;&#xa;    &lt;script type=&quot;text/javascript&quot;>&#xd;&#xa;    function myFunction(input) {&#xd;&#xa;      // Get the text field&#xd;&#xa;      var copyText = document.getElementById(input);&#xd;&#xa;&#x9;  copyText.type = 'text';&#xd;&#xa;      &#xd;&#xa;      // Select the text field&#xd;&#xa;      copyText.select();&#xd;&#xa;      copyText.setSelectionRange(0, 99999); // For mobile devices&#xd;&#xa;      &#xd;&#xa;      // Copy the text inside the text field&#xd;&#xa;      document.execCommand('copy');&#xd;&#xa;      copyText.type = 'hidden';&#xd;&#xa;      alert(&quot;Link copied: &quot; + copyText.value);&#xd;&#xa;    }&#xd;&#xa;    &#xd;&#xa;    &lt;/script>&#xd;&#xa;    &quot;&quot;&quot;&#xd;&#xa;&#xd;&#xa;html += '&lt;/head>'&#xd;&#xa;html += '&lt;body>'&#xd;&#xa;&#xd;&#xa;&#xd;&#xa;html += '&lt;h2>Информация о скважине:&lt;/h2>'&#xd;&#xa;html += '&lt;table>'&#xd;&#xa;html += &quot;&quot;&quot;&lt;tr>&lt;td>Название [рус]:&lt;/td>&lt;td>[%name_ru%]&lt;/td>&lt;/tr>&quot;&quot;&quot;&#xd;&#xa;html += &quot;&quot;&quot;&lt;tr>&lt;td>Название [англ]:&lt;/td>&lt;td>[%name_en%]&lt;/td>&lt;/tr>&quot;&quot;&quot;&#xd;&#xa;html += &quot;&quot;&quot;&lt;tr>&lt;td>Тип:&lt;/td>&lt;td>[%well_type%]&lt;/td>&lt;/tr>&quot;&quot;&quot;&#xd;&#xa;html += f&quot;&quot;&quot;&lt;tr>&lt;td>Источник:&lt;/td>&lt;td>{source}&lt;/td>&lt;/tr>&quot;&quot;&quot;&#xd;&#xa;html += &quot;&quot;&quot;&lt;tr>&lt;td>Качество данных:&lt;/td>&lt;td>[%data_quality%]&lt;/td>&lt;/tr>&quot;&quot;&quot;&#xd;&#xa;&#xd;&#xa;html += f&quot;&quot;&quot;&lt;tr>&lt;td>Магнитное склонение IGRF:&lt;/td>&lt;td>{str(magnetic_declination())}&lt;/td>&lt;/tr>&quot;&quot;&quot;&#xd;&#xa;point_conv = meridian_convergence()&#xd;&#xa;html += f&quot;&quot;&quot;&lt;tr>&lt;td>Гауссово сближение (CRS: {str(point_conv['crs'])}):&lt;/td>&lt;td>{str(point_conv['convergence'])}&lt;/td>&lt;/tr>&quot;&quot;&quot;&#xd;&#xa;html += '&lt;/table>'&#xd;&#xa;&#xd;&#xa;attr_table = QgsProject.instance().mapLayersByName(&quot;well_attributes_view&quot;)[0]&#xd;&#xa;exp = QgsExpression(f'well_id = {well_id}')&#xd;&#xa;request = QgsFeatureRequest(exp)&#xd;&#xa;i = 1&#xd;&#xa;for row in attr_table.getFeatures(request):&#xd;&#xa;    if i == 1:&#xd;&#xa;        html += '&lt;h2>Данные по скважине:&lt;/h2>'&#xd;&#xa;        html += '&lt;table>'&#xd;&#xa;        html += '&lt;tr>&lt;th>Атрибут&lt;/th>&lt;th>Значение&lt;/th>&lt;th>Ссылка&lt;/th>&lt;th>Качество&lt;/th>&lt;th>Источник&lt;/th>&lt;th>Ограничения&lt;/th>&lt;/tr>'&#xd;&#xa;    html += &quot;&lt;tr>&quot;&#xd;&#xa;    html += f&quot;&lt;td>{row['well_attribute_name']}&lt;/td>&quot;&#xd;&#xa;    html += f&quot;&lt;td>&quot;&#xd;&#xa;    html += f&quot;{row['well_attribute_value']}&quot;&#xd;&#xa;    html += '&lt;/td>'&#xd;&#xa;    html += '&lt;td>'&#xd;&#xa;    if row['link_id'] > 0:&#xd;&#xa;        html += f&quot;&quot;&quot;&lt;input type=&quot;hidden&quot; value=&quot;{row['link']}&quot; id=&quot;linkInput{i}&quot;>&lt;button onclick=&quot;myFunction('linkInput{i}')&quot;>Скопировать ссылку&lt;/button>&quot;&quot;&quot;&#xd;&#xa;    html += '&lt;/td>'&#xd;&#xa;    html += '&lt;td>'&#xd;&#xa;    html += row['data_quality']&#xd;&#xa;    html += '&lt;/td>'&#xd;&#xa;    html += '&lt;td>'&#xd;&#xa;    html += row['source']&#xd;&#xa;    html += '&lt;/td>'&#xd;&#xa;    html += '&lt;td>'&#xd;&#xa;    if row['nda_id'] > 0:&#xd;&#xa;        html += f&quot;&quot;&quot;&lt;input type=&quot;hidden&quot; value=&quot;{row['nda_scan']}&quot; id=&quot;ndaInput{i}&quot;>&lt;button onclick=&quot;myFunction('ndaInput{i}')&quot;>NDA с {row['nda_company_a']} от {str(row['nda_date'].day()) + '.' + str(row['nda_date'].month()) + '.' + str(row['nda_date'].year())}&lt;/button>&quot;&quot;&quot;&#xd;&#xa;    &#xd;&#xa;    html += '&lt;/td>'&#xd;&#xa;    html += '&lt;/tr>'&#xd;&#xa;    i += 1&#xd;&#xa;if i > 1:&#xd;&#xa;    html += '&lt;/table>'&#xd;&#xa;&#xd;&#xa;html += '&lt;/body>&lt;/html>'&#xd;&#xa;&#xd;&#xa;myWV = QWebView(None)&#xd;&#xa;settings = myWV.settings()&#xd;&#xa;#settings.setAttribute(QWebSettings.DeveloperExtrasEnabled, True)&#xd;&#xa;settings.setAttribute(QWebSettings.JavascriptCanAccessClipboard, True)&#xd;&#xa;myWV.setHtml(html)&#xd;&#xa;myWV.show()" id="{222ecf2d-d99d-42a2-97c8-a32546e3a20e}">
+          <actionScope id="Feature"/>
+        </actionsetting>
+        <actionsetting notificationMessage="" name="Гауссово сближение меридианов" shortTitle="" type="1" icon="" capture="0" isEnabledOnlyWhenEditable="0" action="from qgis.core import Qgis&#xd;&#xa;from qgis._core import *&#xd;&#xa;from qgis.utils import iface&#xd;&#xa;from math import floor&#xd;&#xa;import pyproj&#xd;&#xa;&#xd;&#xa;# Get the clicked well point coordinates in layer's crs and create a QgsPointXY object from them&#xd;&#xa;point = QgsPointXY([% $x %], [% $y %])&#xd;&#xa;&#xd;&#xa;# Create a QgsGeometry oblect from that point&#xd;&#xa;point_geom = QgsGeometry.fromPointXY(point)&#xd;&#xa;&#xd;&#xa;# get the layer's CRS name from layer's variable @layer_crs and create a QgsCoordinateReferenceSystem object from that&#xd;&#xa;layer_crs = QgsCoordinateReferenceSystem('[% @layer_crs%]')&#xd;&#xa;&#xd;&#xa;# get the project's CRS name from project's variable @project_crs_wkt and create a QgsCoordinateReferenceSystem object from that&#xd;&#xa;proj_crs = QgsCoordinateReferenceSystem.fromWkt('[% @project_crs_wkt %]')&#xd;&#xa;&#xd;&#xa;# Use pyproj.CRS().geodetic_crs.to_wkt() to get the WKT of project's GCS and then create a QgsCoordinateReferenceSystem from that&#xd;&#xa;proj_gcs = QgsCoordinateReferenceSystem.fromWkt(pyproj.CRS('[% @project_crs_wkt %]').geodetic_crs.to_wkt())&#xd;&#xa;&#xd;&#xa;# transform point coordinates from layer's CRS to project's GCS&#xd;&#xa;point_geom.transform(QgsCoordinateTransform(layer_crs, proj_gcs, QgsProject.instance()))&#xd;&#xa;&#xd;&#xa;# create a pyproj CRS object from the project's CRS&#xd;&#xa;pyproj_proj_crs = pyproj.CRS(proj_crs.toWkt())&#xd;&#xa;&#xd;&#xa;# get point's x and y coordinates in project's GCS (as lon/lat)&#xd;&#xa;x_dec = point_geom.centroid().asPoint().x()&#xd;&#xa;y_dec = point_geom.centroid().asPoint().y()&#xd;&#xa;&#xd;&#xa;# create a pyproj.Proj object from pyproj_proj_crs&#xd;&#xa;p = pyproj.Proj(pyproj_proj_crs)&#xd;&#xa;&#xd;&#xa;# get factors (named tuple with various geodetic parameters) for the point (lon/lat in project's GCS)&#xd;&#xa;my_factors = p.get_factors(x_dec, y_dec)&#xd;&#xa;&#xd;&#xa;# display the meridian convergence for the clicked well also showing the project's CRS name&#xd;&#xa;iface.messageBar().pushMessage(f'Гауссово сближение меридианов ({pyproj_proj_crs.name}) = {round(my_factors.meridian_convergence, 6)}', level=Qgis.Warning)" id="{f2aab329-bd5e-48c3-96c7-a77a636ad93e}">
+          <actionScope id="Feature"/>
+          <actionScope id="Canvas"/>
+        </actionsetting>
+      </attributeactions>
+      <attributetableconfig sortExpression="&quot;gid&quot;" sortOrder="0" actionWidgetStyle="dropDown">
+        <columns>
+          <column name="name_en" width="-1" type="field" hidden="0"/>
+          <column name="name_ru" width="-1" type="field" hidden="0"/>
+          <column name="gid" width="-1" type="field" hidden="0"/>
+          <column name="date_created" width="-1" type="field" hidden="0"/>
+          <column name="last_edited_user" width="-1" type="field" hidden="0"/>
+          <column name="date_edited" width="-1" type="field" hidden="0"/>
+          <column name="created_user" width="-1" type="field" hidden="0"/>
+          <column name="well_id" width="-1" type="field" hidden="0"/>
+          <column name="well_type_id" width="-1" type="field" hidden="0"/>
+          <column name="well_type" width="-1" type="field" hidden="0"/>
+          <column name="source" width="595" type="field" hidden="0"/>
+          <column name="geo_transf_applied" width="-1" type="field" hidden="0"/>
+          <column name="datestamp" width="-1" type="field" hidden="0"/>
+          <column name="data_quality_id" width="-1" type="field" hidden="0"/>
+          <column name="data_quality" width="-1" type="field" hidden="0"/>
+          <column name="area_name_ru" width="-1" type="field" hidden="0"/>
+          <column name="area_name_en" width="-1" type="field" hidden="0"/>
+          <column name="well_number" width="-1" type="field" hidden="0"/>
+          <column name="well_uwi" width="-1" type="field" hidden="0"/>
+          <column width="-1" type="actions" hidden="1"/>
+        </columns>
+      </attributetableconfig>
+      <conditionalstyles>
+        <rowstyles/>
+        <fieldstyles/>
+      </conditionalstyles>
+      <storedexpressions/>
+      <editform tolerant="1"></editform>
+      <editforminit/>
+      <editforminitcodesource>0</editforminitcodesource>
+      <editforminitfilepath></editforminitfilepath>
+      <editforminitcode><![CDATA[# -*- coding: utf-8 -*-
+"""
+QGIS forms can have a Python function that is called when the form is
+opened.
+
+Use this function to add extra logic to your forms.
+
+Enter the name of the function in the "Python Init function"
+field.
+An example follows:
+"""
+from qgis.PyQt.QtWidgets import QWidget
+
+def my_form_open(dialog, layer, feature):
+    geom = feature.geometry()
+    control = dialog.findChild(QWidget, "MyLineEdit")
+]]></editforminitcode>
+      <featformsuppress>0</featformsuppress>
+      <editorlayout>generatedlayout</editorlayout>
+      <editable>
+        <field name="ACTIVE" editable="1"/>
+        <field name="Altitude" editable="1"/>
+        <field name="COMMENTS" editable="1"/>
+        <field name="DATESTAMP" editable="1"/>
+        <field name="EASTING" editable="1"/>
+        <field name="EASTING_TXT" editable="1"/>
+        <field name="ELEV" editable="1"/>
+        <field name="NORTHING" editable="1"/>
+        <field name="NORTHING_TXT" editable="1"/>
+        <field name="PROJECT" editable="1"/>
+        <field name="RESULT" editable="1"/>
+        <field name="SOURCE" editable="1"/>
+        <field name="SUBTYPE" editable="1"/>
+        <field name="TD_MD" editable="1"/>
+        <field name="TD_TVDSS" editable="1"/>
+        <field name="TYPE" editable="1"/>
+        <field name="area_name_en" editable="1"/>
+        <field name="area_name_ru" editable="1"/>
+        <field name="created_user" editable="1"/>
+        <field name="data_quality" editable="1"/>
+        <field name="data_quality_id" editable="1"/>
+        <field name="date_created" editable="1"/>
+        <field name="date_edited" editable="1"/>
+        <field name="datestamp" editable="1"/>
+        <field name="fid" editable="1"/>
+        <field name="geo_transf_applied" editable="1"/>
+        <field name="gid" editable="1"/>
+        <field name="id" editable="1"/>
+        <field name="last_edited_user" editable="1"/>
+        <field name="name_en" editable="1"/>
+        <field name="name_ru" editable="1"/>
+        <field name="source" editable="1"/>
+        <field name="well_id" editable="1"/>
+        <field name="well_number" editable="1"/>
+        <field name="well_type" editable="1"/>
+        <field name="well_type_id" editable="1"/>
+        <field name="well_uwi" editable="1"/>
+      </editable>
+      <labelOnTop>
+        <field name="ACTIVE" labelOnTop="0"/>
+        <field name="Altitude" labelOnTop="0"/>
+        <field name="COMMENTS" labelOnTop="0"/>
+        <field name="DATESTAMP" labelOnTop="0"/>
+        <field name="EASTING" labelOnTop="0"/>
+        <field name="EASTING_TXT" labelOnTop="0"/>
+        <field name="ELEV" labelOnTop="0"/>
+        <field name="NORTHING" labelOnTop="0"/>
+        <field name="NORTHING_TXT" labelOnTop="0"/>
+        <field name="PROJECT" labelOnTop="0"/>
+        <field name="RESULT" labelOnTop="0"/>
+        <field name="SOURCE" labelOnTop="0"/>
+        <field name="SUBTYPE" labelOnTop="0"/>
+        <field name="TD_MD" labelOnTop="0"/>
+        <field name="TD_TVDSS" labelOnTop="0"/>
+        <field name="TYPE" labelOnTop="0"/>
+        <field name="area_name_en" labelOnTop="0"/>
+        <field name="area_name_ru" labelOnTop="0"/>
+        <field name="created_user" labelOnTop="0"/>
+        <field name="data_quality" labelOnTop="0"/>
+        <field name="data_quality_id" labelOnTop="0"/>
+        <field name="date_created" labelOnTop="0"/>
+        <field name="date_edited" labelOnTop="0"/>
+        <field name="datestamp" labelOnTop="0"/>
+        <field name="fid" labelOnTop="0"/>
+        <field name="geo_transf_applied" labelOnTop="0"/>
+        <field name="gid" labelOnTop="0"/>
+        <field name="id" labelOnTop="0"/>
+        <field name="last_edited_user" labelOnTop="0"/>
+        <field name="name_en" labelOnTop="0"/>
+        <field name="name_ru" labelOnTop="0"/>
+        <field name="source" labelOnTop="0"/>
+        <field name="well_id" labelOnTop="0"/>
+        <field name="well_number" labelOnTop="0"/>
+        <field name="well_type" labelOnTop="0"/>
+        <field name="well_type_id" labelOnTop="0"/>
+        <field name="well_uwi" labelOnTop="0"/>
+      </labelOnTop>
+      <reuseLastValue>
+        <field reuseLastValue="0" name="ACTIVE"/>
+        <field reuseLastValue="0" name="Altitude"/>
+        <field reuseLastValue="0" name="COMMENTS"/>
+        <field reuseLastValue="0" name="DATESTAMP"/>
+        <field reuseLastValue="0" name="EASTING"/>
+        <field reuseLastValue="0" name="EASTING_TXT"/>
+        <field reuseLastValue="0" name="ELEV"/>
+        <field reuseLastValue="0" name="NORTHING"/>
+        <field reuseLastValue="0" name="NORTHING_TXT"/>
+        <field reuseLastValue="0" name="PROJECT"/>
+        <field reuseLastValue="0" name="RESULT"/>
+        <field reuseLastValue="0" name="SOURCE"/>
+        <field reuseLastValue="0" name="SUBTYPE"/>
+        <field reuseLastValue="0" name="TD_MD"/>
+        <field reuseLastValue="0" name="TD_TVDSS"/>
+        <field reuseLastValue="0" name="TYPE"/>
+        <field reuseLastValue="0" name="area_name_en"/>
+        <field reuseLastValue="0" name="area_name_ru"/>
+        <field reuseLastValue="0" name="created_user"/>
+        <field reuseLastValue="0" name="data_quality"/>
+        <field reuseLastValue="0" name="data_quality_id"/>
+        <field reuseLastValue="0" name="date_created"/>
+        <field reuseLastValue="0" name="date_edited"/>
+        <field reuseLastValue="0" name="datestamp"/>
+        <field reuseLastValue="0" name="fid"/>
+        <field reuseLastValue="0" name="geo_transf_applied"/>
+        <field reuseLastValue="0" name="gid"/>
+        <field reuseLastValue="0" name="id"/>
+        <field reuseLastValue="0" name="last_edited_user"/>
+        <field reuseLastValue="0" name="name_en"/>
+        <field reuseLastValue="0" name="name_ru"/>
+        <field reuseLastValue="0" name="source"/>
+        <field reuseLastValue="0" name="well_id"/>
+        <field reuseLastValue="0" name="well_number"/>
+        <field reuseLastValue="0" name="well_type"/>
+        <field reuseLastValue="0" name="well_type_id"/>
+        <field reuseLastValue="0" name="well_uwi"/>
+      </reuseLastValue>
+      <dataDefinedFieldProperties/>
+      <widgets/>
+      <previewExpression>"name_en"</previewExpression>
+      <mapTip></mapTip>
+    </maplayer>
+    <maplayer autoRefreshTime="0" geometry="No geometry" refreshOnNotifyMessage="" legendPlaceholderImage="" styleCategories="AllStyleCategories" type="vector" autoRefreshEnabled="0" wkbType="NoGeometry" minScale="1e+08" hasScaleBasedVisibilityFlag="0" refreshOnNotifyEnabled="0" maxScale="0" readOnly="0">
+      <id>well_attributes_view_3bb32882_1928_4582_adef_d4a8d9a5836f</id>
+      <datasource>dbname='vgdb' host=192.168.117.3 port=5432 sslmode=disable key='gid' checkPrimaryKeyUnicity='1' table="dm"."well_attributes_view"</datasource>
+      <keywordList>
+        <value></value>
+      </keywordList>
+      <layername>well_attributes_view</layername>
+      <srs>
+        <spatialrefsys nativeFormat="Wkt">
+          <wkt></wkt>
+          <proj4></proj4>
+          <srsid>0</srsid>
+          <srid>0</srid>
+          <authid></authid>
+          <description></description>
+          <projectionacronym></projectionacronym>
+          <ellipsoidacronym></ellipsoidacronym>
+          <geographicflag>false</geographicflag>
+        </spatialrefsys>
+      </srs>
+      <resourceMetadata>
+        <identifier></identifier>
+        <parentidentifier></parentidentifier>
+        <language></language>
+        <type>dataset</type>
+        <title></title>
+        <abstract></abstract>
+        <links/>
+        <fees></fees>
+        <encoding></encoding>
+        <crs>
+          <spatialrefsys nativeFormat="Wkt">
+            <wkt></wkt>
+            <proj4></proj4>
+            <srsid>0</srsid>
+            <srid>0</srid>
+            <authid></authid>
+            <description></description>
+            <projectionacronym></projectionacronym>
+            <ellipsoidacronym></ellipsoidacronym>
+            <geographicflag>false</geographicflag>
+          </spatialrefsys>
+        </crs>
+        <extent/>
+      </resourceMetadata>
+      <provider encoding="">postgres</provider>
+      <vectorjoins/>
+      <layerDependencies/>
+      <dataDependencies/>
+      <expressionfields/>
+      <map-layer-style-manager current="default">
+        <map-layer-style name="default"/>
+      </map-layer-style-manager>
+      <auxiliaryLayer/>
+      <metadataUrls/>
+      <flags>
+        <Identifiable>1</Identifiable>
+        <Removable>1</Removable>
+        <Searchable>1</Searchable>
+        <Private>0</Private>
+      </flags>
+      <temporal endExpression="" fixedDuration="0" startExpression="" startField="" mode="0" endField="" durationUnit="min" durationField="" limitMode="0" accumulate="0" enabled="0">
+        <fixedRange>
+          <start></start>
+          <end></end>
+        </fixedRange>
+      </temporal>
+      <elevation extrusion="0" binding="Centroid" type="IndividualFeatures" respectLayerSymbol="1" extrusionEnabled="0" zoffset="0" zscale="1" clamping="Terrain" showMarkerSymbolInSurfacePlots="0" symbology="Line">
+        <data-defined-properties>
+          <Option type="Map">
+            <Option name="name" type="QString" value=""/>
+            <Option name="properties"/>
+            <Option name="type" type="QString" value="collection"/>
+          </Option>
+        </data-defined-properties>
+        <profileLineSymbol>
+          <symbol alpha="1" clip_to_extent="1" name="" type="line" force_rhr="0" is_animated="0" frame_rate="10">
+            <data_defined_properties>
+              <Option type="Map">
+                <Option name="name" type="QString" value=""/>
+                <Option name="properties"/>
+                <Option name="type" type="QString" value="collection"/>
+              </Option>
+            </data_defined_properties>
+            <layer locked="0" class="SimpleLine" enabled="1" pass="0">
+              <Option type="Map">
+                <Option name="align_dash_pattern" type="QString" value="0"/>
+                <Option name="capstyle" type="QString" value="square"/>
+                <Option name="customdash" type="QString" value="5;2"/>
+                <Option name="customdash_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="customdash_unit" type="QString" value="MM"/>
+                <Option name="dash_pattern_offset" type="QString" value="0"/>
+                <Option name="dash_pattern_offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="dash_pattern_offset_unit" type="QString" value="MM"/>
+                <Option name="draw_inside_polygon" type="QString" value="0"/>
+                <Option name="joinstyle" type="QString" value="bevel"/>
+                <Option name="line_color" type="QString" value="229,182,54,255"/>
+                <Option name="line_style" type="QString" value="solid"/>
+                <Option name="line_width" type="QString" value="0.6"/>
+                <Option name="line_width_unit" type="QString" value="MM"/>
+                <Option name="offset" type="QString" value="0"/>
+                <Option name="offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="offset_unit" type="QString" value="MM"/>
+                <Option name="ring_filter" type="QString" value="0"/>
+                <Option name="trim_distance_end" type="QString" value="0"/>
+                <Option name="trim_distance_end_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="trim_distance_end_unit" type="QString" value="MM"/>
+                <Option name="trim_distance_start" type="QString" value="0"/>
+                <Option name="trim_distance_start_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="trim_distance_start_unit" type="QString" value="MM"/>
+                <Option name="tweak_dash_pattern_on_corners" type="QString" value="0"/>
+                <Option name="use_custom_dash" type="QString" value="0"/>
+                <Option name="width_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+              </Option>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option name="name" type="QString" value=""/>
+                  <Option name="properties"/>
+                  <Option name="type" type="QString" value="collection"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </profileLineSymbol>
+        <profileFillSymbol>
+          <symbol alpha="1" clip_to_extent="1" name="" type="fill" force_rhr="0" is_animated="0" frame_rate="10">
+            <data_defined_properties>
+              <Option type="Map">
+                <Option name="name" type="QString" value=""/>
+                <Option name="properties"/>
+                <Option name="type" type="QString" value="collection"/>
+              </Option>
+            </data_defined_properties>
+            <layer locked="0" class="SimpleFill" enabled="1" pass="0">
+              <Option type="Map">
+                <Option name="border_width_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="color" type="QString" value="229,182,54,255"/>
+                <Option name="joinstyle" type="QString" value="bevel"/>
+                <Option name="offset" type="QString" value="0,0"/>
+                <Option name="offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="offset_unit" type="QString" value="MM"/>
+                <Option name="outline_color" type="QString" value="164,130,39,255"/>
+                <Option name="outline_style" type="QString" value="solid"/>
+                <Option name="outline_width" type="QString" value="0.2"/>
+                <Option name="outline_width_unit" type="QString" value="MM"/>
+                <Option name="style" type="QString" value="solid"/>
+              </Option>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option name="name" type="QString" value=""/>
+                  <Option name="properties"/>
+                  <Option name="type" type="QString" value="collection"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </profileFillSymbol>
+        <profileMarkerSymbol>
+          <symbol alpha="1" clip_to_extent="1" name="" type="marker" force_rhr="0" is_animated="0" frame_rate="10">
+            <data_defined_properties>
+              <Option type="Map">
+                <Option name="name" type="QString" value=""/>
+                <Option name="properties"/>
+                <Option name="type" type="QString" value="collection"/>
+              </Option>
+            </data_defined_properties>
+            <layer locked="0" class="SimpleMarker" enabled="1" pass="0">
+              <Option type="Map">
+                <Option name="angle" type="QString" value="0"/>
+                <Option name="cap_style" type="QString" value="square"/>
+                <Option name="color" type="QString" value="229,182,54,255"/>
+                <Option name="horizontal_anchor_point" type="QString" value="1"/>
+                <Option name="joinstyle" type="QString" value="bevel"/>
+                <Option name="name" type="QString" value="diamond"/>
+                <Option name="offset" type="QString" value="0,0"/>
+                <Option name="offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="offset_unit" type="QString" value="MM"/>
+                <Option name="outline_color" type="QString" value="164,130,39,255"/>
+                <Option name="outline_style" type="QString" value="solid"/>
+                <Option name="outline_width" type="QString" value="0.2"/>
+                <Option name="outline_width_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="outline_width_unit" type="QString" value="MM"/>
+                <Option name="scale_method" type="QString" value="diameter"/>
+                <Option name="size" type="QString" value="3"/>
+                <Option name="size_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+                <Option name="size_unit" type="QString" value="MM"/>
+                <Option name="vertical_anchor_point" type="QString" value="1"/>
+              </Option>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option name="name" type="QString" value=""/>
+                  <Option name="properties"/>
+                  <Option name="type" type="QString" value="collection"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </profileMarkerSymbol>
+      </elevation>
+      <customproperties>
+        <Option type="Map">
+          <Option name="dualview/previewExpressions" type="List">
+            <Option type="QString" value="&quot;well_name_ru&quot;"/>
+          </Option>
+        </Option>
+      </customproperties>
+      <geometryOptions removeDuplicateNodes="0" geometryPrecision="0">
+        <activeChecks type="StringList">
+          <Option type="QString" value=""/>
+        </activeChecks>
+        <checkConfiguration/>
+      </geometryOptions>
+      <legend type="default-vector" showLabelLegend="0"/>
+      <referencedLayers/>
+      <fieldConfiguration>
+        <field name="gid" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="well_attribute_id" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="well_id" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="well_name_ru" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="well_name_en" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="well_attribute_name_id" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="well_attribute_name" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="well_attribute_value" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="source" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="comments" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="datestamp" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="data_quality_id" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="data_quality" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="link_id" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="link" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="nda_id" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="nda_company_a" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="nda_date" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="nda_scan" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="created_user" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="date_created" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="last_edited_user" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="date_edited" configurationFlags="None">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+      </fieldConfiguration>
+      <aliases>
+        <alias name="" field="gid" index="0"/>
+        <alias name="" field="well_attribute_id" index="1"/>
+        <alias name="" field="well_id" index="2"/>
+        <alias name="" field="well_name_ru" index="3"/>
+        <alias name="" field="well_name_en" index="4"/>
+        <alias name="" field="well_attribute_name_id" index="5"/>
+        <alias name="" field="well_attribute_name" index="6"/>
+        <alias name="" field="well_attribute_value" index="7"/>
+        <alias name="" field="source" index="8"/>
+        <alias name="" field="comments" index="9"/>
+        <alias name="" field="datestamp" index="10"/>
+        <alias name="" field="data_quality_id" index="11"/>
+        <alias name="" field="data_quality" index="12"/>
+        <alias name="" field="link_id" index="13"/>
+        <alias name="" field="link" index="14"/>
+        <alias name="" field="nda_id" index="15"/>
+        <alias name="" field="nda_company_a" index="16"/>
+        <alias name="" field="nda_date" index="17"/>
+        <alias name="" field="nda_scan" index="18"/>
+        <alias name="" field="created_user" index="19"/>
+        <alias name="" field="date_created" index="20"/>
+        <alias name="" field="last_edited_user" index="21"/>
+        <alias name="" field="date_edited" index="22"/>
+      </aliases>
+      <defaults>
+        <default applyOnUpdate="0" field="gid" expression=""/>
+        <default applyOnUpdate="0" field="well_attribute_id" expression=""/>
+        <default applyOnUpdate="0" field="well_id" expression=""/>
+        <default applyOnUpdate="0" field="well_name_ru" expression=""/>
+        <default applyOnUpdate="0" field="well_name_en" expression=""/>
+        <default applyOnUpdate="0" field="well_attribute_name_id" expression=""/>
+        <default applyOnUpdate="0" field="well_attribute_name" expression=""/>
+        <default applyOnUpdate="0" field="well_attribute_value" expression=""/>
+        <default applyOnUpdate="0" field="source" expression=""/>
+        <default applyOnUpdate="0" field="comments" expression=""/>
+        <default applyOnUpdate="0" field="datestamp" expression=""/>
+        <default applyOnUpdate="0" field="data_quality_id" expression=""/>
+        <default applyOnUpdate="0" field="data_quality" expression=""/>
+        <default applyOnUpdate="0" field="link_id" expression=""/>
+        <default applyOnUpdate="0" field="link" expression=""/>
+        <default applyOnUpdate="0" field="nda_id" expression=""/>
+        <default applyOnUpdate="0" field="nda_company_a" expression=""/>
+        <default applyOnUpdate="0" field="nda_date" expression=""/>
+        <default applyOnUpdate="0" field="nda_scan" expression=""/>
+        <default applyOnUpdate="0" field="created_user" expression=""/>
+        <default applyOnUpdate="0" field="date_created" expression=""/>
+        <default applyOnUpdate="0" field="last_edited_user" expression=""/>
+        <default applyOnUpdate="0" field="date_edited" expression=""/>
+      </defaults>
+      <constraints>
+        <constraint unique_strength="1" notnull_strength="1" field="gid" constraints="3" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="well_attribute_id" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="well_id" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="well_name_ru" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="well_name_en" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="well_attribute_name_id" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="well_attribute_name" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="well_attribute_value" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="source" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="comments" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="datestamp" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="data_quality_id" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="data_quality" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="link_id" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="link" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="nda_id" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="nda_company_a" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="nda_date" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="nda_scan" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="created_user" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="date_created" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="last_edited_user" constraints="0" exp_strength="0"/>
+        <constraint unique_strength="0" notnull_strength="0" field="date_edited" constraints="0" exp_strength="0"/>
+      </constraints>
+      <constraintExpressions>
+        <constraint field="gid" desc="" exp=""/>
+        <constraint field="well_attribute_id" desc="" exp=""/>
+        <constraint field="well_id" desc="" exp=""/>
+        <constraint field="well_name_ru" desc="" exp=""/>
+        <constraint field="well_name_en" desc="" exp=""/>
+        <constraint field="well_attribute_name_id" desc="" exp=""/>
+        <constraint field="well_attribute_name" desc="" exp=""/>
+        <constraint field="well_attribute_value" desc="" exp=""/>
+        <constraint field="source" desc="" exp=""/>
+        <constraint field="comments" desc="" exp=""/>
+        <constraint field="datestamp" desc="" exp=""/>
+        <constraint field="data_quality_id" desc="" exp=""/>
+        <constraint field="data_quality" desc="" exp=""/>
+        <constraint field="link_id" desc="" exp=""/>
+        <constraint field="link" desc="" exp=""/>
+        <constraint field="nda_id" desc="" exp=""/>
+        <constraint field="nda_company_a" desc="" exp=""/>
+        <constraint field="nda_date" desc="" exp=""/>
+        <constraint field="nda_scan" desc="" exp=""/>
+        <constraint field="created_user" desc="" exp=""/>
+        <constraint field="date_created" desc="" exp=""/>
+        <constraint field="last_edited_user" desc="" exp=""/>
+        <constraint field="date_edited" desc="" exp=""/>
+      </constraintExpressions>
+      <expressionfields/>
+      <attributeactions>
+        <defaultAction key="Canvas" value="{00000000-0000-0000-0000-000000000000}"/>
+      </attributeactions>
+      <attributetableconfig sortExpression="" sortOrder="0" actionWidgetStyle="dropDown">
+        <columns>
+          <column name="gid" width="-1" type="field" hidden="0"/>
+          <column name="well_attribute_id" width="-1" type="field" hidden="0"/>
+          <column name="well_id" width="-1" type="field" hidden="0"/>
+          <column name="well_name_ru" width="-1" type="field" hidden="0"/>
+          <column name="well_name_en" width="-1" type="field" hidden="0"/>
+          <column name="well_attribute_name_id" width="-1" type="field" hidden="0"/>
+          <column name="well_attribute_name" width="-1" type="field" hidden="0"/>
+          <column name="well_attribute_value" width="-1" type="field" hidden="0"/>
+          <column name="source" width="-1" type="field" hidden="0"/>
+          <column name="comments" width="-1" type="field" hidden="0"/>
+          <column name="datestamp" width="-1" type="field" hidden="0"/>
+          <column name="data_quality_id" width="-1" type="field" hidden="0"/>
+          <column name="data_quality" width="-1" type="field" hidden="0"/>
+          <column name="link_id" width="-1" type="field" hidden="0"/>
+          <column name="link" width="-1" type="field" hidden="0"/>
+          <column name="created_user" width="-1" type="field" hidden="0"/>
+          <column name="date_created" width="-1" type="field" hidden="0"/>
+          <column name="last_edited_user" width="-1" type="field" hidden="0"/>
+          <column name="date_edited" width="-1" type="field" hidden="0"/>
+          <column width="-1" type="actions" hidden="1"/>
+        </columns>
+      </attributetableconfig>
+      <conditionalstyles>
+        <rowstyles/>
+        <fieldstyles/>
+      </conditionalstyles>
+      <storedexpressions/>
+      <editform tolerant="1"></editform>
+      <editforminit/>
+      <editforminitcodesource>0</editforminitcodesource>
+      <editforminitfilepath></editforminitfilepath>
+      <editforminitcode><![CDATA[]]></editforminitcode>
+      <featformsuppress>0</featformsuppress>
+      <editorlayout>generatedlayout</editorlayout>
+      <editable/>
+      <labelOnTop/>
+      <reuseLastValue/>
+      <dataDefinedFieldProperties/>
+      <widgets/>
+      <previewExpression>"well_name_ru"</previewExpression>
+      <mapTip></mapTip>
+    </maplayer>
+  </maplayers>
+</qlr>

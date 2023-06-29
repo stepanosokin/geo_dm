@@ -147,6 +147,8 @@ class GeoDM:
         self.wells_view_list = None
         self.well_attributes_view_list = None
         self.well_attributes_names_list = None
+        self.aux_docs_dict = {}
+        self.doc_types = None
 
         self.survey_id_filter = None
         self.proc_id_filter = None
@@ -157,8 +159,9 @@ class GeoDM:
         self.selectedProcLayer = None
         self.selectedFieldLayer = None
 
-        self.selectedProcFeaturesList = []
-        self.selectedFieldFeaturesList = []
+        self.selectedProcFeaturesList = None
+        self.selectedFieldFeaturesList = None
+        self.selectedWellFeaturesList = None
 
         self.sql = ''
 
@@ -278,6 +281,12 @@ class GeoDM:
             ':/plugins/geo_dm/oil-rig.png',
             text=self.tr(u'Manage Wells'),
             callback=self.run_mwd,
+            parent=self.iface.mainWindow())
+
+        self.add_action(
+            ':/plugins/geo_dm/document.png',
+            text=self.tr(u'Manage Auxiliary Documents'),
+            callback=self.run_aux,
             parent=self.iface.mainWindow())
 
         # will be set False in run()
@@ -910,17 +919,18 @@ class GeoDM:
 
 
     def display_selected_geometry_count(self):
-        # if self.selectedProcFeaturesList:
-        self.dockwind.selectedGeometryLabel.setText(f"Выбрано объектов: {len(self.selectedProcFeaturesList)}")
+        if self.selectedProcFeaturesList:
+            self.dockwind.selectedGeometryLabel.setText(f"Выбрано объектов: {len(self.selectedProcFeaturesList)}")
 
 
     def display_selected_field_geometry_count(self):
-        # if self.selectedProcFeaturesList:
-        self.dockwindfield.selectedGeometryLabel.setText(f"Выбрано объектов: {len(self.selectedFieldFeaturesList)}")
+        if self.selectedFieldFeaturesList:
+            self.dockwindfield.selectedGeometryLabel.setText(f"Выбрано объектов: {len(self.selectedFieldFeaturesList)}")
 
 
     def display_selected_wells_geometry_count(self):
-        self.dockwindwells.selectedGeometryLabel.setText(f"Выбрано объектов: {len(self.selectedWellFeaturesList)}")
+        if self.selectedWellFeaturesList:
+            self.dockwindwells.selectedGeometryLabel.setText(f"Выбрано объектов: {len(self.selectedWellFeaturesList)}")
 
 
     def set_selected_field_features_list(self):
@@ -1075,10 +1085,7 @@ class GeoDM:
             self.addreportdlg.reportConfInput.clear()
             self.addreportdlg.reportContractInput.clear()
 
-            with open('.pgdsn', encoding='utf-8') as dsnf:
-                dsn = dsnf.read().replace('\n', '')
             with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-
                 # with self.pgconn.cursor() as cur:
                 with pgconn.cursor() as cur:
                     sql = f"select * from {self.report_types}"
@@ -4626,6 +4633,123 @@ class GeoDM:
         self.addtransmittaldlg.show()
 
 
+    def refresh_aux_doc_types(self):
+        self.doc_types = {
+            'Компании': 0
+            , 'Договоры': 1
+            , 'Конфиденциальность': 2
+            , 'Качество данных': 3
+            , 'Физические носители': 4
+            , 'Форматы': 5
+            , 'Ссылки': 6
+            , 'NDA': 7
+            , 'Проекты': 8
+            , 'Отчеты': 9
+            , 'Акты приема-передачи': 10
+                     }
+        self.wind.auxDocTypeComboBox.addItem('--Выберите тип документа--')
+        self.wind.auxDocTypeComboBox.addItems(self.doc_types.keys())
+
+
+    def reload_aux_docs(self):
+        selected_doc_type_index = self.wind.auxDocTypeComboBox.currentIndex() - 1
+        if selected_doc_type_index >= 0:
+            filter_str = self.wind.auxFilterLineEdit.text().lower().strip().replace("'", "''")
+            selected_doc_type = self.doc_types[self.wind.auxDocTypeComboBox.currentText()]
+            if selected_doc_type == 0:
+                sql = f"select * from {self.companies}"
+                if filter_str:
+                    sql += f" where (LOWER(name) like '%{filter_str}%'" \
+                           f" or LOWER(shortname) like '%{filter_str}%'" \
+                           f")"
+                sql += ' order by name;'
+                try:
+                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                        with pgconn.cursor() as cur:
+                            cur.execute(sql)
+                            self.aux_docs_dict = {}
+                            self.aux_docs_dict['doc_type'] = 'companies'
+                            self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                    self.wind.auxDocsTableWidget.clear()
+                    self.wind.auxDocsTableWidget.setRowCount(0)
+                    self.wind.auxDocsTableWidget.setColumnCount(2)
+                    self.wind.auxDocsTableWidget.setHorizontalHeaderLabels(['Название', 'Короткое имя'])
+                    header = self.wind.auxDocsTableWidget.horizontalHeader()
+                    header.resizeSection(0, 150)
+                    header.resizeSection(1, 150)
+                    for i, company_row in enumerate(self.aux_docs_dict['docs_list']):
+                        self.wind.auxDocsTableWidget.insertRow(i)
+                        citem = QTableWidgetItem(company_row['name'])
+                        citem.setToolTip(str(company_row['name']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 0, citem)
+                        citem = QTableWidgetItem(company_row['shortname'])
+                        citem.setToolTip(str(company_row['shortname']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 1, citem)
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Не удалось загрузить список компаний из базы ' + sql,
+                                                        level=Qgis.Critical, duration=3)
+            elif selected_doc_type == 1:
+                sql = f"select * from {self.contracts_view}"
+                if filter_str:
+                    sql += f" where (LOWER(number) like '%{filter_str}%'" \
+                           f" or LOWER(date::text) like '%{filter_str}%'" \
+                           f" or LOWER(name) like '%{filter_str}%'" \
+                           f" or LOWER(customer) like '%{filter_str}%'" \
+                           f" or LOWER(customer_short) like '%{filter_str}%'" \
+                           f" or LOWER(contractor) like '%{filter_str}%'" \
+                           f" or LOWER(contractor_short) like '%{filter_str}%'" \
+                           f" or LOWER(contract_type) like '%{filter_str}%'" \
+                           f" or LOWER(link) like '%{filter_str}%'" \
+                           f")"
+                sql += ' order by date DESC;'
+                try:
+                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                        with pgconn.cursor() as cur:
+                            cur.execute(sql)
+                            self.aux_docs_dict = {}
+                            self.aux_docs_dict['doc_type'] = 'contracts'
+                            self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                    self.wind.auxDocsTableWidget.clear()
+                    self.wind.auxDocsTableWidget.setRowCount(0)
+                    self.wind.auxDocsTableWidget.setColumnCount(4)
+                    self.wind.auxDocsTableWidget.setHorizontalHeaderLabels(['Номер', 'Дата', 'Заказчик', 'Подрядчик'])
+                    header = self.wind.auxDocsTableWidget.horizontalHeader()
+                    header.resizeSection(0, 100)
+                    header.resizeSection(1, 95)
+                    header.resizeSection(2, 100)
+                    header.resizeSection(3, 100)
+                    for i, contract_row in enumerate(self.aux_docs_dict['docs_list']):
+                        self.wind.auxDocsTableWidget.insertRow(i)
+                        citem = QTableWidgetItem(contract_row['number'])
+                        citem.setToolTip(str(f"{contract_row['number']} {contract_row['name']}"))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 0, citem)
+                        citem = QTableWidgetItem(str(contract_row['date']))
+                        citem.setToolTip(str(contract_row['date']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 1, citem)
+                        citem = QTableWidgetItem(str(contract_row['customer_short']))
+                        citem.setToolTip(str(contract_row['customer']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 2, citem)
+                        citem = QTableWidgetItem(str(contract_row['contractor_short']))
+                        citem.setToolTip(str(contract_row['contractor']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 3, citem)
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Не удалось загрузить список договоров из базы ' + sql,
+                                                        level=Qgis.Critical, duration=3)
+        else:
+            self.aux_docs_dict = {}
+            self.wind.auxDocsTableWidget.setRowCount(0)
+            self.wind.auxDocsTableWidget.setColumnCount(0)
+            self.wind.auxDocsTableWidget.clear()
+
+
     def run_mps(self):
         """Run method that performs all the real work"""
         # Create the dialog with elements (after translation) and keep reference
@@ -4814,3 +4938,29 @@ class GeoDM:
             self.iface.messageBar().pushMessage('Ошибка', 'Необходимо добавить в проект слой с точками скважин',
                                                 level=Qgis.Warning, duration=3)
 
+
+    def run_aux(self):
+        """Run method that performs all the real work"""
+        try:
+            self.wind.close()
+        except:
+            pass
+        if self.first_start == True:
+            self.first_start = False
+            self.dockwindaux = GeoDMDockWidgetAux()
+        else:
+            self.dockwindaux = GeoDMDockWidgetAux()
+
+        self.mode = 'aux'
+        self.wind = self.dockwindaux
+
+        self.wind.auxRefreshButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+
+        self.refresh_aux_doc_types()
+
+        self.wind.auxDocTypeComboBox.activated.connect(self.reload_aux_docs)
+        self.wind.auxFilterLineEdit.textEdited.connect(self.reload_aux_docs)
+        self.wind.auxRefreshButton.clicked.connect(self.reload_aux_docs)
+
+        self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.wind)
+        self.wind.adjustSize()
