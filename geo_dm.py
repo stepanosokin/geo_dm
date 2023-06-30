@@ -1018,7 +1018,7 @@ class GeoDM:
                 mbutton = QPushButton(mwidget)
                 mbutton.setText('Подтвердить')
                 mbutton.pressed.connect(self.execute_sql)
-                mbutton.pressed.connect(self.refresh_processings)
+                # mbutton.pressed.connect(self.refresh_processings)
                 mwidget.layout().addWidget(mbutton)
                 self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=3)
                 self.addcompdlg.accept()
@@ -4553,7 +4553,7 @@ class GeoDM:
                     sql += ' order by name'
                     cur.execute(sql)
                     self.addtransmittaldlg.from_companies_list = cur.fetchall()
-                    self.addtransmittaldlg.transmittalFromCompanyComboBox.addItem('Выберите отправителя')
+                    self.addtransmittaldlg.transmittalFromCompanyComboBox.addItem('--Выберите отправителя--')
                     self.addtransmittaldlg.transmittalFromCompanyComboBox.addItems(
                         [row['name'] for row in self.addtransmittaldlg.from_companies_list])
 
@@ -4569,7 +4569,7 @@ class GeoDM:
                     sql += ' order by name'
                     cur.execute(sql)
                     self.addtransmittaldlg.to_companies_list = cur.fetchall()
-                    self.addtransmittaldlg.transmittalToCompanyComboBox.addItem('Выберите отправителя')
+                    self.addtransmittaldlg.transmittalToCompanyComboBox.addItem('--Выберите получателя--')
                     self.addtransmittaldlg.transmittalToCompanyComboBox.addItems(
                         [row['name'] for row in self.addtransmittaldlg.to_companies_list])
 
@@ -4675,7 +4675,7 @@ class GeoDM:
                     self.wind.auxDocsTableWidget.setColumnCount(2)
                     self.wind.auxDocsTableWidget.setHorizontalHeaderLabels(['Название', 'Короткое имя'])
                     header = self.wind.auxDocsTableWidget.horizontalHeader()
-                    header.resizeSection(0, 150)
+                    header.resizeSection(0, 325)
                     header.resizeSection(1, 150)
                     for i, company_row in enumerate(self.aux_docs_dict['docs_list']):
                         self.wind.auxDocsTableWidget.insertRow(i)
@@ -4717,7 +4717,7 @@ class GeoDM:
                     self.wind.auxDocsTableWidget.setColumnCount(4)
                     self.wind.auxDocsTableWidget.setHorizontalHeaderLabels(['Номер', 'Дата', 'Заказчик', 'Подрядчик'])
                     header = self.wind.auxDocsTableWidget.horizontalHeader()
-                    header.resizeSection(0, 100)
+                    header.resizeSection(0, 200)
                     header.resizeSection(1, 95)
                     header.resizeSection(2, 100)
                     header.resizeSection(3, 100)
@@ -4759,16 +4759,21 @@ class GeoDM:
                             self.aux_docs_dict['docs_list'] = list(cur.fetchall())
                     self.wind.auxDocsTableWidget.clear()
                     self.wind.auxDocsTableWidget.setRowCount(0)
-                    self.wind.auxDocsTableWidget.setColumnCount(1)
+                    self.wind.auxDocsTableWidget.setColumnCount(2)
                     self.wind.auxDocsTableWidget.setHorizontalHeaderLabels(['Конфиденциальность'])
                     header = self.wind.auxDocsTableWidget.horizontalHeader()
                     header.resizeSection(0, 395)
+                    header.resizeSection(1, 100)
                     for i, contract_row in enumerate(self.aux_docs_dict['docs_list']):
                         self.wind.auxDocsTableWidget.insertRow(i)
                         citem = QTableWidgetItem(contract_row['conf_name'])
                         citem.setToolTip(contract_row['conf_name'])
                         citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                         self.wind.auxDocsTableWidget.setItem(i, 0, citem)
+                        citem = QTableWidgetItem(contract_row['conf_name_short'])
+                        citem.setToolTip(contract_row['conf_name_short'])
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 1, citem)
                 except:
                     self.iface.messageBar().pushMessage('Ошибка',
                                                         'Не удалось загрузить список уровней конфиденциальности из базы ' + sql,
@@ -4789,19 +4794,24 @@ class GeoDM:
                             self.aux_docs_dict['docs_list'] = list(cur.fetchall())
                     self.wind.auxDocsTableWidget.clear()
                     self.wind.auxDocsTableWidget.setRowCount(0)
-                    self.wind.auxDocsTableWidget.setColumnCount(1)
+                    self.wind.auxDocsTableWidget.setColumnCount(2)
                     self.wind.auxDocsTableWidget.setHorizontalHeaderLabels(['Качество данных'])
                     header = self.wind.auxDocsTableWidget.horizontalHeader()
-                    header.resizeSection(0, 395)
+                    header.resizeSection(0, 390)
+                    header.resizeSection(1, 90)
                     for i, row in enumerate(self.aux_docs_dict['docs_list']):
                         self.wind.auxDocsTableWidget.insertRow(i)
                         citem = QTableWidgetItem(row['name_ru'])
                         citem.setToolTip(row['name_ru'])
                         citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                         self.wind.auxDocsTableWidget.setItem(i, 0, citem)
+                        citem = QTableWidgetItem(str(row['quality_range']))
+                        citem.setToolTip(str(row['quality_range']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 1, citem)
                 except:
                     self.iface.messageBar().pushMessage('Ошибка',
-                                                        'Не удалось загрузить список уровней конфиденциальности из базы ' + sql,
+                                                        'Не удалось загрузить список качества данных из базы ' + sql,
                                                         level=Qgis.Critical, duration=3)
             elif selected_doc_type == 4:
                 sql = f"select * from {self.drives_view}"
@@ -4826,8 +4836,8 @@ class GeoDM:
                     self.wind.auxDocsTableWidget.setColumnCount(2)
                     self.wind.auxDocsTableWidget.setHorizontalHeaderLabels(['Номер', 'Тип'])
                     header = self.wind.auxDocsTableWidget.horizontalHeader()
-                    header.resizeSection(0, 250)
-                    header.resizeSection(1, 145)
+                    header.resizeSection(0, 300)
+                    header.resizeSection(1, 195)
                     for i, drive_row in enumerate(self.aux_docs_dict['docs_list']):
                         self.wind.auxDocsTableWidget.insertRow(i)
                         citem = QTableWidgetItem(drive_row['drive_number'])
@@ -4858,7 +4868,7 @@ class GeoDM:
                     self.wind.auxDocsTableWidget.setColumnCount(1)
                     self.wind.auxDocsTableWidget.setHorizontalHeaderLabels(['Формат'])
                     header = self.wind.auxDocsTableWidget.horizontalHeader()
-                    header.resizeSection(0, 395)
+                    header.resizeSection(0, 495)
                     for i, row in enumerate(self.aux_docs_dict['docs_list']):
                         self.wind.auxDocsTableWidget.insertRow(i)
                         citem = QTableWidgetItem(row['name'])
@@ -4869,11 +4879,322 @@ class GeoDM:
                     self.iface.messageBar().pushMessage('Ошибка',
                                                         'Не удалось загрузить список форматов из базы ' + sql,
                                                         level=Qgis.Critical, duration=3)
+            elif selected_doc_type == 6:
+                sql = f"select * from {self.links}"
+                if filter_str:
+                    sql += f" where (LOWER(link) like '%{filter_str}%')"
+                sql += ' order by link;'
+                try:
+                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                        with pgconn.cursor() as cur:
+                            cur.execute(sql)
+                            self.aux_docs_dict = {}
+                            self.aux_docs_dict['doc_type'] = 'links'
+                            self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                    self.wind.auxDocsTableWidget.clear()
+                    self.wind.auxDocsTableWidget.setRowCount(0)
+                    self.wind.auxDocsTableWidget.setColumnCount(1)
+                    self.wind.auxDocsTableWidget.setHorizontalHeaderLabels(['Ссылка'])
+                    header = self.wind.auxDocsTableWidget.horizontalHeader()
+                    header.resizeSection(0, 1000)
+                    for i, row in enumerate(self.aux_docs_dict['docs_list']):
+                        self.wind.auxDocsTableWidget.insertRow(i)
+                        citem = QTableWidgetItem(row['link'])
+                        citem.setToolTip(row['link'])
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 0, citem)
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Не удалось загрузить список ссылок из базы ' + sql,
+                                                        level=Qgis.Critical, duration=3)
+            elif selected_doc_type == 7:
+                sql = f"select * from {self.nda_view}"
+                if filter_str:
+                    sql += f" where (LOWER(name) like '%{filter_str}%'" \
+                           f" or LOWER(company_a_name) like '%{filter_str}%'" \
+                           f" or LOWER(company_a_shortname) like '%{filter_str}%'" \
+                           f" or LOWER(company_b_name) like '%{filter_str}%'" \
+                           f" or LOWER(company_b_shortname) like '%{filter_str}%'" \
+                           f" or LOWER(date_signed::text) like '%{filter_str}%'" \
+                           f")"
+                sql += ' order by date_signed DESC;'
+                try:
+                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                        with pgconn.cursor() as cur:
+                            cur.execute(sql)
+                            self.aux_docs_dict = {}
+                            self.aux_docs_dict['doc_type'] = 'nda'
+                            self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                    self.wind.auxDocsTableWidget.clear()
+                    self.wind.auxDocsTableWidget.setRowCount(0)
+                    self.wind.auxDocsTableWidget.setColumnCount(3)
+                    self.wind.auxDocsTableWidget.setHorizontalHeaderLabels(['Компания A', 'Компания B', 'Дата'])
+                    header = self.wind.auxDocsTableWidget.horizontalHeader()
+                    header.resizeSection(0, 190)
+                    header.resizeSection(1, 190)
+                    header.resizeSection(2, 95)
+                    for i, row in enumerate(self.aux_docs_dict['docs_list']):
+                        self.wind.auxDocsTableWidget.insertRow(i)
+                        citem = QTableWidgetItem(row['company_a_shortname'])
+                        citem.setToolTip(row['company_a_name'])
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 0, citem)
+                        citem = QTableWidgetItem(row['company_b_shortname'])
+                        citem.setToolTip(row['company_b_name'])
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 1, citem)
+                        citem = QTableWidgetItem(str(row['date_signed']))
+                        citem.setToolTip(str(row['date_signed']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 2, citem)
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Не удалось загрузить список nda из базы ' + sql,
+                                                        level=Qgis.Critical, duration=3)
+            elif selected_doc_type == 8:
+                sql = f"select * from {self.projects}"
+                if filter_str:
+                    sql += f" where (LOWER(name_ru) like '%{filter_str}%'" \
+                           f" or LOWER(name_en) like '%{filter_str}%'" \
+                           f")"
+                sql += ' order by name_ru;'
+                try:
+                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                        with pgconn.cursor() as cur:
+                            cur.execute(sql)
+                            self.aux_docs_dict = {}
+                            self.aux_docs_dict['doc_type'] = 'projects'
+                            self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                    self.wind.auxDocsTableWidget.clear()
+                    self.wind.auxDocsTableWidget.setRowCount(0)
+                    self.wind.auxDocsTableWidget.setColumnCount(1)
+                    self.wind.auxDocsTableWidget.setHorizontalHeaderLabels(['Проект'])
+                    header = self.wind.auxDocsTableWidget.horizontalHeader()
+                    header.resizeSection(0, 495)
+                    for i, row in enumerate(self.aux_docs_dict['docs_list']):
+                        self.wind.auxDocsTableWidget.insertRow(i)
+                        citem = QTableWidgetItem(row['name_ru'])
+                        citem.setToolTip(f"{row['name_ru']} - {row['name_en']}")
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 0, citem)
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Не удалось загрузить список проектов из базы ' + sql,
+                                                        level=Qgis.Critical, duration=3)
+            elif selected_doc_type == 9:
+                sql = f"select * from {self.reports_view}"
+                if filter_str:
+                    sql += f" where (LOWER(name) like '%{filter_str}%'" \
+                           f" or LOWER(shortname) like '%{filter_str}%'" \
+                           f" or LOWER(company_name) like '%{filter_str}%'" \
+                           f" or LOWER(company_shortname) like '%{filter_str}%'" \
+                           f" or LOWER(contract_number) like '%{filter_str}%'" \
+                           f" or LOWER(contract_name) like '%{filter_str}%'" \
+                           f" or LOWER(year::text) like '%{filter_str}%'" \
+                           f" or LOWER(report_type) like '%{filter_str}%'" \
+                           f")"
+                sql += ' order by shortname;'
+                try:
+                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                        with pgconn.cursor() as cur:
+                            cur.execute(sql)
+                            self.aux_docs_dict = {}
+                            self.aux_docs_dict['doc_type'] = 'reports'
+                            self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                    self.wind.auxDocsTableWidget.clear()
+                    self.wind.auxDocsTableWidget.setRowCount(0)
+                    self.wind.auxDocsTableWidget.setColumnCount(4)
+                    self.wind.auxDocsTableWidget.setHorizontalHeaderLabels(['Отчет', 'Тип', 'Исполнитель', 'Год'])
+                    header = self.wind.auxDocsTableWidget.horizontalHeader()
+                    header.resizeSection(0, 250)
+                    header.resizeSection(1, 100)
+                    header.resizeSection(2, 80)
+                    header.resizeSection(3, 50)
+                    for i, row in enumerate(self.aux_docs_dict['docs_list']):
+                        self.wind.auxDocsTableWidget.insertRow(i)
+                        citem = QTableWidgetItem(row['shortname'])
+                        citem.setToolTip(row['name'])
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 0, citem)
+                        citem = QTableWidgetItem(row['report_type'])
+                        citem.setToolTip(row['report_type'])
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 1, citem)
+                        citem = QTableWidgetItem(row['company_shortname'])
+                        citem.setToolTip(row['company_name'])
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 2, citem)
+                        citem = QTableWidgetItem(str(row['year']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 3, citem)
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Не удалось загрузить список отчетов из базы ' + sql,
+                                                        level=Qgis.Critical, duration=3)
+            elif selected_doc_type == 10:
+                sql = f"select * from {self.transmittals_view}"
+                if filter_str:
+                    sql += f" where (LOWER(number) like '%{filter_str}%'" \
+                           f" or LOWER(name) like '%{filter_str}%'" \
+                           f" or LOWER(transmittal_type) like '%{filter_str}%'" \
+                           f" or LOWER(from_company) like '%{filter_str}%'" \
+                           f" or LOWER(to_company) like '%{filter_str}%'" \
+                           f" or LOWER(datestamp::text) like '%{filter_str}%'" \
+                           f" or LOWER(from_company_short) like '%{filter_str}%'" \
+                           f" or LOWER(to_company_short) like '%{filter_str}%'" \
+                           f")"
+                sql += ' order by datestamp DESC;'
+                try:
+                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                        with pgconn.cursor() as cur:
+                            cur.execute(sql)
+                            self.aux_docs_dict = {}
+                            self.aux_docs_dict['doc_type'] = 'transmittals'
+                            self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                    self.wind.auxDocsTableWidget.clear()
+                    self.wind.auxDocsTableWidget.setRowCount(0)
+                    self.wind.auxDocsTableWidget.setColumnCount(4)
+                    self.wind.auxDocsTableWidget.setHorizontalHeaderLabels(['Номер', 'Дата', 'Отправитель', 'Получатель'])
+                    header = self.wind.auxDocsTableWidget.horizontalHeader()
+                    header.resizeSection(0, 125)
+                    header.resizeSection(1, 100)
+                    header.resizeSection(2, 125)
+                    header.resizeSection(3, 125)
+                    for i, row in enumerate(self.aux_docs_dict['docs_list']):
+                        self.wind.auxDocsTableWidget.insertRow(i)
+                        citem = QTableWidgetItem(row['number'])
+                        citem.setToolTip(row['number'])
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 0, citem)
+                        citem = QTableWidgetItem(str(row['datestamp']))
+                        citem.setToolTip(str(row['datestamp']))
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 1, citem)
+                        citem = QTableWidgetItem(row['from_company_short'])
+                        citem.setToolTip(row['from_company'])
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 2, citem)
+                        citem = QTableWidgetItem(row['to_company_short'])
+                        citem.setToolTip(row['to_company'])
+                        citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                        self.wind.auxDocsTableWidget.setItem(i, 3, citem)
+
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Не удалось загрузить список актов из базы ' + sql,
+                                                        level=Qgis.Critical, duration=3)
+            self.dockwindaux.auxAddDocButton.clicked.connect(self.add_aux_doc)
+            self.dockwindaux.auxUpdateDocButton.clicked.connect(self.update_aux_doc)
+            self.dockwindaux.auxDeleteDocButton.clicked.connect(self.delete_aux_doc)
         else:
             self.aux_docs_dict = {}
             self.wind.auxDocsTableWidget.setRowCount(0)
             self.wind.auxDocsTableWidget.setColumnCount(0)
             self.wind.auxDocsTableWidget.clear()
+
+
+    def add_conf(self):
+        self.addconfdlg = AddConfDialog()
+        def generate_and_execute_sql():
+            new_conf_name = self.addconfdlg.confNameLineEdit.text().strip().replace("'", "''")
+            new_conf_shortname = self.addconfdlg.confShortnameLineEdit.text().strip().replace("'", "''")
+            if new_conf_name and new_conf_shortname:
+                sql = f"insert into {self.conf}(conf_name, conf_name_short) values('{new_conf_name}', '{new_conf_shortname}');"
+                self.sql = sql
+                mwidget = self.iface.messageBar().createMessage(f"Добавить в базу новую конфиденциальность '{new_conf_name}'?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=3)
+                self.addconfdlg.accept()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Укажите название и краткое название конфиденциальности',
+                                                    level=Qgis.Warning, duration=3)
+        self.addconfdlg.insertConfButton.clicked.connect(generate_and_execute_sql)
+        self.addconfdlg.show()
+
+
+    def add_quality(self):
+        self.addqualitydlg = AddQualityDialog()
+        def generate_and_execute_sql():
+            new_quality_name_ru = self.addqualitydlg.qualityNameRuLineEdit.text().strip().replace("'", "''")
+            new_quality_name_en = self.addqualitydlg.qualityNameEnLineEdit.text().strip().replace("'", "''")
+            new_quality_range = self.addqualitydlg.qualityRangeSpinBox.value()
+            if all([new_quality_name_ru, new_quality_name_en, new_quality_range]):
+                sql = f"insert into {self.data_quality}(name_ru, name_en, quality_range) values('{new_quality_name_ru}', '{new_quality_name_en}', {str(new_quality_range)});"
+                self.sql = sql
+                mwidget = self.iface.messageBar().createMessage(
+                    f"Добавить в базу новое качество данных '{new_quality_name_ru}'?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=3)
+                self.addqualitydlg.accept()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Укажите названия на обоих языках и ранг качества',
+                                                    level=Qgis.Warning, duration=3)
+
+        self.addqualitydlg.insertQualityButton.clicked.connect(generate_and_execute_sql)
+        self.addqualitydlg.show()
+
+
+    def add_format(self):
+        self.addformatdlg = AddFormatDialog()
+        def generate_and_execute_sql():
+            new_format_name = self.addformatdlg.formatNameLineEdit.text().strip().replace("'", "''")
+            if new_format_name:
+                sql = f"insert into {self.formats}(name) values('{new_format_name}');"
+                self.sql = sql
+                mwidget = self.iface.messageBar().createMessage(
+                    f"Добавить в базу новый формат '{new_format_name}'?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=3)
+                self.addformatdlg.accept()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Укажите название формата',
+                                                    level=Qgis.Warning, duration=3)
+
+        self.addformatdlg.insertFormatButton.clicked.connect(generate_and_execute_sql)
+        self.addformatdlg.show()
+
+
+    def add_aux_doc(self):
+        if self.aux_docs_dict:
+            if self.aux_docs_dict['doc_type'] == 'companies':
+                self.add_company()
+            if self.aux_docs_dict['doc_type'] == 'contracts':
+                self.add_contract()
+            if self.aux_docs_dict['doc_type'] == 'conf':
+                self.add_conf()
+            if self.aux_docs_dict['doc_type'] == 'data_quality':
+                self.add_quality()
+            if self.aux_docs_dict['doc_type'] == 'drives':
+                self.add_drive()
+            if self.aux_docs_dict['doc_type'] == 'formats':
+                self.add_format()
+            if self.aux_docs_dict['doc_type'] == 'links':
+                self.add_link()
+            if self.aux_docs_dict['doc_type'] == 'nda':
+                self.add_nda()
+            if self.aux_docs_dict['doc_type'] == 'projects':
+                self.add_project()
+            if self.aux_docs_dict['doc_type'] == 'reports':
+                self.add_report()
+            if self.aux_docs_dict['doc_type'] == 'transmittals':
+                self.add_transmittal()
+
+
+    def update_aux_doc(self):
+        pass
+
+
+    def delete_aux_doc(self):
+        pass
 
 
     def run_mps(self):
@@ -5090,3 +5411,4 @@ class GeoDM:
 
         self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.wind)
         self.wind.adjustSize()
+

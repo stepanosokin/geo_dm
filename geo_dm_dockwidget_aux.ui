@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>539</width>
-    <height>300</height>
+    <height>303</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -41,7 +41,7 @@
      <rect>
       <x>10</x>
       <y>61</y>
-      <width>411</width>
+      <width>511</width>
       <height>171</height>
      </rect>
     </property>
@@ -49,8 +49,8 @@
    <widget class="QPushButton" name="auxAddDocButton">
     <property name="geometry">
      <rect>
-      <x>430</x>
-      <y>60</y>
+      <x>220</x>
+      <y>240</y>
       <width>101</width>
       <height>31</height>
      </rect>
@@ -62,8 +62,8 @@
    <widget class="QPushButton" name="auxUpdateDocButton">
     <property name="geometry">
      <rect>
-      <x>430</x>
-      <y>90</y>
+      <x>320</x>
+      <y>240</y>
       <width>101</width>
       <height>31</height>
      </rect>
@@ -75,8 +75,8 @@
    <widget class="QPushButton" name="auxDeleteDocButton">
     <property name="geometry">
      <rect>
-      <x>430</x>
-      <y>120</y>
+      <x>420</x>
+      <y>240</y>
       <width>101</width>
       <height>31</height>
      </rect>
@@ -90,7 +90,7 @@
      <rect>
       <x>62</x>
       <y>40</y>
-      <width>331</width>
+      <width>431</width>
       <height>21</height>
      </rect>
     </property>
@@ -111,7 +111,7 @@
    <widget class="QPushButton" name="auxRefreshButton">
     <property name="geometry">
      <rect>
-      <x>390</x>
+      <x>490</x>
       <y>40</y>
       <width>31</width>
       <height>23</height>

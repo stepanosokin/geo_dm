@@ -243,3 +243,33 @@ class GeoDMDockWidgetAux(QtWidgets.QDockWidget, FORM_CLASS_DOCK_AUX):
         """Constructor."""
         super(GeoDMDockWidgetAux, self).__init__(parent)
         self.setupUi(self)
+
+
+FORM_CLASS_ADD_CONF, _ = uic.loadUiType(os.path.join(
+    os.path.dirname(__file__), 'geo_dm_add_conf_dialog.ui'))
+
+class AddConfDialog(QtWidgets.QDialog, FORM_CLASS_ADD_CONF):
+    def __init__(self, parent=None):
+        """Constructor."""
+        super(AddConfDialog, self).__init__(parent)
+        self.setupUi(self)
+
+
+FORM_CLASS_ADD_QUALITY, _ = uic.loadUiType(os.path.join(
+    os.path.dirname(__file__), 'geo_dm_add_quality_dialog.ui'))
+
+class AddQualityDialog(QtWidgets.QDialog, FORM_CLASS_ADD_QUALITY):
+    def __init__(self, parent=None):
+        """Constructor."""
+        super(AddQualityDialog, self).__init__(parent)
+        self.setupUi(self)
+
+
+FORM_CLASS_ADD_FORMAT, _ = uic.loadUiType(os.path.join(
+    os.path.dirname(__file__), 'geo_dm_add_format_dialog.ui'))
+
+class AddFormatDialog(QtWidgets.QDialog, FORM_CLASS_ADD_FORMAT):
+    def __init__(self, parent=None):
+        """Constructor."""
+        super(AddFormatDialog, self).__init__(parent)
+        self.setupUi(self)
