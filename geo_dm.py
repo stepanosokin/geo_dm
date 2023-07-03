@@ -999,6 +999,260 @@ class GeoDM:
                 self.display_selected_geometry_count()
 
 
+    def update_company(self):
+        self.updatecompdlg = AddCompDialog()
+        self.updatecompdlg.selected_company = None
+
+        def get_selected_company():
+            selected_company_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+            if selected_company_rows:
+                if len(selected_company_rows) == 1:
+                    self.updatecompdlg.selected_company = self.aux_docs_dict['docs_list'][selected_company_rows[0]]
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одну компанию', level=Qgis.Warning,
+                                                        duration=3)
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одну компанию', level=Qgis.Warning,
+                                                    duration=3)
+
+        def reload_company_data():
+            self.updatecompdlg.companyFullNameInput.setText(self.updatecompdlg.selected_company['name'])
+            self.updatecompdlg.companyShortNameInput.setText(self.updatecompdlg.selected_company['shortname'])
+
+        def generate_and_execute_sql():
+            new_company_name = self.updatecompdlg.companyFullNameInput.text().strip().replace("'", "''")
+            new_company_shortname = self.updatecompdlg.companyShortNameInput.text().strip().replace("'", "''")
+            sql = f"update {self.companies} set name = '{new_company_name}', shortname = '{new_company_shortname}' where company_id = {str(self.updatecompdlg.selected_company['company_id'])}"
+            self.sql = sql
+            mwidget = self.iface.messageBar().createMessage(
+                f"Изменить компанию {self.updatecompdlg.selected_company['name']}?")
+            mbutton = QPushButton(mwidget)
+            mbutton.setText('Подтвердить')
+            mbutton.pressed.connect(self.execute_sql)
+            self.updatecompdlg.accept()
+            mwidget.layout().addWidget(mbutton)
+            self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+
+        get_selected_company()
+        if self.updatecompdlg.selected_company:
+            reload_company_data()
+            self.updatecompdlg.setWindowTitle('Изменить Организацию')
+            self.updatecompdlg.insertCompanyButton.setText('Изменить Организацию')
+            self.updatecompdlg.insertCompanyButton.clicked.connect(generate_and_execute_sql)
+            self.updatecompdlg.show()
+
+
+    def update_contract(self):
+        self.updatecontractdlg = AddContractDialog()
+        self.updatecontractdlg.contractCustomerRefreshButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.updatecontractdlg.contractContractorRefreshButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.updatecontractdlg.selected_contract = None
+        self.updatecontractdlg.contract_types = None
+        self.updatecontractdlg.customer_companies = None
+        self.updatecontractdlg.contractor_companies = None
+        self.updatecontractdlg.contracts = None
+
+        def get_selected_contract():
+            selected_contract_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+            if selected_contract_rows:
+                if len(selected_contract_rows) == 1:
+                    self.updatecontractdlg.selected_contract = self.aux_docs_dict['docs_list'][selected_contract_rows[0]]
+
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один договор', level=Qgis.Warning,
+                                                        duration=3)
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один договор', level=Qgis.Warning,
+                                                    duration=3)
+
+        def reload_contract_number():
+            if self.updatecontractdlg.selected_contract['number']:
+                self.updatecontractdlg.contractNumberInput.setText(self.updatecontractdlg.selected_contract['number'])
+
+        def reload_contract_name():
+            if self.updatecontractdlg.selected_contract['name']:
+                self.updatecontractdlg.contractNameInput.setText(self.updatecontractdlg.selected_contract['name'])
+
+        def reload_contract_types():
+            self.updatecontractdlg.contractTypeInput.clear()
+            sql = f"select * from {self.contract_types};"
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.updatecontractdlg.contract_types = list(cur.fetchall())
+                self.updatecontractdlg.contractTypeInput.addItems([row['name'] for row in self.updatecontractdlg.contract_types])
+                # if self.updatecontractdlg.selected_contract['contract_type_id']:
+                #     self.updatecontractdlg.contractTypeInput.setCurrentText(self.updatecontractdlg.selected_contract['contract_type'])
+            except:
+                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список типов договоров из базы', level=Qgis.Critical, duration=3)
+
+        def reload_contract_date():
+            contract_date = self.updatecontractdlg.selected_contract['date']
+            if contract_date:
+                self.updatecontractdlg.contractDateInput.setDate(QDate(contract_date.year, contract_date.month, contract_date.day))
+
+        def reload_customers():
+            self.updatecontractdlg.contractCustomerInput.clear()
+            sql = f"select * from {self.companies}"
+            filter_str = self.updatecontractdlg.contractCustomerFilterLineEdit.text().lower().strip().replace("'", "''")
+            if filter_str:
+                sql += f" where LOWER(name) like '%{filter_str}%'" \
+                       f" or LOWER(shortname) like '%{filter_str}%'"
+            sql += ' order by name;'
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.updatecontractdlg.customer_companies = list(cur.fetchall())
+                self.updatecontractdlg.contractCustomerInput.addItem('')
+                self.updatecontractdlg.contractCustomerInput.addItems([row['name'] for row in self.updatecontractdlg.customer_companies])
+                # if self.updatecontractdlg.selected_contract['customer_id']:
+                #     self.updatecontractdlg.contractCustomerInput.setCurrentText(self.updatecontractdlg.selected_contract['customer'])
+            except:
+                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список организаций из базы',
+                                                    level=Qgis.Critical, duration=3)
+
+        def reload_contractors():
+            self.updatecontractdlg.contractContractorInput.clear()
+            sql = f"select * from {self.companies}"
+            filter_str = self.updatecontractdlg.contractContractorFilterLineEdit.text().lower().strip().replace("'", "''")
+            if filter_str:
+                sql += f" where LOWER(name) like '%{filter_str}%'" \
+                       f" or LOWER(shortname) like '%{filter_str}%'"
+            sql += ' order by name;'
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.updatecontractdlg.contractor_companies = list(cur.fetchall())
+                self.updatecontractdlg.contractContractorInput.addItem('')
+                self.updatecontractdlg.contractContractorInput.addItems([row['name'] for row in self.updatecontractdlg.contractor_companies])
+                # if self.updatecontractdlg.selected_contract['contractor_id']:
+                #     self.updatecontractdlg.contractContractorInput.setCurrentText(self.updatecontractdlg.selected_contract['contractor'])
+            except:
+                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список организаций из базы',
+                                                    level=Qgis.Critical, duration=3)
+
+        def reload_link():
+            if self.updatecontractdlg.selected_contract['link']:
+                self.updatecontractdlg.contractLinkInput.setText(self.updatecontractdlg.selected_contract['link'])
+
+        def reload_parent_contracts():
+            self.updatecontractdlg.contractParentContractInput.clear()
+            sql = f"select * from {self.contracts_view}"
+            filter_str = self.updatecontractdlg.contractParentContractFilterLineEdit.text().lower().strip().replace("'", "''")
+            if filter_str:
+                sql += f" where LOWER(number) like '%{filter_str}%'" \
+                       f" or date::text like '%{filter_str}%'" \
+                       f" or LOWER(name) like '%{filter_str}%'" \
+                       f" or LOWER(customer) like '%{filter_str}%'" \
+                       f" or LOWER(customer_short) like '%{filter_str}%'" \
+                       f" or LOWER(contractor) like '%{filter_str}%'" \
+                       f" or LOWER(contractor_short) like '%{filter_str}%'"
+            sql += ' order by date DESC;'
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.updatecontractdlg.contracts = list(cur.fetchall())
+                self.updatecontractdlg.contractParentContractInput.addItem('')
+                self.updatecontractdlg.contractParentContractInput.addItems([row['number'] + ' от ' + str(row['date']) for row in self.updatecontractdlg.contracts])
+                # sc = self.updatecontractdlg.selected_contract['parent_contract_id']
+                # if sc:
+                #     self.updatecontractdlg.contractParentContractInput.setCurrentText(sc['number'] + ' от ' + str(sc['date']))
+            except:
+                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список договоров из базы',
+                                                    level=Qgis.Critical, duration=3)
+
+        def fill_with_selected_contract():
+            if self.updatecontractdlg.selected_contract['number']:
+                self.updatecontractdlg.contractNumberInput.setText(self.updatecontractdlg.selected_contract['number'])
+            if self.updatecontractdlg.selected_contract['name']:
+                self.updatecontractdlg.contractNameInput.setText(self.updatecontractdlg.selected_contract['name'])
+            if self.updatecontractdlg.selected_contract['contract_type_id']:
+                self.updatecontractdlg.contractTypeInput.setCurrentText(self.updatecontractdlg.selected_contract['contract_type'])
+            contract_date = self.updatecontractdlg.selected_contract['date']
+            if contract_date:
+                self.updatecontractdlg.contractDateInput.setDate(QDate(contract_date.year, contract_date.month, contract_date.day))
+            if self.updatecontractdlg.selected_contract['customer_id']:
+                self.updatecontractdlg.contractCustomerInput.setCurrentText(self.updatecontractdlg.selected_contract['customer'])
+            if self.updatecontractdlg.selected_contract['contractor_id']:
+                self.updatecontractdlg.contractContractorInput.setCurrentText(self.updatecontractdlg.selected_contract['contractor'])
+            if self.updatecontractdlg.selected_contract['link']:
+                self.updatecontractdlg.contractLinkInput.setText(self.updatecontractdlg.selected_contract['link'])
+            sc = self.updatecontractdlg.selected_contract['parent_contract_id']
+            if sc:
+                self.updatecontractdlg.contractParentContractInput.setCurrentText(
+                    sc['number'] + ' от ' + str(sc['date']))
+
+        def generate_and_execute_sql():
+            selected_contract_id = self.updatecontractdlg.selected_contract['contract_id']
+            new_contract_number = self.updatecontractdlg.contractNumberInput.text().replace("'", "''")
+            new_contract_name = self.updatecontractdlg.contractNameInput.text().replace("'", "''")
+            selected_contract_type_index = self.updatecontractdlg.contractTypeInput.currentIndex()
+            selected_contract_type_id = self.updatecontractdlg.contract_types[selected_contract_type_index]['contract_type_id']
+            selected_contract_date = self.updatecontractdlg.contractDateInput.dateTime()
+            selected_customer_index = self.updatecontractdlg.contractCustomerInput.currentIndex() - 1
+            selected_contractor_index = self.updatecontractdlg.contractContractorInput.currentIndex() - 1
+            new_contract_link = self.updatecontractdlg.contractLinkInput.text().replace("'", "''")
+            selected_parent_contract_index = self.updatecontractdlg.contractParentContractInput.currentIndex() - 1
+            if all([new_contract_number, new_contract_name, selected_contract_type_id, selected_contract_date]):
+                fields_to_update = ['number', 'name', 'contract_type_id', 'date']
+                values_to_insert = [f"'{new_contract_number}'", f"'{new_contract_name}'", str(selected_contract_type_id), f"'{selected_contract_date.toString('yyyy-MM-dd')}'"]
+                if selected_customer_index >= 0:
+                    fields_to_update.append('customer_id')
+                    selected_customer_id = self.updatecontractdlg.customer_companies[selected_customer_index]['company_id']
+                    values_to_insert.append(str(selected_customer_id))
+                if selected_contractor_index >= 0:
+                    fields_to_update.append('contractor_id')
+                    selected_contractor_id = self.updatecontractdlg.contractor_companies[selected_contractor_index]['company_id']
+                    values_to_insert.append(str(selected_contractor_id))
+                if new_contract_link:
+                    fields_to_update.append('link')
+                    values_to_insert.append(f"'{new_contract_link}'")
+                if selected_parent_contract_index >= 0:
+                    fields_to_update.append('parent_contract_id')
+                    selected_parent_contract_id = self.updatecontractdlg.contracts[selected_parent_contract_index]['contract_id']
+                    values_to_insert.append(str(selected_parent_contract_id))
+                sql = f"update {self.contracts} set {', '.join([x[0] + ' = ' + x[1] for x in zip(fields_to_update, values_to_insert)])} where contract_id = {str(selected_contract_id)};"
+                self.sql = sql
+                mwidget = self.iface.messageBar().createMessage(f"Изменить договор {new_contract_number}?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=3)
+                self.updatecontractdlg.accept()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно указать номер, название, тип и дату договора',
+                                                    level=Qgis.Warning, duration=3)
+
+        get_selected_contract()
+        if self.updatecontractdlg.selected_contract:
+            reload_contract_number()
+            reload_contract_name()
+            reload_contract_types()
+            reload_contract_date()
+            reload_customers()
+            reload_contractors()
+            reload_link()
+            reload_parent_contracts()
+            fill_with_selected_contract()
+            self.updatecontractdlg.contractCustomerFilterLineEdit.textEdited.connect(reload_customers)
+            self.updatecontractdlg.contractCustomerRefreshButton.clicked.connect(reload_customers)
+            self.updatecontractdlg.contractCustomerAddCompanyButton.clicked.connect(self.add_company)
+            self.updatecontractdlg.contractContractorFilterLineEdit.textEdited.connect(reload_contractors)
+            self.updatecontractdlg.contractContractorRefreshButton.clicked.connect(reload_contractors)
+            self.updatecontractdlg.contractContractorAddCompanyButton.clicked.connect(self.add_company)
+            self.updatecontractdlg.contractParentContractFilterLineEdit.textEdited.connect(reload_parent_contracts)
+            self.updatecontractdlg.insertContractButton.clicked.connect(generate_and_execute_sql)
+            self.updatecontractdlg.show()
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать договор', level=Qgis.Warning, duration=3)
+
+
+
     def add_company(self):
         self.addcompdlg = AddCompDialog()
 
@@ -1199,18 +1453,41 @@ class GeoDM:
 
                 # with self.pgconn.cursor() as cur:
                 with pgconn.cursor() as cur:
-                    sql = f"select * from {self.contract_types}"
+                    sql = f"select * from {self.contract_types};"
                     cur.execute(sql)
                     self.addcontractdlg.contract_types = list(cur.fetchall())
                     self.addcontractdlg.contractTypeInput.addItems([row['name'] for row in self.addcontractdlg.contract_types])
-                    sql = f"select * from {self.companies} order by name"
+                    sql = f"select * from {self.companies}"
+                    filter_str = self.addcontractdlg.contractCustomerFilterLineEdit.text().lower().strip().replace("'", "''")
+                    if filter_str:
+                        sql += f" where LOWER(name) like '%{filter_str}%'" \
+                               f" or LOWER(shortname) like '%{filter_str}%'"
+                    sql += ' order by name;'
                     cur.execute(sql)
-                    self.addcontractdlg.companies = list(cur.fetchall())
+                    self.addcontractdlg.customer_companies = list(cur.fetchall())
                     self.addcontractdlg.contractCustomerInput.addItem('')
-                    self.addcontractdlg.contractCustomerInput.addItems([row['name'] for row in self.addcontractdlg.companies])
+                    self.addcontractdlg.contractCustomerInput.addItems([row['name'] for row in self.addcontractdlg.customer_companies])
+                    sql = f"select * from {self.companies}"
+                    filter_str = self.addcontractdlg.contractContractorFilterLineEdit.text().lower().strip().replace("'", "''")
+                    if filter_str:
+                        sql += f" where LOWER(name) like '%{filter_str}%'" \
+                               f" or LOWER(shortname) like '%{filter_str}%'"
+                    sql += ' order by name;'
+                    cur.execute(sql)
+                    self.addcontractdlg.contractor_companies = list(cur.fetchall())
                     self.addcontractdlg.contractContractorInput.addItem('')
-                    self.addcontractdlg.contractContractorInput.addItems([row['name'] for row in self.addcontractdlg.companies])
-                    sql = f"select * from {self.contracts_view} order by date DESC"
+                    self.addcontractdlg.contractContractorInput.addItems([row['name'] for row in self.addcontractdlg.contractor_companies])
+                    sql = f"select * from {self.contracts_view}"
+                    filter_str = self.addcontractdlg.contractParentContractFilterLineEdit.text().lower().strip().replace("'", "''")
+                    if filter_str:
+                        sql += f" where LOWER(number) like '%{filter_str}%'" \
+                               f" or date::text like '%{filter_str}%'" \
+                               f" or LOWER(name) like '%{filter_str}%'" \
+                               f" or LOWER(customer) like '%{filter_str}%'" \
+                               f" or LOWER(customer_short) like '%{filter_str}%'" \
+                               f" or LOWER(contractor) like '%{filter_str}%'" \
+                               f" or LOWER(contractor_short) like '%{filter_str}%'"
+                    sql += ' order by date DESC;'
                     cur.execute(sql)
                     self.addcontractdlg.contracts = list(cur.fetchall())
                     self.addcontractdlg.contractParentContractInput.addItem('')
@@ -1278,6 +1555,10 @@ class GeoDM:
         self.addcontractdlg.contractDateInput.dateTimeChanged.connect(generate_sql)
         self.addcontractdlg.contractCustomerInput.activated.connect(generate_sql)
         self.addcontractdlg.contractCustomerRefreshButton.clicked.connect(reload_contract_data)
+        self.addcontractdlg.contractCustomerFilterLineEdit.textEdited.connect(reload_contract_data)
+        self.addcontractdlg.contractContractorFilterLineEdit.textEdited.connect(reload_contract_data)
+        self.addcontractdlg.contractParentContractFilterLineEdit.textEdited.connect(reload_contract_data)
+
         self.addcontractdlg.contractCustomerAddCompanyButton.clicked.connect(self.add_company)
         self.addcontractdlg.contractContractorInput.activated.connect(generate_sql)
         self.addcontractdlg.contractContractorRefreshButton.clicked.connect(reload_contract_data)
@@ -1493,7 +1774,6 @@ class GeoDM:
                     if selected_project_name:
                         self.updateprocdlg.projectInput.setCurrentText(selected_project_name)
 
-
         def reload_companies():
             self.updateprocdlg.procAuthorInput.clear()
             with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
@@ -1506,7 +1786,6 @@ class GeoDM:
                 selected_author = self.proc_list[self.updateprocdlg.selected_proc_row]['company_name']
                 if selected_author:
                     self.updateprocdlg.procAuthorInput.setCurrentText(selected_author)
-
 
         def reload_contracts():
             self.updateprocdlg.procContractInput.clear()
@@ -1524,7 +1803,6 @@ class GeoDM:
                     selected_contract = [x for x in self.updateprocdlg.contracts if x['contract_id'] == selected_contract_id][0]
                     self.updateprocdlg.procContractInput.setCurrentText(
                         f"{selected_contract['number']} от {str(selected_contract['date'])} {selected_contract['customer_short']}-{selected_contract['contractor_short']}")
-
 
         def reload_reports():
             self.updateprocdlg.procReportInput.clear()
@@ -5190,7 +5468,11 @@ class GeoDM:
 
 
     def update_aux_doc(self):
-        pass
+        if self.aux_docs_dict:
+            if self.aux_docs_dict['doc_type'] == 'companies':
+                self.update_company()
+            elif self.aux_docs_dict['doc_type'] == 'contracts':
+                self.update_contract()
 
 
     def delete_aux_doc(self):
@@ -5408,7 +5690,9 @@ class GeoDM:
         self.wind.auxDocTypeComboBox.activated.connect(self.reload_aux_docs)
         self.wind.auxFilterLineEdit.textEdited.connect(self.reload_aux_docs)
         self.wind.auxRefreshButton.clicked.connect(self.reload_aux_docs)
+        self.wind.auxUpdateDocButton.clicked.connect(self.update_aux_doc)
 
         self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.wind)
         self.wind.adjustSize()
+
 
