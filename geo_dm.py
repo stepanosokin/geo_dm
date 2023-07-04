@@ -1082,8 +1082,8 @@ class GeoDM:
                         cur.execute(sql)
                         self.updatecontractdlg.contract_types = list(cur.fetchall())
                 self.updatecontractdlg.contractTypeInput.addItems([row['name'] for row in self.updatecontractdlg.contract_types])
-                # if self.updatecontractdlg.selected_contract['contract_type_id']:
-                #     self.updatecontractdlg.contractTypeInput.setCurrentText(self.updatecontractdlg.selected_contract['contract_type'])
+                if self.updatecontractdlg.selected_contract['contract_type_id']:
+                    self.updatecontractdlg.contractTypeInput.setCurrentText(self.updatecontractdlg.selected_contract['contract_type'])
             except:
                 self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список типов договоров из базы', level=Qgis.Critical, duration=3)
 
@@ -1107,8 +1107,8 @@ class GeoDM:
                         self.updatecontractdlg.customer_companies = list(cur.fetchall())
                 self.updatecontractdlg.contractCustomerInput.addItem('')
                 self.updatecontractdlg.contractCustomerInput.addItems([row['name'] for row in self.updatecontractdlg.customer_companies])
-                # if self.updatecontractdlg.selected_contract['customer_id']:
-                #     self.updatecontractdlg.contractCustomerInput.setCurrentText(self.updatecontractdlg.selected_contract['customer'])
+                if self.updatecontractdlg.selected_contract['customer_id']:
+                    self.updatecontractdlg.contractCustomerInput.setCurrentText(self.updatecontractdlg.selected_contract['customer'])
             except:
                 self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список организаций из базы',
                                                     level=Qgis.Critical, duration=3)
@@ -1128,8 +1128,8 @@ class GeoDM:
                         self.updatecontractdlg.contractor_companies = list(cur.fetchall())
                 self.updatecontractdlg.contractContractorInput.addItem('')
                 self.updatecontractdlg.contractContractorInput.addItems([row['name'] for row in self.updatecontractdlg.contractor_companies])
-                # if self.updatecontractdlg.selected_contract['contractor_id']:
-                #     self.updatecontractdlg.contractContractorInput.setCurrentText(self.updatecontractdlg.selected_contract['contractor'])
+                if self.updatecontractdlg.selected_contract['contractor_id']:
+                    self.updatecontractdlg.contractContractorInput.setCurrentText(self.updatecontractdlg.selected_contract['contractor'])
             except:
                 self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список организаций из базы',
                                                     level=Qgis.Critical, duration=3)
@@ -1158,34 +1158,14 @@ class GeoDM:
                         self.updatecontractdlg.contracts = list(cur.fetchall())
                 self.updatecontractdlg.contractParentContractInput.addItem('')
                 self.updatecontractdlg.contractParentContractInput.addItems([row['number'] + ' от ' + str(row['date']) for row in self.updatecontractdlg.contracts])
-                # sc = self.updatecontractdlg.selected_contract['parent_contract_id']
-                # if sc:
-                #     self.updatecontractdlg.contractParentContractInput.setCurrentText(sc['number'] + ' от ' + str(sc['date']))
+                sc = self.updatecontractdlg.selected_contract['parent_contract_id']
+                if sc:
+                    self.updatecontractdlg.contractParentContractInput.setCurrentText(sc['number'] + ' от ' + str(sc['date']))
             except:
                 self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список договоров из базы',
                                                     level=Qgis.Critical, duration=3)
 
-        def fill_with_selected_contract():
-            if self.updatecontractdlg.selected_contract['number']:
-                self.updatecontractdlg.contractNumberInput.setText(self.updatecontractdlg.selected_contract['number'])
-            if self.updatecontractdlg.selected_contract['name']:
-                self.updatecontractdlg.contractNameInput.setText(self.updatecontractdlg.selected_contract['name'])
-            if self.updatecontractdlg.selected_contract['contract_type_id']:
-                self.updatecontractdlg.contractTypeInput.setCurrentText(self.updatecontractdlg.selected_contract['contract_type'])
-            contract_date = self.updatecontractdlg.selected_contract['date']
-            if contract_date:
-                self.updatecontractdlg.contractDateInput.setDate(QDate(contract_date.year, contract_date.month, contract_date.day))
-            if self.updatecontractdlg.selected_contract['customer_id']:
-                self.updatecontractdlg.contractCustomerInput.setCurrentText(self.updatecontractdlg.selected_contract['customer'])
-            if self.updatecontractdlg.selected_contract['contractor_id']:
-                self.updatecontractdlg.contractContractorInput.setCurrentText(self.updatecontractdlg.selected_contract['contractor'])
-            if self.updatecontractdlg.selected_contract['link']:
-                self.updatecontractdlg.contractLinkInput.setText(self.updatecontractdlg.selected_contract['link'])
-            sc = self.updatecontractdlg.selected_contract['parent_contract_id']
-            if sc:
-                self.updatecontractdlg.contractParentContractInput.setCurrentText(
-                    sc['number'] + ' от ' + str(sc['date']))
-
+        
         def generate_and_execute_sql():
             selected_contract_id = self.updatecontractdlg.selected_contract['contract_id']
             new_contract_number = self.updatecontractdlg.contractNumberInput.text().replace("'", "''")
@@ -1238,7 +1218,6 @@ class GeoDM:
             reload_contractors()
             reload_link()
             reload_parent_contracts()
-            fill_with_selected_contract()
             self.updatecontractdlg.contractCustomerFilterLineEdit.textEdited.connect(reload_customers)
             self.updatecontractdlg.contractCustomerRefreshButton.clicked.connect(reload_customers)
             self.updatecontractdlg.contractCustomerAddCompanyButton.clicked.connect(self.add_company)
@@ -1746,6 +1725,7 @@ class GeoDM:
         self.updateprocdlg.refreshAuthorsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
         self.updateprocdlg.refreshContractsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
         self.updateprocdlg.refreshReportsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.updateprocdlg.selected_proc_row = None
 
         def reload_proc_types():
             self.updateprocdlg.procTypeInput.clear()
@@ -1759,7 +1739,6 @@ class GeoDM:
             if selected_proc_type:
                 self.updateprocdlg.procTypeInput.setCurrentText(selected_proc_type)
 
-
         def reload_projects():
             self.updateprocdlg.projectInput.clear()
             with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
@@ -1769,15 +1748,20 @@ class GeoDM:
                     self.updateprocdlg.projects = list(cur.fetchall())
                     self.updateprocdlg.projectInput.addItems([row[1] for row in self.updateprocdlg.projects])
                 selected_project_id = self.proc_list[self.updateprocdlg.selected_proc_row]['project_id']
-                if selected_project_id:
-                    selected_project_name = [x for x in self.updateprocdlg.projects if x[0] == selected_project_id][0][1]
-                    if selected_project_name:
-                        self.updateprocdlg.projectInput.setCurrentText(selected_project_name)
+            if selected_project_id:
+                selected_project_name = [x for x in self.updateprocdlg.projects if x[0] == selected_project_id][0][1]
+                if selected_project_name:
+                    self.updateprocdlg.projectInput.setCurrentText(selected_project_name)
 
         def reload_companies():
             self.updateprocdlg.procAuthorInput.clear()
             with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                sql = f"select * from {self.companies} order by name"
+                filter_str = self.updateprocdlg.authorFilterInput.text().strip().lower().replace("'", "''")
+                sql = f"select * from {self.companies}"
+                if filter_str:
+                    sql += f" where LOWER(name) like '%{filter_str}%'" \
+                           f" or LOWER(shortname) like '%{filter_str}%'"
+                sql += ' order by name;'
                 with pgconn.cursor() as cur:
                     cur.execute(sql)
                     self.updateprocdlg.companies = list(cur.fetchall())
@@ -1791,7 +1775,17 @@ class GeoDM:
             self.updateprocdlg.procContractInput.clear()
             with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
                 with pgconn.cursor() as cur:
-                    sql = f"select * from {self.contracts_view} order by date DESC"
+                    filter_str = self.updateprocdlg.contractFilterInput.text().strip().lower().replace("'", "''")
+                    sql = f"select * from {self.contracts_view}"
+                    if filter_str:
+                        sql += f" where LOWER(number) like '%{filter_str}%' " \
+                               f"or LOWER(name) like '%{filter_str}%' " \
+                               f"or date::text like '%{filter_str}%' " \
+                               f"or LOWER(customer) like '%{filter_str}%' " \
+                               f"or LOWER(customer_short) like '%{filter_str}%' " \
+                               f"or LOWER(contractor) like '%{filter_str}%' " \
+                               f"or LOWER(contractor_short) like '%{filter_str}%'"
+                    sql += ' order by date DESC;'
                     cur.execute(sql)
                     self.updateprocdlg.contracts = cur.fetchall()
                     self.updateprocdlg.procContractInput.addItem('')
@@ -1803,12 +1797,26 @@ class GeoDM:
                     selected_contract = [x for x in self.updateprocdlg.contracts if x['contract_id'] == selected_contract_id][0]
                     self.updateprocdlg.procContractInput.setCurrentText(
                         f"{selected_contract['number']} от {str(selected_contract['date'])} {selected_contract['customer_short']}-{selected_contract['contractor_short']}")
+                # reload_proc_data()
 
         def reload_reports():
             self.updateprocdlg.procReportInput.clear()
             with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
                 with pgconn.cursor() as cur:
-                    sql = f"select * from {self.reports_view} order by shortname DESC"
+                    filter_string = self.updateprocdlg.reportFilterInput.text().strip().lower().replace("'", "''")
+                    if filter_string:
+                        sql += f" where LOWER(name) like '%{filter_string}%' " \
+                               f"or LOWER(shortname) like '%{filter_string}%' " \
+                               f"or LOWER(company_name) like '%{filter_string}%' " \
+                               f"or LOWER(company_shortname) like '%{filter_string}%' " \
+                               f"or LOWER(contract_number) like '%{filter_string}%' " \
+                               f"or LOWER(contract_name) like '%{filter_string}%' " \
+                               f"or year::text like '%{filter_string}%' " \
+                               f"or LOWER(conf) like '%{filter_string}%' " \
+                               f"or LOWER(conf_shortname) like '%{filter_string}%' " \
+                               f"or LOWER(conf_limit) like '%{filter_string}%' " \
+                               f"or LOWER(report_type) like '%{filter_string}%'"
+                    sql += ' order by shortname DESC;'
                     cur.execute(sql)
                     self.updateprocdlg.reports = cur.fetchall()
                     self.updateprocdlg.procReportInput.addItem('')
@@ -1816,47 +1824,6 @@ class GeoDM:
                 selected_report = self.proc_list[self.updateprocdlg.selected_proc_row]['report_shortname']
                 if selected_report:
                     self.updateprocdlg.procReportInput.setCurrentText(selected_report)
-
-
-        def reload_proc_data():
-            self.updateprocdlg.procTypeInput.clear()
-            self.updateprocdlg.projectInput.clear()
-            self.updateprocdlg.procAuthorInput.clear()
-            self.updateprocdlg.procContractInput.clear()
-            self.updateprocdlg.procReportInput.clear()
-
-            # with open('.pgdsn', encoding='utf-8') as dsnf:
-            #     dsn = dsnf.read().replace('\n', '')
-            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-
-                # with self.pgconn.cursor() as cur:
-                with pgconn.cursor() as cur:
-                    sql = f"select * from {self.processing_types} order by id"
-                    cur.execute(sql)
-                    self.updateprocdlg.proc_types = list(cur.fetchall())
-                    self.updateprocdlg.procTypeInput.addItems([row['name'] for row in self.updateprocdlg.proc_types])
-                    sql = f"select * from {self.projects}"
-                    cur.execute(sql)
-                    self.updateprocdlg.projects = list(cur.fetchall())
-                    self.updateprocdlg.projectInput.addItems([row['name_ru'] for row in self.updateprocdlg.projects])
-                    sql = f"select * from {self.companies} order by name"
-                    cur.execute(sql)
-                    self.updateprocdlg.companies = list(cur.fetchall())
-                    self.updateprocdlg.procAuthorInput.addItem('')
-                    self.updateprocdlg.procAuthorInput.addItems([row['name'] for row in self.updateprocdlg.companies])
-                    sql = f"select * from {self.contracts_view} order by date DESC"
-                    cur.execute(sql)
-                    self.updateprocdlg.contracts = cur.fetchall()
-                    self.updateprocdlg.procContractInput.addItem('')
-                    self.updateprocdlg.procContractInput.addItems(
-                        [row['number'] + ' от ' + str(row['date']) + ' ' + row['customer_short'] + '-' + row['contractor_short'] for row in self.updateprocdlg.contracts])
-                    sql = f"select * from {self.reports_view} order by shortname DESC"
-                    cur.execute(sql)
-                    self.updateprocdlg.reports = cur.fetchall()
-                    self.updateprocdlg.procReportInput.addItem('')
-                    self.updateprocdlg.procReportInput.addItems([row['shortname'] for row in self.updateprocdlg.reports])
-
-        reload_proc_data()
 
         def fill_with_selected_proc():
             selected_proc_name = self.proc_list[self.updateprocdlg.selected_proc_row]['name']
@@ -1890,6 +1857,74 @@ class GeoDM:
             if selected_report:
                 self.updateprocdlg.procReportInput.setCurrentText(selected_report)
 
+        def reload_proc_data():
+            self.updateprocdlg.procTypeInput.clear()
+            self.updateprocdlg.projectInput.clear()
+            self.updateprocdlg.procAuthorInput.clear()
+            self.updateprocdlg.procContractInput.clear()
+            self.updateprocdlg.procReportInput.clear()
+
+            # with open('.pgdsn', encoding='utf-8') as dsnf:
+            #     dsn = dsnf.read().replace('\n', '')
+            with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+
+                # with self.pgconn.cursor() as cur:
+                with pgconn.cursor() as cur:
+                    sql = f"select * from {self.processing_types} order by id"
+                    cur.execute(sql)
+                    self.updateprocdlg.proc_types = list(cur.fetchall())
+                    self.updateprocdlg.procTypeInput.addItems([row['name'] for row in self.updateprocdlg.proc_types])
+                    sql = f"select * from {self.projects}"
+                    cur.execute(sql)
+                    self.updateprocdlg.projects = list(cur.fetchall())
+                    self.updateprocdlg.projectInput.addItems([row['name_ru'] for row in self.updateprocdlg.projects])
+                    filter_str = self.updateprocdlg.authorFilterInput.text().strip().lower().replace("'", "''")
+                    sql = f"select * from {self.companies}"
+                    if filter_str:
+                        sql += f" where LOWER(name) like '%{filter_str}%'" \
+                               f" or LOWER(shortname) like '%{filter_str}%'"
+                    sql += ' order by name;'
+                    cur.execute(sql)
+                    self.updateprocdlg.companies = list(cur.fetchall())
+                    self.updateprocdlg.procAuthorInput.addItem('')
+                    self.updateprocdlg.procAuthorInput.addItems([row['name'] for row in self.updateprocdlg.companies])
+                    filter_str = self.updateprocdlg.contractFilterInput.text().strip().lower().replace("'", "''")
+                    sql = f"select * from {self.contracts_view}"
+                    if filter_str:
+                        sql += f" where LOWER(number) like '%{filter_str}%' " \
+                               f"or LOWER(name) like '%{filter_str}%' " \
+                               f"or date::text like '%{filter_str}%' " \
+                               f"or LOWER(customer) like '%{filter_str}%' " \
+                               f"or LOWER(customer_short) like '%{filter_str}%' " \
+                               f"or LOWER(contractor) like '%{filter_str}%' " \
+                               f"or LOWER(contractor_short) like '%{filter_str}%'"
+                    sql += ' order by date DESC;'
+                    cur.execute(sql)
+                    self.updateprocdlg.contracts = cur.fetchall()
+                    self.updateprocdlg.procContractInput.addItem('')
+                    self.updateprocdlg.procContractInput.addItems(
+                        [row['number'] + ' от ' + str(row['date']) + ' ' + row['customer_short'] + '-' + row['contractor_short'] for row in self.updateprocdlg.contracts])
+                    sql = f"select * from {self.reports_view}"
+                    filter_string = self.updateprocdlg.reportFilterInput.text().strip().lower().replace("'", "''")
+                    if filter_string:
+                        sql += f" where LOWER(name) like '%{filter_string}%' " \
+                               f"or LOWER(shortname) like '%{filter_string}%' " \
+                               f"or LOWER(company_name) like '%{filter_string}%' " \
+                               f"or LOWER(company_shortname) like '%{filter_string}%' " \
+                               f"or LOWER(contract_number) like '%{filter_string}%' " \
+                               f"or LOWER(contract_name) like '%{filter_string}%' " \
+                               f"or year::text like '%{filter_string}%' " \
+                               f"or LOWER(conf) like '%{filter_string}%' " \
+                               f"or LOWER(conf_shortname) like '%{filter_string}%' " \
+                               f"or LOWER(conf_limit) like '%{filter_string}%' " \
+                               f"or LOWER(report_type) like '%{filter_string}%'"
+                    sql += ' order by shortname DESC;'
+                    cur.execute(sql)
+                    self.updateprocdlg.reports = cur.fetchall()
+                    self.updateprocdlg.procReportInput.addItem('')
+                    self.updateprocdlg.procReportInput.addItems([row['shortname'] for row in self.updateprocdlg.reports])
+
+            fill_with_selected_proc()
 
         def generate_sql():
             selected_proc_id = self.proc_list[self.updateprocdlg.selected_proc_row]['proc_id']
@@ -1942,6 +1977,7 @@ class GeoDM:
         selected_proc_rows = list(set([x.row() for x in self.dockwind.procTableWidget.selectedItems()]))
         if len(selected_proc_rows) == 1:
             self.updateprocdlg.selected_proc_row = selected_proc_rows[0]
+            reload_proc_data()
             self.updateprocdlg.setWindowTitle('Изменить обработку')
             self.updateprocdlg.insertProcButton.setText('Изменить обработку')
             fill_with_selected_proc()
@@ -1960,6 +1996,9 @@ class GeoDM:
             self.updateprocdlg.refreshAuthorsButton.clicked.connect(reload_companies)
             self.updateprocdlg.refreshContractsButton.clicked.connect(reload_contracts)
             self.updateprocdlg.refreshReportsButton.clicked.connect(reload_reports)
+            self.updateprocdlg.authorFilterInput.textEdited.connect(reload_proc_data)
+            self.updateprocdlg.contractFilterInput.textEdited.connect(reload_proc_data)
+            self.updateprocdlg.reportFilterInput.textEdited.connect(reload_proc_data)
             self.updateprocdlg.addContractButton.clicked.connect(self.add_contract)
             self.updateprocdlg.addReportButton.clicked.connect(self.add_report)
 
@@ -1968,9 +2007,6 @@ class GeoDM:
             self.updateprocdlg.show()
         else:
             self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одну обработку', level=Qgis.Warning, duration=3)
-
-
-
 
 
     def select_proc_by_geometry(self):
@@ -2865,6 +2901,221 @@ class GeoDM:
                                                     duration=5)
         self.addwellattrnamedlg.insertWellAttrNameButton.clicked.connect(generate_and_execute_sql)
         self.addwellattrnamedlg.show()
+
+
+    def update_nda(self):
+        self.updatendadlg = AddNdaDialog()
+        self.updatendadlg.ndaRefreshCompaniesButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.updatendadlg.setWindowTitle('Изменить NDA')
+        self.updatendadlg.insertNdaButton.setText('Изменить NDA')
+        self.updatendadlg.selected_nda = None
+        self.updatendadlg.companies_a_list = None
+        self.updatendadlg.companies_b_list = None
+        self.updatendadlg.active_list = None
+        self.updatendadlg.conf_list = None
+
+        def get_selected_nda():
+            selected_nda_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+            if selected_nda_rows:
+                if len(selected_nda_rows) == 1:
+                    self.updatendadlg.selected_nda = self.aux_docs_dict['docs_list'][selected_nda_rows[0]]
+
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один NDA', level=Qgis.Warning,
+                                                        duration=3)
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один NDA', level=Qgis.Warning,
+                                                    duration=3)
+
+        def reload_nda_name():
+            if self.updatendadlg.selected_nda['name']:
+                self.updatendadlg.ndaNameLineEdit.setText(self.updatendadlg.selected_nda['name'])
+        
+        def reload_companies_a():
+            self.updatendadlg.ndaCompanyAComboBox.clear()
+            filter_str = self.updatendadlg.ndaCompanyAFilterLineEdit.text().strip().lower().replace("'", "''")
+            sql = f"select * from {self.companies}"
+            if filter_str:
+                sql += f" where (LOWER(name) like '%{filter_str}%'" \
+                       f" or LOWER(shortname) like '%{filter_str}%'" \
+                       f")"
+            sql += ' order by name;'
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.updatendadlg.companies_a_list = list(cur.fetchall())
+                self.updatendadlg.ndaCompanyAComboBox.addItem('--Выберите Компанию А--')
+                self.updatendadlg.ndaCompanyAComboBox.addItems([x['name'] for x in self.updatendadlg.companies_a_list])
+                if self.updatendadlg.selected_nda['company_a_id']:
+                    self.updatendadlg.ndaCompanyAComboBox.setCurrentText(self.updatendadlg.selected_nda['company_a_name'])
+            except:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Не удалось загрузить данные о компаниях из базы ' + sql,
+                                                    level=Qgis.Critical,
+                                                    duration=3)
+        
+        def reload_companies_b():
+            self.updatendadlg.ndaCompanyBComboBox.clear()
+            filter_str = self.updatendadlg.ndaCompanyBFilterLineEdit.text().strip().lower().replace("'", "''")
+            sql = f"select * from {self.companies}"
+            if filter_str:
+                sql += f" where (LOWER(name) like '%{filter_str}%'" \
+                       f" or LOWER(shortname) like '%{filter_str}%'" \
+                       f")"
+            sql += ' order by name;'
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.updatendadlg.companies_b_list = list(cur.fetchall())
+                self.updatendadlg.ndaCompanyBComboBox.addItem('--Выберите Компанию B--')
+                self.updatendadlg.ndaCompanyBComboBox.addItems([x['name'] for x in self.updatendadlg.companies_b_list])
+                if self.updatendadlg.selected_nda['company_b_id']:
+                    self.updatendadlg.ndaCompanyBComboBox.setCurrentText(self.updatendadlg.selected_nda['company_b_name'])
+            except:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Не удалось загрузить данные о компаниях из базы ' + sql,
+                                                    level=Qgis.Critical,
+                                                    duration=3)
+
+        def reload_nda_subject():
+            if self.updatendadlg.selected_nda['subject']:
+                self.updatendadlg.ndaSubjectPlainTextEdit.setPlainText(self.updatendadlg.selected_nda['subject'])
+
+        def reload_nda_date():
+            if self.updatendadlg.selected_nda['date_signed']:
+                sd = self.updatendadlg.selected_nda['date_signed']
+                self.updatendadlg.ndaDateSignedCalendarWidget.setSelectedDate(QDate(sd.year, sd.month, sd.day))
+
+        def reload_nda_source():
+            if self.updatendadlg.selected_nda['source']:
+                self.updatendadlg.ndaSourcePlainTextEdit.setPlainText(self.updatendadlg.selected_nda['source'])
+
+        def reload_nda_comments():
+            if self.updatendadlg.selected_nda['comments']:
+                self.updatendadlg.ndaCommentsPlainTextEdit.setPlainText(self.updatendadlg.selected_nda['comments'])
+
+        def reload_nda_active():
+            self.updatendadlg.ndaActiveComboBox.clear()
+            self.updatendadlg.active_list = ['YES', 'NO']
+            self.updatendadlg.ndaActiveComboBox.addItem('--Выберите акуальность--')
+            self.updatendadlg.ndaActiveComboBox.addItems(self.updatendadlg.active_list)
+            if self.updatendadlg.selected_nda['active']:
+                self.updatendadlg.ndaActiveComboBox.setCurrentText(self.updatendadlg.selected_nda['active'])
+
+        def reload_nda_scan():
+            if self.updatendadlg.selected_nda['scan_link']:
+                self.updatendadlg.ndaScalLinkPlainTextEdit.setPlainText(self.updatendadlg.selected_nda['scan_link'])
+        
+        def reload_nda_conf():
+            self.updatendadlg.ndaConfComboBox.clear()
+            sql = f"select * from {self.conf};"
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.updatendadlg.conf_list = list(cur.fetchall())
+                self.updatendadlg.ndaConfComboBox.addItem('--Выберите конфиденциальность--')
+                self.updatendadlg.ndaConfComboBox.addItems([x['conf_name'] for x in self.updatendadlg.conf_list])
+                if self.updatendadlg.selected_nda['conf']:
+                    self.updatendadlg.ndaConfComboBox.setCurrentText(self.updatendadlg.selected_nda['conf'])
+            except:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Не удалось загрузить данные о конфиденциальности ' + sql,
+                                                    level=Qgis.Critical,
+                                                    duration=3)
+
+        def generate_and_execute_sql():
+            new_nda_name = self.updatendadlg.ndaNameLineEdit.text().strip().replace("'", "''")
+            selected_company_a_index = self.updatendadlg.ndaCompanyAComboBox.currentIndex() - 1
+            selected_company_b_index = self.updatendadlg.ndaCompanyBComboBox.currentIndex() - 1
+            new_subject = self.updatendadlg.ndaSubjectPlainTextEdit.toPlainText().strip().replace("'", "''")
+            new_nda_date = self.updatendadlg.ndaDateSignedCalendarWidget.selectedDate()
+            new_source = self.updatendadlg.ndaSourcePlainTextEdit.toPlainText().strip().replace("'", "''")
+            new_comments = self.updatendadlg.ndaSourcePlainTextEdit.toPlainText().strip().replace("'", "''")
+            selected_active_index = self.updatendadlg.ndaActiveComboBox.currentIndex() - 1
+            new_scan_link = self.updatendadlg.ndaScalLinkPlainTextEdit.toPlainText().strip().replace("'", "''")
+            selected_conf_index = self.updatendadlg.ndaConfComboBox.currentIndex() - 1
+            if all([new_nda_name, selected_company_a_index >= 0, selected_company_b_index >= 0]):
+                selected_company_a_id = self.updatendadlg.companies_a_list[selected_company_a_index]['company_id']
+                selected_company_b_id = self.updatendadlg.companies_b_list[selected_company_b_index]['company_id']
+                fields_to_update = ['name', 'company_a_id', 'company_b_id']
+                values_to_insert = [f"'{new_nda_name}'", str(selected_company_a_id), str(selected_company_b_id)]
+                fields_to_update.append('subject')
+                if new_subject:
+                    values_to_insert.append(f"'{new_subject}'")
+                else:
+                    values_to_insert.append('NULL')
+                fields_to_update.append('date_signed')
+                if new_nda_date:
+                    values_to_insert.append(f"'{new_nda_date.toString('yyyy-MM-dd')}'")
+                else:
+                    values_to_insert.append('NULL')
+                fields_to_update.append('source')
+                if new_source:
+                    values_to_insert.append(f"'{new_source}'")
+                else:
+                    values_to_insert.append('NULL')
+                fields_to_update.append('comments')
+                if new_comments:
+                    values_to_insert.append(f"'{new_comments}'")
+                else:
+                    values_to_insert.append('NULL')
+                fields_to_update.append('active')
+                if selected_active_index >= 0:
+                    values_to_insert.append(f"'{self.updatendadlg.active_list[selected_active_index]}'")
+                else:
+                    values_to_insert.append('NULL')
+                fields_to_update.append('scan_link')
+                if new_scan_link:
+                    values_to_insert.append(f"'{new_scan_link}'")
+                else:
+                    values_to_insert.append('NULL')
+                fields_to_update.append('conf_id')
+                if selected_conf_index >= 0:
+                    values_to_insert.append(str(self.updatendadlg.conf_list[selected_conf_index]['conf_id']))
+                else:
+                    values_to_insert.append('NULL')
+                sql = f"update {self.nda}" \
+                      f" set {', '.join([x[0] + ' = ' + x[1] for x in zip(fields_to_update, values_to_insert)])}" \
+                      f" where nda_id = {str(self.updatendadlg.selected_nda['nda_id'])};"
+                self.sql = sql
+                mwidget = self.iface.messageBar().createMessage(f"Изменить NDA '{new_nda_name}'?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                self.updatendadlg.accept()
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+            else:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Нужно ввести Название, выбрать Компанию А и Компанию B',
+                                                    level=Qgis.Warning,
+                                                    duration=5)
+
+        get_selected_nda()
+        if self.updatendadlg.selected_nda:
+            reload_nda_name()
+            reload_companies_a()
+            reload_companies_b()
+            reload_nda_subject()
+            reload_nda_date()
+            reload_nda_source()
+            reload_nda_comments()
+            reload_nda_active()
+            reload_nda_scan()
+            reload_nda_conf()
+            self.updatendadlg.ndaRefreshCompaniesButton.clicked.connect(reload_companies_a)
+            self.updatendadlg.ndaRefreshCompaniesButton.clicked.connect(reload_companies_b)
+            self.updatendadlg.ndaAddCompanyButton.clicked.connect(self.add_company)
+            self.updatendadlg.insertNdaButton.clicked.connect(generate_and_execute_sql)
+            self.updatendadlg.show()
+        else:
+            self.iface.messageBar().pushMessage('Ошибка',
+                                                'Нужно выьрать один NDA',
+                                                level=Qgis.Warning,
+                                                duration=5)
 
 
     def add_nda(self):
@@ -4709,6 +4960,135 @@ class GeoDM:
             self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
 
 
+    def update_drive(self):
+        self.updatedrivedlg = AddDriveDialog()
+        self.updatedrivedlg.setWindowTitle('Изменить носитель')
+        self.updatedrivedlg.insertDriveButton.setText('Изменить носитель')
+        self.updatedrivedlg.selected_drive = None
+        self.updatedrivedlg.drive_types_list = None
+        self.updatedrivedlg.conf_list = None
+
+        def get_selected_drive():
+            selected_drive_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+            if selected_drive_rows:
+                if len(selected_drive_rows) == 1:
+                    self.updatedrivedlg.selected_drive = self.aux_docs_dict['docs_list'][selected_drive_rows[0]]
+
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один носитель', level=Qgis.Warning,
+                                                        duration=3)
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один носитель', level=Qgis.Warning,
+                                                    duration=3)
+
+        def reload_drive_number():
+            if self.updatedrivedlg.selected_drive['drive_number']:
+                self.updatedrivedlg.driveNumberLineEdit.setText(self.updatedrivedlg.selected_drive['drive_number'])
+
+        def reload_drive_types():
+            self.updatedrivedlg.driveTypeComboBox.clear()
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        sql = f"select * from {self.drive_types};"
+                        cur.execute(sql)
+                        self.updatedrivedlg.drive_types_list = list(cur.fetchall())
+                self.updatedrivedlg.driveTypeComboBox.addItems([row['name'] for row in self.updatedrivedlg.drive_types_list])
+                if self.updatedrivedlg.selected_drive['type_id']:
+                    self.updatedrivedlg.driveTypeComboBox.setCurrentText(self.updatedrivedlg.selected_drive['drive_type'])
+            except:
+                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список типов носителей', level=Qgis.Critical,
+                                                    duration=3)
+
+        def reload_drive_label():
+            if self.updatedrivedlg.selected_drive['label']:
+                self.updatedrivedlg.driveLabelTextEdit.setPlainText(self.updatedrivedlg.selected_drive['label'])
+
+        def reload_drive_volume():
+            if self.updatedrivedlg.selected_drive['volume_gb']:
+                self.updatedrivedlg.driveSizeGbSpinBox.setValue(self.updatedrivedlg.selected_drive['volume_gb'])
+
+        def reload_drive_conf():
+            self.updatedrivedlg.driveConfComboBox.clear()
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        sql = f"select * from {self.conf};"
+                        cur.execute(sql)
+                        self.updatedrivedlg.conf_list = list(cur.fetchall())
+                self.updatedrivedlg.driveConfComboBox.addItem('')
+                self.updatedrivedlg.driveConfComboBox.addItems([row['conf_name'] for row in self.updatedrivedlg.conf_list])
+                if self.updatedrivedlg.selected_drive['conf_id']:
+                    self.updatedrivedlg.driveConfComboBox.setCurrentText(self.updatedrivedlg.selected_drive['conf_name'])
+            except:
+                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список конфиденциальности',
+                                                    level=Qgis.Critical,
+                                                    duration=3)
+
+        def reload_drive_conf_limit():
+            if self.updatedrivedlg.selected_drive['conf_limit']:
+                self.updatedrivedlg.driveConfLimitLineEdit.setText(self.updatedrivedlg.selected_drive['conf_limit'])
+        
+        def generate_and_exeute_sql():
+            new_drive_number = self.updatedrivedlg.driveNumberLineEdit.text().strip().replace("'", "''")
+            if new_drive_number:
+                selected_drive_type_index = self.updatedrivedlg.driveTypeComboBox.currentIndex()
+                selected_drive_type_id = self.updatedrivedlg.drive_types_list[selected_drive_type_index]['drive_type_id']
+                selected_drive_type_name = self.updatedrivedlg.drive_types_list[selected_drive_type_index]['name']
+                new_drive_label = self.updatedrivedlg.driveLabelTextEdit.toPlainText().strip().replace("'", "''")
+                new_drive_sizegb = self.updatedrivedlg.driveSizeGbSpinBox.value()
+                selected_conf_index = self.updatedrivedlg.driveConfComboBox.currentIndex() - 1
+                new_drive_conf_limit = self.updatedrivedlg.driveConfLimitLineEdit.text().strip().replace("'", "''")
+                fields_to_update = ['drive_number', 'type_id']
+                values_to_insert = [f"'{new_drive_number}'", str(selected_drive_type_id)]
+                fields_to_update.append('label')
+                if new_drive_label:
+                    values_to_insert.append(f"'{new_drive_label}'")
+                else:
+                    values_to_insert.append('NULL')
+                if new_drive_sizegb > 0:
+                    fields_to_update.append('volume_gb')
+                    values_to_insert.append(str(new_drive_sizegb))
+                fields_to_update.append('conf_id')
+                if selected_conf_index >= 0:
+                    selected_conf_id = self.updatedrivedlg.conf_list[selected_conf_index]['conf_id']
+                    values_to_insert.append(str(selected_conf_id))
+                else:
+                    values_to_insert.append('NULL')
+                fields_to_update.append('conf_limit')
+                if new_drive_conf_limit:
+                    values_to_insert.append(str(new_drive_conf_limit))
+                else:
+                    values_to_insert.append('NULL')
+                self.sql = f"update {self.drives}" \
+                           f" set {', '.join([x[0] + ' = ' + x[1] for x in zip(fields_to_update, values_to_insert)])}" \
+                           f" where drive_id = {str(self.updatedrivedlg.selected_drive['drive_id'])};"
+                mwidget = self.iface.messageBar().createMessage(
+                    f"Изменить {selected_drive_type_name} {str(new_drive_number)}?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+                self.updatedrivedlg.accept()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Введите номер и тип нового физ.носителя',
+                                                    level=Qgis.Warning, duration=5)
+
+        get_selected_drive()
+        if self.updatedrivedlg.selected_drive:
+            reload_drive_number()
+            reload_drive_types()
+            reload_drive_label()
+            reload_drive_volume()
+            reload_drive_conf()
+            reload_drive_conf_limit()
+            self.updatedrivedlg.insertDriveButton.clicked.connect(generate_and_exeute_sql)
+            self.updatedrivedlg.show()
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один носитель', level=Qgis.Warning, duration=5)
+
+
     def add_drive(self):
         self.adddrivedlg = AddDriveDialog()
         self.adddrivedlg.drive_types_list = None
@@ -4800,6 +5180,56 @@ class GeoDM:
                                                                 level=Qgis.Warning, duration=5)
         self.addlinkdlg.insertLinkButton.clicked.connect(generate_and_execute_sql)
         self.addlinkdlg.show()
+
+
+    def update_link(self):
+        self.updatelinkdlg = AddLinkDialog()
+        self.updatelinkdlg.setWindowTitle('Изменить ссылку')
+        self.updatelinkdlg.insertLinkButton.setText('Изменить ссылку')
+        self.updatelinkdlg.selected_link = None
+
+        def get_selected_link():
+            selected_link_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+            if selected_link_rows:
+                if len(selected_link_rows) == 1:
+                    self.updatelinkdlg.selected_link = self.aux_docs_dict['docs_list'][selected_link_rows[0]]
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одну ссылку',
+                                                        level=Qgis.Warning,
+                                                        duration=3)
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одну ссылку',
+                                                    level=Qgis.Warning,
+                                                    duration=3)
+
+        def reload_link():
+            if self.updatelinkdlg.selected_link['link']:
+                self.updatelinkdlg.linkPlainTextEdit.setPlainText(self.updatelinkdlg.selected_link['link'])
+
+        def generate_and_execute_sql():
+            new_link = self.updatelinkdlg.linkPlainTextEdit.toPlainText().strip().replace("'", "''")
+            if new_link:
+                self.sql = f"update {self.links} set link = '{new_link}' where link_id = {str(self.updatelinkdlg.selected_link['link_id'])}"
+                mwidget = self.iface.messageBar().createMessage(f"Изменить ссфлку?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=3)
+                self.updatelinkdlg.accept()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно указать текст ссылки',
+                                                    level=Qgis.Warning,
+                                                    duration=3)
+        get_selected_link()
+        if self.updatelinkdlg.selected_link:
+            reload_link()
+            self.updatelinkdlg.insertLinkButton.clicked.connect(generate_and_execute_sql)
+            self.updatelinkdlg.show()
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', 'Нужно указать текст ссылки',
+                                                level=Qgis.Warning,
+                                                duration=3)
 
 
     def add_transmittal(self):
@@ -5073,7 +5503,7 @@ class GeoDM:
                     self.wind.auxDocsTableWidget.clear()
                     self.wind.auxDocsTableWidget.setRowCount(0)
                     self.wind.auxDocsTableWidget.setColumnCount(2)
-                    self.wind.auxDocsTableWidget.setHorizontalHeaderLabels(['Качество данных'])
+                    self.wind.auxDocsTableWidget.setHorizontalHeaderLabels(['Качество данных', 'Ранг'])
                     header = self.wind.auxDocsTableWidget.horizontalHeader()
                     header.resizeSection(0, 390)
                     header.resizeSection(1, 90)
@@ -5391,7 +5821,62 @@ class GeoDM:
                                                     level=Qgis.Warning, duration=3)
         self.addconfdlg.insertConfButton.clicked.connect(generate_and_execute_sql)
         self.addconfdlg.show()
+    
+    
+    def update_conf(self):
+        self.updateconfdlg = AddConfDialog()
+        self.updateconfdlg.setWindowTitle('Изменить конфиденциальность')
+        self.updateconfdlg.insertConfButton.setText('Изменить конфиденциальность')
+        self.updateconfdlg.selected_conf = None
 
+        def get_selected_conf():
+            selected_conf_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+            if selected_conf_rows:
+                if len(selected_conf_rows) == 1:
+                    self.updateconfdlg.selected_conf = self.aux_docs_dict['docs_list'][selected_conf_rows[0]]
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одну конфиденциальность', level=Qgis.Warning,
+                                                        duration=3)
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одну конфиденциальность', level=Qgis.Warning,
+                                                    duration=3)
+
+        def reload_conf_name():
+            if self.updateconfdlg.selected_conf['conf_name']:
+                self.updateconfdlg.confNameLineEdit.setText(self.updateconfdlg.selected_conf['conf_name'])
+
+        def reload_conf_shortname():
+            if self.updateconfdlg.selected_conf['conf_name_short']:
+                self.updateconfdlg.confShortnameLineEdit.setText(self.updateconfdlg.selected_conf['conf_name_short'])
+
+        def generate_and_execute_sql():
+            new_conf_name = self.updateconfdlg.confNameLineEdit.text().strip().replace("'", "''")
+            new_conf_shortname = self.updateconfdlg.confShortnameLineEdit.text().strip().replace("'", "''")
+            if new_conf_name and new_conf_shortname:
+                # sql = f"insert into {self.conf}(conf_name, conf_name_short) values('{new_conf_name}', '{new_conf_shortname}');"
+                sql = f"update {self.conf} set conf_name = '{new_conf_name}', conf_name_short = '{new_conf_shortname}' where conf_id = {str(self.updateconfdlg.selected_conf['conf_id'])};"
+                self.sql = sql
+                mwidget = self.iface.messageBar().createMessage(f"Изменить конфиденциальность '{new_conf_name}'?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=3)
+                self.updateconfdlg.accept()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Укажите название и краткое название конфиденциальности',
+                                                    level=Qgis.Warning, duration=3)
+
+        get_selected_conf()
+        if self.updateconfdlg.selected_conf:
+            reload_conf_name()
+            reload_conf_shortname()
+            self.updateconfdlg.insertConfButton.clicked.connect(generate_and_execute_sql)
+            self.updateconfdlg.show()
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', 'Укажите название и краткое название конфиденциальности',
+                                                level=Qgis.Warning, duration=3)
+    
 
     def add_quality(self):
         self.addqualitydlg = AddQualityDialog()
@@ -5416,6 +5901,119 @@ class GeoDM:
 
         self.addqualitydlg.insertQualityButton.clicked.connect(generate_and_execute_sql)
         self.addqualitydlg.show()
+    
+    
+    def update_quality(self):
+        self.updatequalitydlg = AddQualityDialog()
+        self.updatequalitydlg.setWindowTitle('Изменить качество данных')
+        self.updatequalitydlg.insertQualityButton.setText('Изменить')
+        self.updatequalitydlg.selected_quality = None
+
+        def get_selected_quality():
+            selected_quality_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+            if selected_quality_rows:
+                if len(selected_quality_rows) == 1:
+                    self.updatequalitydlg.selected_quality = self.aux_docs_dict['docs_list'][selected_quality_rows[0]]
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одно качество',
+                                                        level=Qgis.Warning,
+                                                        duration=3)
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одно качество',
+                                                    level=Qgis.Warning,
+                                                    duration=3)
+
+        def reload_quality_name_ru():
+            if self.updatequalitydlg.selected_quality['name_ru']:
+                self.updatequalitydlg.qualityNameRuLineEdit.setText(self.updatequalitydlg.selected_quality['name_ru'])
+
+        def reload_quality_name_en():
+            if self.updatequalitydlg.selected_quality['name_en']:
+                self.updatequalitydlg.qualityNameEnLineEdit.setText(self.updatequalitydlg.selected_quality['name_en'])
+
+        def reload_quality_range():
+            if self.updatequalitydlg.selected_quality['quality_range']:
+                self.updatequalitydlg.qualityRangeSpinBox.setValue(self.updatequalitydlg.selected_quality['quality_range'])
+
+        def generate_and_execute_sql():
+            new_quality_name_ru = self.updatequalitydlg.qualityNameRuLineEdit.text().strip().replace("'", "''")
+            new_quality_name_en = self.updatequalitydlg.qualityNameEnLineEdit.text().strip().replace("'", "''")
+            new_quality_range = self.updatequalitydlg.qualityRangeSpinBox.value()
+            if all([new_quality_name_ru, new_quality_name_en, new_quality_range]):
+                sql = f"update {self.data_quality} set name_ru = '{new_quality_name_ru}', name_en = '{new_quality_name_en}', quality_range = {str(new_quality_range)} where data_quality_id = {self.updatequalitydlg.selected_quality['data_quality_id']};"
+                self.sql = sql
+                mwidget = self.iface.messageBar().createMessage(
+                    f"Изменить качество данных '{new_quality_name_ru}'?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=3)
+                self.updatequalitydlg.accept()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Укажите названия на обоих языках и ранг качества',
+                                                    level=Qgis.Warning, duration=3)
+
+        get_selected_quality()
+        if self.updatequalitydlg.selected_quality:
+            reload_quality_name_ru()
+            reload_quality_name_en()
+            reload_quality_range()
+            self.updatequalitydlg.insertQualityButton.clicked.connect(generate_and_execute_sql)
+            self.updatequalitydlg.show()
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать одно качество',
+                                                level=Qgis.Warning,
+                                                duration=3)
+
+
+    def update_format(self):
+        self.updateformatdlg = AddFormatDialog()
+        self.updateformatdlg.setWindowTitle('Изменить формат')
+        self.updateformatdlg.insertFormatButton.setText('Изменить формат')
+        self.updateformatdlg.selected_format = None
+
+        def get_selected_format():
+            selected_format_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+            if selected_format_rows:
+                if len(selected_format_rows) == 1:
+                    self.updateformatdlg.selected_format = self.aux_docs_dict['docs_list'][selected_format_rows[0]]
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один формат',
+                                                        level=Qgis.Warning,
+                                                        duration=3)
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один формат',
+                                                    level=Qgis.Warning,
+                                                    duration=3)
+
+        def reload_format_name():
+            if self.updateformatdlg.selected_format['name']:
+                self.updateformatdlg.formatNameLineEdit.setText(self.updateformatdlg.selected_format['name'])
+
+        def generate_and_execute_sql():
+            new_format_name = self.updateformatdlg.formatNameLineEdit.text().strip().replace("'", "''")
+            if new_format_name:
+                self.sql = f"update {self.formats} set name = '{new_format_name}' where format_id = {self.updateformatdlg.selected_format['format_id']}"
+                mwidget = self.iface.messageBar().createMessage(f"Изменить формат '{new_format_name}'?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=3)
+                self.updateformatdlg.accept()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно указать название формата',
+                                                    level=Qgis.Warning,
+                                                    duration=3)
+
+        get_selected_format()
+        if self.updateformatdlg.selected_format:
+            reload_format_name()
+            self.updateformatdlg.insertFormatButton.clicked.connect(generate_and_execute_sql)
+            self.updateformatdlg.show()
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать формат', level=Qgis.Warning, duration=3)
 
 
     def add_format(self):
@@ -5473,6 +6071,18 @@ class GeoDM:
                 self.update_company()
             elif self.aux_docs_dict['doc_type'] == 'contracts':
                 self.update_contract()
+            elif self.aux_docs_dict['doc_type'] == 'conf':
+                self.update_conf()
+            elif self.aux_docs_dict['doc_type'] == 'data_quality':
+                self.update_quality()
+            elif self.aux_docs_dict['doc_type'] == 'drives':
+                self.update_drive()
+            elif self.aux_docs_dict['doc_type'] == 'formats':
+                self.update_format()
+            elif self.aux_docs_dict['doc_type'] == 'links':
+                self.update_link()
+            elif self.aux_docs_dict['doc_type'] == 'nda':
+                self.update_nda()
 
 
     def delete_aux_doc(self):
