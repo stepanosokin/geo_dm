@@ -1269,6 +1269,63 @@ class GeoDM:
         self.addcompdlg.show()
 
 
+    def update_project(self):
+        self.updateprojdlg = AddProjDialog()
+        self.updateprojdlg.setWindowTitle('Изменить проект')
+        self.updateprojdlg.insertProjButton.setText('Изменить проект')
+        self.updateprojdlg.selected_project = None
+
+        def get_selected_project():
+            selected_project_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+            if selected_project_rows:
+                if len(selected_project_rows) == 1:
+                    self.updateprojdlg.selected_project = self.aux_docs_dict['docs_list'][selected_project_rows[0]]
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один проект', level=Qgis.Warning,
+                                                        duration=3)
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один проект', level=Qgis.Warning,
+                                                    duration=3)
+
+        def reload_project_name_ru():
+            if self.updateprojdlg.selected_project['name_ru']:
+                self.updateprojdlg.projNameRuInput.setText(self.updateprojdlg.selected_project['name_ru'])
+
+        def reload_project_name_en():
+            if self.updateprojdlg.selected_project['name_en']:
+                self.updateprojdlg.projNameEnInput.setText(self.updateprojdlg.selected_project['name_en'])
+
+        def generate_and_execute_sql():
+            new_project_name_ru = self.updateprojdlg.projNameRuInput.text().strip().replace("'", "''")
+            new_project_name_en = self.updateprojdlg.projNameEnInput.text().strip().replace("'", "''")
+            if new_project_name_ru and new_project_name_en:
+                sql = f"update {self.projects}" \
+                      f" set name_ru = '{new_project_name_ru}', name_en = '{new_project_name_en}'" \
+                      f" where id = {str(self.updateprojdlg.selected_project['id'])};"
+                self.sql = sql
+                mwidget = self.iface.messageBar().createMessage(f"Изменить проект {self.updateprojdlg.selected_project['name_ru']}?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                self.updateprojdlg.accept()
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно указать название на русском и английском', level=Qgis.Warning,
+                                                    duration=3)
+
+        get_selected_project()
+        if self.updateprojdlg.selected_project:
+            reload_project_name_ru()
+            reload_project_name_en()
+            self.updateprojdlg.insertProjButton.clicked.connect(generate_and_execute_sql)
+            self.updateprojdlg.show()
+        else:
+            self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один проект',
+                                                level=Qgis.Warning,
+                                                duration=3)
+
+
     def add_project(self):
         self.addprojdlg = AddProjDialog()
         new_proj_name_ru = self.addprojdlg.projNameRuInput.text()
@@ -1307,6 +1364,227 @@ class GeoDM:
         self.addprojdlg.show()
 
 
+    def update_report(self):
+        self.updatereportdlg = AddReportDialog()
+        self.updatereportdlg.setWindowTitle('Изменить отчет')
+        self.updatereportdlg.insertReportButton.setText('Изменить отчет')
+        self.updatereportdlg.reportAuthorRefreshButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.updatereportdlg.reportContractRefreshButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.updatereportdlg.selected_report = None
+        self.updatereportdlg.report_types_list = None
+        self.updatereportdlg.companies_list = None
+        self.updatereportdlg.contracts_list = None
+        self.updatereportdlg.conf_list = None
+
+        def get_selected_report():
+            selected_report_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+            if selected_report_rows:
+                if len(selected_report_rows) == 1:
+                    self.updatereportdlg.selected_report = self.aux_docs_dict['docs_list'][selected_report_rows[0]]
+
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один отчет', level=Qgis.Warning,
+                                                        duration=3)
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один отчет', level=Qgis.Warning,
+                                                    duration=3)
+
+        def reload_report_name():
+            if self.updatereportdlg.selected_report['name']:
+                self.updatereportdlg.reportNameInput.setText(self.updatereportdlg.selected_report['name'])
+
+        def reload_report_shortname():
+            if self.updatereportdlg.selected_report['shortname']:
+                self.updatereportdlg.reportShortNameInput.setText(self.updatereportdlg.selected_report['shortname'])
+
+        def reload_report_types():
+            self.updatereportdlg.reportTypeInput.clear()
+            sql = f"select * from {self.report_types};"
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.updatereportdlg.report_types_list = list(cur.fetchall())
+                        self.updatereportdlg.reportTypeInput.addItem('')
+                        self.updatereportdlg.reportTypeInput.addItems([x['name'] for x in self.updatereportdlg.report_types_list])
+                        if self.updatereportdlg.selected_report['report_type_id']:
+                            self.updatereportdlg.reportTypeInput.setCurrentText(self.updatereportdlg.selected_report['report_type'])
+            except:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Не удалось загрузить данные о типах отчетов из базы ' + sql,
+                                                    level=Qgis.Critical,
+                                                    duration=3)
+
+        def reload_report_companies():
+            self.updatereportdlg.reportAuthorInput.clear()
+            sql = f"select * from {self.companies}"
+            filter_str = self.updatereportdlg.reportCompanyFilterLineEdit.text().strip().lower().replace("'", "''")
+            if filter_str:
+                sql += f" where LOWER(name) like '%{filter_str}%'" \
+                       f" or LOWER(shortname) like '%{filter_str}%'"
+            sql += ' order by name;'
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.updatereportdlg.companies_list = list(cur.fetchall())
+                        self.updatereportdlg.reportAuthorInput.addItem('')
+                        self.updatereportdlg.reportAuthorInput.addItems(
+                            [x['name'] for x in self.updatereportdlg.companies_list])
+                        if self.updatereportdlg.selected_report['company_id']:
+                            self.updatereportdlg.reportAuthorInput.setCurrentText(self.updatereportdlg.selected_report['company_name'])
+            except:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Не удалось загрузить данные о компаниях из базы ' + sql,
+                                                    level=Qgis.Critical,
+                                                    duration=3)
+
+        def reload_report_year():
+            if self.updatereportdlg.selected_report['year']:
+                self.updatereportdlg.reportYearInput.setValue(self.updatereportdlg.selected_report['year'])
+
+        def reload_report_contracts():
+            self.updatereportdlg.reportContractInput.clear()
+            sql = f"select * from {self.contracts_view}"
+            filter_str = self.updatereportdlg.reportContractFilterLineEdit.text().strip().lower().replace("'", "''")
+            if filter_str:
+                sql += f" where LOWER(number) like '%{filter_str}%'" \
+                       f" or date::text like '%{filter_str}%'" \
+                       f" or LOWER(name) like '%{filter_str}%'" \
+                       f" or LOWER(customer) like '%{filter_str}%'" \
+                       f" or LOWER(customer_short) like '%{filter_str}%'" \
+                       f" or LOWER(contractor) like '%{filter_str}%'" \
+                       f" or LOWER(contractor_short) like '%{filter_str}%'"
+            sql += ' order by date DESC;'
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.updatereportdlg.contracts_list = list(cur.fetchall())
+                        self.updatereportdlg.reportContractInput.addItem('')
+                        self.updatereportdlg.reportContractInput.addItems(
+                            [row['number'] + ' от ' + str(row['date']) for row in self.updatereportdlg.contracts_list])
+                        if self.updatereportdlg.selected_report['contract_id']:
+                            sr = self.updatereportdlg.selected_report
+                            self.updatereportdlg.reportContractInput.setCurrentText(sr['contract_number'] + ' от ' + str(sr['contract_date']))
+            except:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Не удалось загрузить данные о договорах из базы ' + sql,
+                                                    level=Qgis.Critical,
+                                                    duration=3)
+
+        def reload_report_link():
+            if self.updatereportdlg.selected_report['link']:
+                self.updatereportdlg.reportLinkInput.setText(self.updatereportdlg.selected_report['link'])
+
+        def reload_report_conf():
+            self.updatereportdlg.reportConfInput.clear()
+            sql = f"select * from {self.conf};"
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        cur.execute(sql)
+                        self.updatereportdlg.conf_list = list(cur.fetchall())
+                        self.updatereportdlg.reportConfInput.addItem('')
+                        self.updatereportdlg.reportConfInput.addItems([x['conf_name'] for x in self.updatereportdlg.conf_list])
+                        if self.updatereportdlg.selected_report['conf_id']:
+                            self.updatereportdlg.reportConfInput.setCurrentText(self.updatereportdlg.selected_report['conf'])
+            except:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Не удалось загрузить данные о конфиденциальности из базы ' + sql,
+                                                    level=Qgis.Critical,
+                                                    duration=3)
+
+        def reload_report_conf_limit():
+            if self.updatereportdlg.selected_report['conf_limit']:
+                self.updatereportdlg.reportConfLimitInput.setText(self.updatereportdlg.selected_report['conf_limit'])
+
+        def generate_and_execute_sql():
+            new_report_name = self.updatereportdlg.reportNameInput.text().strip().replace("'", "''")
+            new_report_shortname = self.updatereportdlg.reportShortNameInput.text().strip().replace("'", "''")
+            selected_report_type_index = self.updatereportdlg.reportTypeInput.currentIndex() - 1
+            selected_report_company_index = self.updatereportdlg.reportAuthorInput.currentIndex() - 1
+            new_report_year = self.updatereportdlg.reportYearInput.value()
+            selected_report_contract_index = self.updatereportdlg.reportContractInput.currentIndex() - 1
+            new_report_link = self.updatereportdlg.reportLinkInput.text().strip().replace("'", "''")
+            selected_report_conf_index = self.updatereportdlg.reportConfInput.currentIndex() - 1
+            new_report_conf_limit = self.updatereportdlg.reportConfLimitInput.text().strip().replace("'", "''")
+            if all([new_report_name, new_report_shortname, selected_report_type_index >= 0]):
+                fields_to_update = ['name', 'shortname', 'report_type_id', 'company_id', 'year',
+                                    'contract_id', 'link', 'conf_id', 'conf_limit']
+                selected_report_type_id = self.updatereportdlg.report_types_list[selected_report_type_index]['report_type_id']
+                values_to_insert = [f"'{new_report_name}'", f"'{new_report_shortname}'", str(selected_report_type_id)]
+                if selected_report_company_index >= 0:
+                    selected_report_company_id = self.updatereportdlg.companies_list[selected_report_company_index]['company_id']
+                    values_to_insert.append(str(selected_report_company_id))
+                else:
+                    values_to_insert.append('NULL')
+                if new_report_year:
+                    values_to_insert.append(str(new_report_year))
+                else:
+                    values_to_insert.append('NULL')
+                if selected_report_contract_index >= 0:
+                    selected_report_contract_id = self.updatereportdlg.contracts_list[selected_report_contract_index]['contract_id']
+                    values_to_insert.append(str(selected_report_contract_id))
+                else:
+                    values_to_insert.append('NULL')
+                if new_report_link:
+                    values_to_insert.append(f"'{new_report_link}'")
+                else:
+                    values_to_insert.append('NULL')
+                if selected_report_conf_index >= 0:
+                    selected_report_conf_id = self.updatereportdlg.conf_list[selected_report_conf_index]['conf_id']
+                    values_to_insert.append(str(selected_report_conf_id))
+                else:
+                    values_to_insert.append('NULL')
+                if new_report_conf_limit:
+                    values_to_insert.append(f"'{new_report_conf_limit}'")
+                else:
+                    values_to_insert.append('NULL')
+                sql = f"update {self.reports}" \
+                      f" set {', '.join([x[0] + ' = ' + x[1] for x in zip(fields_to_update, values_to_insert)])}" \
+                      f" where report_id = {str(self.updatereportdlg.selected_report['report_id'])};"
+                self.sql = sql
+                mwidget = self.iface.messageBar().createMessage(f"Изменить Отчет '{new_report_name}'?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                self.updatereportdlg.accept()
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+            else:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Нужно ввести название, сокр.название и вбрать тип отчета',
+                                                    level=Qgis.Warning,
+                                                    duration=5)
+
+        get_selected_report()
+        if self.updatereportdlg.selected_report:
+            reload_report_name()
+            reload_report_shortname()
+            reload_report_types()
+            reload_report_companies()
+            reload_report_year()
+            reload_report_contracts()
+            reload_report_link()
+            reload_report_conf()
+            reload_report_conf_limit()
+            self.updatereportdlg.reportCompanyFilterLineEdit.textEdited.connect(reload_report_companies)
+            self.updatereportdlg.reportAuthorRefreshButton.clicked.connect(reload_report_companies)
+            self.updatereportdlg.reportAddAuthorButton.clicked.connect(self.add_company)
+            self.updatereportdlg.reportContractFilterLineEdit.textEdited.connect(reload_report_contracts)
+            self.updatereportdlg.reportContractRefreshButton.clicked.connect(reload_report_contracts)
+            self.updatereportdlg.reportAddContractButton.clicked.connect(self.add_contract)
+            self.updatereportdlg.insertReportButton.clicked.connect(generate_and_execute_sql)
+            self.updatereportdlg.show()
+        else:
+            self.iface.messageBar().pushMessage('Ошибка',
+                                                'Нужно выбрать один отчет',
+                                                level=Qgis.Warning,
+                                                duration=5)
+
+
+
     def add_report(self):
         self.addreportdlg = AddReportDialog()
         self.addreportdlg.reportAuthorRefreshButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
@@ -1325,12 +1603,27 @@ class GeoDM:
                     cur.execute(sql)
                     self.addreportdlg.report_types = list(cur.fetchall())
                     self.addreportdlg.reportTypeInput.addItems([row['name'] for row in self.addreportdlg.report_types])
-                    sql = f"select * from {self.companies} order by name"
+                    sql = f"select * from {self.companies}"
+                    filter_str = self.addreportdlg.reportCompanyFilterLineEdit.text().strip().lower().replace("'", "''")
+                    if filter_str:
+                        sql += f" where LOWER(name) like '%{filter_str}%'" \
+                               f" or LOWER(shortname) like '%{filter_str}%'"
+                    sql += ' order by name;'
                     cur.execute(sql)
                     self.addreportdlg.companies = list(cur.fetchall())
                     self.addreportdlg.reportAuthorInput.addItem('')
                     self.addreportdlg.reportAuthorInput.addItems([row['name'] for row in self.addreportdlg.companies])
-                    sql = f"select * from {self.contracts_view} order by name"
+                    sql = f"select * from {self.contracts_view}"
+                    filter_str = self.addreportdlg.reportContractFilterLineEdit.text().strip().lower().replace("'", "''")
+                    if filter_str:
+                        sql += f" where LOWER(number) like '%{filter_str}%'" \
+                               f" or date::text like '%{filter_str}%'" \
+                               f" or LOWER(name) like '%{filter_str}%'" \
+                               f" or LOWER(customer) like '%{filter_str}%'" \
+                               f" or LOWER(customer_short) like '%{filter_str}%'" \
+                               f" or LOWER(contractor) like '%{filter_str}%'" \
+                               f" or LOWER(contractor_short) like '%{filter_str}%'"
+                    sql += ' order by date DESC;'
                     cur.execute(sql)
                     self.addreportdlg.contracts = list(cur.fetchall())
                     self.addreportdlg.reportContractInput.addItem('')
@@ -1398,6 +1691,8 @@ class GeoDM:
         self.addreportdlg.reportTypeInput.activated.connect(generate_sql)
         self.addreportdlg.reportAuthorInput.activated.connect(generate_sql)
         self.addreportdlg.reportAuthorRefreshButton.clicked.connect(reload_report_data)
+        self.addreportdlg.reportCompanyFilterLineEdit.textEdited.connect(reload_report_data)
+        self.addreportdlg.reportContractFilterLineEdit.textEdited.connect(reload_report_data)
         self.addreportdlg.reportAddAuthorButton.clicked.connect(self.add_company)
         self.addreportdlg.reportYearInput.valueChanged.connect(generate_sql)
         self.addreportdlg.reportYearInput.textChanged.connect(generate_sql)
@@ -3108,6 +3403,8 @@ class GeoDM:
             reload_nda_conf()
             self.updatendadlg.ndaRefreshCompaniesButton.clicked.connect(reload_companies_a)
             self.updatendadlg.ndaRefreshCompaniesButton.clicked.connect(reload_companies_b)
+            self.updatendadlg.ndaCompanyAFilterLineEdit.textEdited.connect(reload_companies_a)
+            self.updatendadlg.ndaCompanyBFilterLineEdit.textEdited.connect(reload_companies_b)
             self.updatendadlg.ndaAddCompanyButton.clicked.connect(self.add_company)
             self.updatendadlg.insertNdaButton.clicked.connect(generate_and_execute_sql)
             self.updatendadlg.show()
@@ -6083,6 +6380,10 @@ class GeoDM:
                 self.update_link()
             elif self.aux_docs_dict['doc_type'] == 'nda':
                 self.update_nda()
+            elif self.aux_docs_dict['doc_type'] == 'projects':
+                self.update_project()
+            elif self.aux_docs_dict['doc_type'] == 'reports':
+                self.update_report()
 
 
     def delete_aux_doc(self):
