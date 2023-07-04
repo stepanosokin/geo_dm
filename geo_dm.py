@@ -2099,6 +2099,7 @@ class GeoDM:
             with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
                 with pgconn.cursor() as cur:
                     filter_string = self.updateprocdlg.reportFilterInput.text().strip().lower().replace("'", "''")
+                    sql = f"select * from {self.reports_view}"
                     if filter_string:
                         sql += f" where LOWER(name) like '%{filter_string}%' " \
                                f"or LOWER(shortname) like '%{filter_string}%' " \
