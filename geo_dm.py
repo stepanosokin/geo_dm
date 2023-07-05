@@ -141,6 +141,7 @@ class GeoDM:
         self.well_types = 'dm.well_types'
         self.nda = 'dm.nda'
         self.nda_view = 'dm.nda_view'
+        self.drives_to_transmittals = 'dm.drives_to_transmittals'
 
         self.datasets_to_geometries_list = None
         self.seismic_datasets_view_list = None
@@ -1231,7 +1232,6 @@ class GeoDM:
             self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать договор', level=Qgis.Warning, duration=3)
 
 
-
     def add_company(self):
         self.addcompdlg = AddCompDialog()
 
@@ -1267,6 +1267,317 @@ class GeoDM:
         self.addcompdlg.insertCompanyButton.clicked.connect(insert_new_comp)
 
         self.addcompdlg.show()
+
+
+    def delete_company(self):
+        if self.mode == 'aux':
+            if self.aux_docs_dict:
+                if self.aux_docs_dict['doc_type'] == 'companies':
+                    selected_company_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+                    if selected_company_rows:
+                        selected_company_ids = [self.aux_docs_dict['docs_list'][x]['company_id'] for x in selected_company_rows]
+                        self.sql = f"delete from {self.companies} where company_id in ({', '.join([str(x) for x in selected_company_ids])});"
+                        self.sql += f" update {self.processings} set author_id = NULL where author_id in ({', '.join([str(x) for x in selected_company_ids])});"
+                        self.sql += f" update {self.surveys} set acquisition_company_id = NULL where acquisition_company_id in ({', '.join([str(x) for x in selected_company_ids])});"
+                        self.sql += f" update {self.contracts} set customer_id = NULL where customer_id in ({', '.join([str(x) for x in selected_company_ids])});"
+                        self.sql += f" update {self.contracts} set contractor_id = NULL where contractor_id in ({', '.join([str(x) for x in selected_company_ids])});"
+                        self.sql += f" update {self.nda} set company_a_id = NULL where company_a_id in ({', '.join([str(x) for x in selected_company_ids])});"
+                        self.sql += f" update {self.nda} set company_b_id = NULL where company_b_id in ({', '.join([str(x) for x in selected_company_ids])});"
+                        self.sql += f" update {self.reports} set company_id = NULL where company_id in ({', '.join([str(x) for x in selected_company_ids])});"
+                        self.sql += f" update {self.transmittals} set from_company_id = NULL where from_company_id in ({', '.join([str(x) for x in selected_company_ids])});"
+                        self.sql += f" update {self.transmittals} set to_company_id = NULL where to_company_id in ({', '.join([str(x) for x in selected_company_ids])});"
+                        mwidget = self.iface.messageBar().createMessage(
+                            f"Вы уверены, что хотите полностью удалить {str(len(selected_company_ids))} выбранных компаний?"
+                            f" Это приведет к ПОЛНОМУ УДАЛЕНИЮ ВСЕХ ИХ СВЯЗЕЙ с другими объектами в базе!"
+                            f" Ссылки на эти компании будут обнулены для: обработок, съемок, договоров, NDA, отчетов и актов!")
+                        mbutton = QPushButton(mwidget)
+                        mbutton.setText('Подтвердить')
+                        mbutton.pressed.connect(self.execute_sql)
+                        mwidget.layout().addWidget(mbutton)
+                        self.iface.messageBar().pushWidget(mwidget, Qgis.Critical, duration=5)
+                    else:
+                        self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы одну компанию', level=Qgis.Warning,
+                                                            duration=3)
+
+
+    def delete_contract(self):
+        if self.mode == 'aux':
+            if self.aux_docs_dict:
+                if self.aux_docs_dict['doc_type'] == 'contracts':
+                    selected_contract_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+                    if selected_contract_rows:
+                        selected_contract_ids = [self.aux_docs_dict['docs_list'][x]['contract_id'] for x in selected_contract_rows]
+                        selected_contract_ids_string = ', '.join([str(x) for x in selected_contract_ids])
+                        sql = f"delete from {self.contracts} where contract_id in ({selected_contract_ids_string});"
+                        sql += f" update {self.processings} set contract_id = NULL where contract_id in ({selected_contract_ids_string});"
+                        sql += f" update {self.reports} set contract_id = NULL where contract_id in ({selected_contract_ids_string});"
+                        sql += f" update {self.surveys} set acquisition_contract_id = NULL where acquisition_contract_id in ({selected_contract_ids_string});"
+                        sql += f" update {self.surveys} set supervising_contract_id = NULL where supervising_contract_id in ({selected_contract_ids_string});"
+                        self.sql = sql
+                        mwidget = self.iface.messageBar().createMessage(
+                            f"Вы уверены, что хотите полностью удалить {str(len(selected_contract_ids))} выбранных договоров?"
+                            f" Это приведет к ПОЛНОМУ УДАЛЕНИЮ ВСЕХ ИХ СВЯЗЕЙ с другими объектами в базе!"
+                            f" Ссылки на эти договоры будут обнулены для: обработок, съемок и отчетов!")
+                        mbutton = QPushButton(mwidget)
+                        mbutton.setText('Подтвердить')
+                        mbutton.pressed.connect(self.execute_sql)
+                        mwidget.layout().addWidget(mbutton)
+                        self.iface.messageBar().pushWidget(mwidget, Qgis.Critical, duration=5)
+                    else:
+                        self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один договор',
+                                                            level=Qgis.Warning,
+                                                            duration=3)
+
+
+    def delete_conf(self):
+        if self.mode == 'aux':
+            if self.aux_docs_dict:
+                if self.aux_docs_dict['doc_type'] == 'conf':
+                    selected_conf_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+                    if selected_conf_rows:
+                        selected_conf_ids = [self.aux_docs_dict['docs_list'][x]['conf_id'] for x in selected_conf_rows]
+                        selected_conf_ids_string = ', '.join([str(x) for x in selected_conf_ids])
+                        sql = f"delete from {self.conf} where conf_id in ({selected_conf_ids_string});"
+                        sql += f" update {self.drives} set conf_id = NULL where conf_id in ({selected_conf_ids_string});"
+                        sql += f" update {self.drives} set conf_limit = NULL where conf_id in ({selected_conf_ids_string});"
+                        sql += f" update {self.nda} set conf_id = NULL where conf_id in ({selected_conf_ids_string});"
+                        sql += f" update {self.reports} set conf_id = NULL where conf_id in ({selected_conf_ids_string});"
+                        sql += f" update {self.reports} set conf_limit = NULL where conf_id in ({selected_conf_ids_string});"
+                        self.sql = sql
+                        mwidget = self.iface.messageBar().createMessage(
+                            f"Вы уверены, что хотите полностью удалить {str(len(selected_conf_ids))} выбранных типов конфиденциальности?"
+                            f" Это приведет к ПОЛНОМУ УДАЛЕНИЮ ВСЕХ ИХ СВЯЗЕЙ с другими объектами в базе!"
+                            f" Поле Конфиденциальность будет обнулено для всех физ.носителей, NDA и отчетов, имеющих такой гриф!")
+                        mbutton = QPushButton(mwidget)
+                        mbutton.setText('Подтвердить')
+                        mbutton.pressed.connect(self.execute_sql)
+                        mwidget.layout().addWidget(mbutton)
+                        self.iface.messageBar().pushWidget(mwidget, Qgis.Critical, duration=5)
+                    else:
+                        self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один тип конфиденциальности',
+                                                            level=Qgis.Warning,
+                                                            duration=3)
+
+
+    def delete_data_quality(self):
+        if self.mode == 'aux':
+            if self.aux_docs_dict:
+                if self.aux_docs_dict['doc_type'] == 'data_quality':
+                    selected_quality_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+                    if selected_quality_rows:
+                        selected_quality_ids = [self.aux_docs_dict['docs_list'][x]['data_quality_id'] for x in selected_quality_rows]
+                        selected_quality_ids_string = ', '.join([str(x) for x in selected_quality_ids])
+                        sql = f"delete from {self.data_quality} where data_quality_id in ({selected_quality_ids_string});"
+                        sql += f" update {self.seismic_datasets} set data_quality_id = NULL where data_quality_id in ({selected_quality_ids_string});"
+                        sql += f" update {self.seismic_lines_field_2d} set data_quality_id = NULL where data_quality_id in ({selected_quality_ids_string});"
+                        sql += f" update {self.seismic_lines_processed_2d} set data_quality_id = NULL where data_quality_id in ({selected_quality_ids_string});"
+                        sql += f" update {self.seismic_pols_field_3d} set data_quality_id = NULL where data_quality_id in ({selected_quality_ids_string});"
+                        sql += f" update {self.seismic_pols_processed_3d} set data_quality_id = NULL where data_quality_id in ({selected_quality_ids_string});"
+                        sql += f" update {self.wells} set data_quality_id = NULL where data_quality_id in ({selected_quality_ids_string});"
+                        self.sql = sql
+                        mwidget = self.iface.messageBar().createMessage(
+                            f"Вы уверены, что хотите полностью удалить {str(len(selected_quality_ids))} выбранных типов качества данных?"
+                            f" Это приведет к ПОЛНОМУ УДАЛЕНИЮ ВСЕХ ИХ СВЯЗЕЙ с другими объектами в базе!"
+                            f" Поле Качество будет обнулено для всех наборов данных, геометрии полевой и обработанной сейсмики и точек скважин, имеющих данный тип качества!")
+                        mbutton = QPushButton(mwidget)
+                        mbutton.setText('Подтвердить')
+                        mbutton.pressed.connect(self.execute_sql)
+                        mwidget.layout().addWidget(mbutton)
+                        self.iface.messageBar().pushWidget(mwidget, Qgis.Critical, duration=5)
+                    else:
+                        self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один тип качества',
+                                                            level=Qgis.Warning,
+                                                            duration=3)
+
+
+    def delete_drive(self):
+        if self.mode == 'aux':
+            if self.aux_docs_dict:
+                if self.aux_docs_dict['doc_type'] == 'drives':
+                    selected_drive_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+                    if selected_drive_rows:
+                        selected_drive_ids = [self.aux_docs_dict['docs_list'][x]['drive_id'] for x in
+                                                selected_drive_rows]
+                        selected_drive_ids_string = ', '.join([str(x) for x in selected_drive_ids])
+                        sql = f"delete from {self.drives} where drive_id in ({selected_drive_ids_string});"
+                        sql += f" delete from {self.drives_to_datasets} where drive_id in ({selected_drive_ids_string});"
+                        sql += f" delete from {self.drives_to_transmittals} where drive_id in ({selected_drive_ids_string});"
+                        self.sql = sql
+                        mwidget = self.iface.messageBar().createMessage(
+                            f"Вы уверены, что хотите полностью удалить {str(len(selected_drive_ids))} выбранных физ.носителей?"
+                            f" Это приведет к ПОЛНОМУ УДАЛЕНИЮ ВСЕХ ИХ СВЯЗЕЙ с другими объектами в базе!"
+                            f" Связи с этими физ.носителями будут обнулены для всех наборов данных и актов приема-передачи!")
+                        mbutton = QPushButton(mwidget)
+                        mbutton.setText('Подтвердить')
+                        mbutton.pressed.connect(self.execute_sql)
+                        mwidget.layout().addWidget(mbutton)
+                        self.iface.messageBar().pushWidget(mwidget, Qgis.Critical, duration=5)
+                    else:
+                        self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один физ.носитель',
+                                                            level=Qgis.Warning,
+                                                            duration=3)
+
+
+    def delete_format(self):
+        if self.mode == 'aux':
+            if self.aux_docs_dict:
+                if self.aux_docs_dict['doc_type'] == 'formats':
+                    selected_format_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+                    if selected_format_rows:
+                        selected_format_ids = [self.aux_docs_dict['docs_list'][x]['format_id'] for x in
+                                                selected_format_rows]
+                        selected_format_ids_string = ', '.join([str(x) for x in selected_format_ids])
+                        sql = f"delete from {self.formats} where format_id in ({selected_format_ids_string});"
+                        sql += f" update {self.seismic_datasets} set format_id = NULL where format_id in ({selected_format_ids_string});"
+                        self.sql = sql
+                        mwidget = self.iface.messageBar().createMessage(
+                            f"Вы уверены, что хотите полностью удалить {str(len(selected_format_ids))} выбранных форматов?"
+                            f" Это приведет к ПОЛНОМУ УДАЛЕНИЮ ВСЕХ ИХ СВЯЗЕЙ с другими объектами в базе!"
+                            f" Поле Формат будет обнулено для всех наборов данных, имеющих эти форматы!")
+                        mbutton = QPushButton(mwidget)
+                        mbutton.setText('Подтвердить')
+                        mbutton.pressed.connect(self.execute_sql)
+                        mwidget.layout().addWidget(mbutton)
+                        self.iface.messageBar().pushWidget(mwidget, Qgis.Critical, duration=5)
+                    else:
+                        self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один формат',
+                                                            level=Qgis.Warning,
+                                                            duration=3)
+
+    def delete_link(self):
+        if self.mode == 'aux':
+            if self.aux_docs_dict:
+                if self.aux_docs_dict['doc_type'] == 'links':
+                    selected_link_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+                    if selected_link_rows:
+                        selected_link_ids = [self.aux_docs_dict['docs_list'][x]['link_id'] for x in
+                                                selected_link_rows]
+                        selected_link_ids_string = ', '.join([str(x) for x in selected_link_ids])
+                        sql = f"delete from {self.links} where link_id in ({selected_link_ids_string});"
+                        sql += f" delete from {self.links_to_datasets} where link_id in ({selected_link_ids_string});"
+                        sql += f" update {self.well_attributes} set link_id = NULL where link_id in ({selected_link_ids_string});"
+                        self.sql = sql
+                        mwidget = self.iface.messageBar().createMessage(
+                            f"Вы уверены, что хотите полностью удалить {str(len(selected_link_ids))} выбранных ссылок?"
+                            f" Это приведет к ПОЛНОМУ УДАЛЕНИЮ ВСЕХ ИХ СВЯЗЕЙ с другими объектами в базе!"
+                            f" Будут удалены связи всех этих ссылок с наборами данных и атрибутами скважин!")
+                        mbutton = QPushButton(mwidget)
+                        mbutton.setText('Подтвердить')
+                        mbutton.pressed.connect(self.execute_sql)
+                        mwidget.layout().addWidget(mbutton)
+                        self.iface.messageBar().pushWidget(mwidget, Qgis.Critical, duration=5)
+                    else:
+                        self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы одну ссылку',
+                                                            level=Qgis.Warning,
+                                                            duration=3)
+
+
+    def delete_nda(self):
+        if self.mode == 'aux':
+            if self.aux_docs_dict:
+                if self.aux_docs_dict['doc_type'] == 'nda':
+                    selected_nda_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+                    if selected_nda_rows:
+                        selected_nda_ids = [self.aux_docs_dict['docs_list'][x]['nda_id'] for x in selected_nda_rows]
+                        selected_nda_ids_string = ', '.join([str(x) for x in selected_nda_ids])
+                        sql = f"delete from {self.nda} where nda_id in ({selected_nda_ids_string});"
+                        sql += f" update {self.well_attributes} set nda_id = NULL where nda_id in ({selected_nda_ids_string});"
+                        self.sql = sql
+                        mwidget = self.iface.messageBar().createMessage(
+                            f"Вы уверены, что хотите полностью удалить {str(len(selected_nda_ids))} выбранных NDA?"
+                            f" Это приведет к ПОЛНОМУ УДАЛЕНИЮ ВСЕХ ИХ СВЯЗЕЙ с другими объектами в базе!"
+                            f" Будут удалены связи всех этих NDA с атрибутами скважин!")
+                        mbutton = QPushButton(mwidget)
+                        mbutton.setText('Подтвердить')
+                        mbutton.pressed.connect(self.execute_sql)
+                        mwidget.layout().addWidget(mbutton)
+                        self.iface.messageBar().pushWidget(mwidget, Qgis.Critical, duration=5)
+                    else:
+                        self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один NDA',
+                                                            level=Qgis.Warning,
+                                                            duration=3)
+
+
+    def delete_project(self):
+        if self.mode == 'aux':
+            if self.aux_docs_dict:
+                if self.aux_docs_dict['doc_type'] == 'projects':
+                    selected_project_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+                    if selected_project_rows:
+                        selected_project_ids = [self.aux_docs_dict['docs_list'][x]['id'] for x in selected_project_rows]
+                        selected_project_ids_string = ', '.join([str(x) for x in selected_project_ids])
+                        sql = f"delete from {self.projects} where id in ({selected_project_ids_string});"
+                        sql += f" update {self.surveys} set project_id = NULL where project_id in ({selected_project_ids_string});"
+                        sql += f" update {self.seismic_pols_field_3d} set project_id = NULL where project_id in ({selected_project_ids_string});"
+                        sql += f" update {self.seismic_lines_field_2d} set project_id = NULL where project_id in ({selected_project_ids_string});"
+                        sql += f" update {self.processings} set project_id = NULL where project_id in ({selected_project_ids_string});"
+                        self.sql = sql
+                        mwidget = self.iface.messageBar().createMessage(
+                            f"Вы уверены, что хотите полностью удалить {str(len(selected_project_ids))} выбранных проектов?"
+                            f" Это приведет к ПОЛНОМУ УДАЛЕНИЮ ВСЕХ ИХ СВЯЗЕЙ с другими объектами в базе!"
+                            f" Будет обнулен атрибут Проект для всех связанных с этими проектами съемок, геометрий полевой сейсмики и обработок!")
+                        mbutton = QPushButton(mwidget)
+                        mbutton.setText('Подтвердить')
+                        mbutton.pressed.connect(self.execute_sql)
+                        mwidget.layout().addWidget(mbutton)
+                        self.iface.messageBar().pushWidget(mwidget, Qgis.Critical, duration=5)
+                    else:
+                        self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один проект',
+                                                            level=Qgis.Warning,
+                                                            duration=3)
+
+
+    def delete_report(self):
+        if self.mode == 'aux':
+            if self.aux_docs_dict:
+                if self.aux_docs_dict['doc_type'] == 'reports':
+                    selected_report_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+                    if selected_report_rows:
+                        selected_report_ids = [self.aux_docs_dict['docs_list'][x]['report_id'] for x in selected_report_rows]
+                        selected_report_ids_string = ', '.join([str(x) for x in selected_report_ids])
+                        sql = f"delete from {self.reports} where report_id in ({selected_report_ids_string});"
+                        sql += f" update {self.processings} set report_id = NULL where report_id in ({selected_report_ids_string});"
+                        sql += f" delete from {self.reports_to_surveys} where report_id in ({selected_report_ids_string});"
+                        self.sql = sql
+                        mwidget = self.iface.messageBar().createMessage(
+                            f"Вы уверены, что хотите полностью удалить {str(len(selected_report_ids))} выбранных отчетов?"
+                            f" Это приведет к ПОЛНОМУ УДАЛЕНИЮ ВСЕХ ИХ СВЯЗЕЙ с другими объектами в базе!"
+                            f" Будет будут удалены связи со всеми связанными съемками и обработками!")
+                        mbutton = QPushButton(mwidget)
+                        mbutton.setText('Подтвердить')
+                        mbutton.pressed.connect(self.execute_sql)
+                        mwidget.layout().addWidget(mbutton)
+                        self.iface.messageBar().pushWidget(mwidget, Qgis.Critical, duration=5)
+                    else:
+                        self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один отчет',
+                                                            level=Qgis.Warning,
+                                                            duration=3)
+
+    def delete_transmittal(self):
+        if self.mode == 'aux':
+            if self.aux_docs_dict:
+                if self.aux_docs_dict['doc_type'] == 'transmittals':
+                    selected_transmittal_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+                    if selected_transmittal_rows:
+                        selected_transmittal_ids = [self.aux_docs_dict['docs_list'][x]['transmittal_id'] for x in selected_transmittal_rows]
+                        selected_transmittal_ids_string = ', '.join([str(x) for x in selected_transmittal_ids])
+                        sql = f"delete from {self.transmittals} where transmittal_id in ({selected_transmittal_ids_string});"
+                        sql += f" delete from {self.seismic_datasets_to_transmittals} where transmittal_id in ({selected_transmittal_ids_string});"
+                        sql += f" delete from {self.drives_to_transmittals} where transmittal_id in ({selected_transmittal_ids_string});"
+                        self.sql = sql
+                        mwidget = self.iface.messageBar().createMessage(
+                            f"Вы уверены, что хотите полностью удалить {str(len(selected_transmittal_ids))} выбранных актов?"
+                            f" Это приведет к ПОЛНОМУ УДАЛЕНИЮ ВСЕХ ИХ СВЯЗЕЙ с другими объектами в базе!"
+                            f" Будет будут удалены связи со всеми наборами данных и физ.носителями!")
+                        mbutton = QPushButton(mwidget)
+                        mbutton.setText('Подтвердить')
+                        mbutton.pressed.connect(self.execute_sql)
+                        mwidget.layout().addWidget(mbutton)
+                        self.iface.messageBar().pushWidget(mwidget, Qgis.Critical, duration=5)
+                    else:
+                        self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы один акт',
+                                                            level=Qgis.Warning,
+                                                            duration=3)
 
 
     def update_project(self):
@@ -1582,7 +1893,6 @@ class GeoDM:
                                                 'Нужно выбрать один отчет',
                                                 level=Qgis.Warning,
                                                 duration=5)
-
 
 
     def add_report(self):
@@ -2323,6 +2633,7 @@ class GeoDM:
         else:
             self.iface.messageBar().pushMessage('Ошибка', f"Нужно выбрать слой и объекты в нем", level=Qgis.Warning,
                                                 duration=5)
+
 
     def select_geometry_by_proc(self):
         selected_proc_rows = list(set([x.row() for x in self.dockwind.procTableWidget.selectedItems()]))
@@ -4043,7 +4354,6 @@ class GeoDM:
             self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать хотя бы одну скважину', level=Qgis.Warning, duration=3)
 
 
-
     def refresh_datasets(self):
         self.wind.datasetTableWidget.clear()
         self.wind.datasetTableWidget.setRowCount(0)
@@ -5453,6 +5763,7 @@ class GeoDM:
         self.adddrivedlg.insertDriveButton.clicked.connect(generate_and_execute_sql)
         self.adddrivedlg.show()
 
+
     def add_link(self):
         self.addlinkdlg = AddLinkDialog()
         def generate_and_execute_sql():
@@ -5528,11 +5839,209 @@ class GeoDM:
             self.iface.messageBar().pushMessage('Ошибка', 'Нужно указать текст ссылки',
                                                 level=Qgis.Warning,
                                                 duration=3)
+    
+    
+    def update_transmittal(self):
+        self.updatetransmittaldlg = AddTransmittalDialog()
+        self.updatetransmittaldlg.setWindowTitle('Изменить акт')
+        self.updatetransmittaldlg.insertTransmittalPushButton.setText('Изменить акт')
+        self.updatetransmittaldlg.transmittalRefreshFromCompaniesPushButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.updatetransmittaldlg.transmittalRefreshToCompaniesPushButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.updatetransmittaldlg.transmittal_types_list = None
+        self.updatetransmittaldlg.from_companies_list = None
+        self.updatetransmittaldlg.to_companies_list = None
+        self.updatetransmittaldlg.selected_transmittal = None
 
+        def get_selected_transmittal():
+            selected_transm_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
+            if selected_transm_rows:
+                if len(selected_transm_rows) == 1:
+                    self.updatetransmittaldlg.selected_transmittal = self.aux_docs_dict['docs_list'][selected_transm_rows[0]]
+                else:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один акт', level=Qgis.Warning,
+                                                        duration=3)
+            else:
+                self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один акт', level=Qgis.Warning,
+                                                    duration=3)
+
+        def reload_transmittal_types():
+            self.updatetransmittaldlg.transmittalTypeComboBox.clear()
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        sql = f"select * from {self.transmittal_types}"
+                        cur.execute(sql)
+                        self.updatetransmittaldlg.transmittal_types_list = cur.fetchall()
+                self.updatetransmittaldlg.transmittalTypeComboBox.addItems([row['name'] for row in self.updatetransmittaldlg.transmittal_types_list])
+                if self.updatetransmittaldlg.selected_transmittal:
+                    if self.updatetransmittaldlg.selected_transmittal['transmittal_type_id']:
+                        self.updatetransmittaldlg.transmittalTypeComboBox.setCurrentText(self.updatetransmittaldlg.selected_transmittal['transmittal_type'])
+            except:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Не удалось загрузить список типов актов из базы ' + sql,
+                                                    level=Qgis.Critical, duration=3)
+
+        def reload_transmittal_number():
+            if self.updatetransmittaldlg.selected_transmittal['number']:
+                self.updatetransmittaldlg.transmittalNumberLineEdit.setText(self.updatetransmittaldlg.selected_transmittal['number'])
+
+        def reload_transmittal_date():
+            if self.updatetransmittaldlg.selected_transmittal['datestamp']:
+                sd = self.updatetransmittaldlg.selected_transmittal['datestamp']
+                self.updatetransmittaldlg.transmittalCalendarWidget.setSelectedDate(QDate(sd.year, sd.month, sd.day))
+
+        def reload_from_companies():
+            self.updatetransmittaldlg.transmittalFromCompanyComboBox.clear()
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        sql = f"select * from {self.companies}"
+                        filter_str = self.updatetransmittaldlg.transmittalFromCompanyFilterLineEdit.text().lower().strip().replace(
+                            "'", "''")
+                        if filter_str:
+                            sql += f" where LOWER(name) like '%{filter_str}%' " \
+                                   f"or LOWER(shortname) like '%{filter_str}%'"
+                        sql += ' order by name'
+                        cur.execute(sql)
+                        self.updatetransmittaldlg.from_companies_list = cur.fetchall()
+                self.updatetransmittaldlg.transmittalFromCompanyComboBox.addItem('--Выберите отправителя--')
+                self.updatetransmittaldlg.transmittalFromCompanyComboBox.addItems(
+                    [row['name'] for row in self.updatetransmittaldlg.from_companies_list])
+                if self.updatetransmittaldlg.selected_transmittal['from_company_id']:
+                    self.updatetransmittaldlg.transmittalFromCompanyComboBox.setCurrentText(self.updatetransmittaldlg.selected_transmittal['from_company'])
+            except:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Не удалось загрузить список компаний из базы ' + sql,
+                                                    level=Qgis.Critical, duration=3)
+
+        def reload_to_companies():
+            self.updatetransmittaldlg.transmittalToCompanyComboBox.clear()
+            try:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
+                        sql = f"select * from {self.companies}"
+                        filter_str = self.updatetransmittaldlg.transmittalToCompanyFilterLineEdit.text().lower().strip().replace(
+                            "'", "''")
+                        if filter_str:
+                            sql += f" where LOWER(name) like '%{filter_str}%' " \
+                                   f"or LOWER(shortname) like '%{filter_str}%'"
+                        sql += ' order by name'
+                        cur.execute(sql)
+                        self.updatetransmittaldlg.to_companies_list = cur.fetchall()
+                self.updatetransmittaldlg.transmittalToCompanyComboBox.addItem('--Выберите получателя--')
+                self.updatetransmittaldlg.transmittalToCompanyComboBox.addItems(
+                    [row['name'] for row in self.updatetransmittaldlg.to_companies_list])
+                if self.updatetransmittaldlg.selected_transmittal:
+                    if self.updatetransmittaldlg.selected_transmittal['to_company_id']:
+                        self.updatetransmittaldlg.transmittalToCompanyComboBox.setCurrentText(self.updatetransmittaldlg.selected_transmittal['to_company'])
+            except:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Не удалось загрузить список компаний из базы ' + sql,
+                                                    level=Qgis.Critical, duration=3)
+
+        def reload_transmittal_name():
+            if self.updatetransmittaldlg.selected_transmittal['name']:
+                self.updatetransmittaldlg.transmittalNameLineEdit.setText(self.updatetransmittaldlg.selected_transmittal['name'])
+
+        def reload_transmittal_desc():
+            if self.updatetransmittaldlg.selected_transmittal['description']:
+                self.updatetransmittaldlg.transmittalDescPlainTextEdit.setPlainText(self.updatetransmittaldlg.selected_transmittal['description'])
+
+        def reload_transmittal_comments():
+            if self.updatetransmittaldlg.selected_transmittal['comments']:
+                self.updatetransmittaldlg.transmittalCommentsPlainTextEdit.setPlainText(self.updatetransmittaldlg.selected_transmittal['comments'])
+
+        def reload_transmittal_link():
+            if self.updatetransmittaldlg.selected_transmittal['scan_link']:
+                self.updatetransmittaldlg.transmittalScanLinkLineEdit.setText(self.updatetransmittaldlg.selected_transmittal['scan_link'])
+
+        def generate_and_execute_sql():
+            selected_transmittal_type_index = self.updatetransmittaldlg.transmittalTypeComboBox.currentIndex()
+            new_transmittal_number = self.updatetransmittaldlg.transmittalNumberLineEdit.text().strip().replace("'", "''")
+            new_transmittal_date = self.updatetransmittaldlg.transmittalCalendarWidget.selectedDate()
+            selected_transmittal_from_company_index = self.updatetransmittaldlg.transmittalFromCompanyComboBox.currentIndex() - 1
+            selected_transmittal_to_company_index = self.updatetransmittaldlg.transmittalToCompanyComboBox.currentIndex() - 1
+            if all([new_transmittal_number,
+                    selected_transmittal_from_company_index >= 0,
+                    selected_transmittal_to_company_index >= 0]):
+                selected_transmittal_type_id = self.updatetransmittaldlg.transmittal_types_list[selected_transmittal_type_index]['transmittal_type_id']
+                selected_transmittal_from_company_id = self.updatetransmittaldlg.from_companies_list[selected_transmittal_from_company_index]['company_id']
+                selected_transmittal_to_company_id = self.updatetransmittaldlg.to_companies_list[selected_transmittal_to_company_index]['company_id']
+                new_transmittal_name = self.updatetransmittaldlg.transmittalNameLineEdit.text().strip().lower().replace("'", "''")
+                new_transmittal_desc = self.updatetransmittaldlg.transmittalDescPlainTextEdit.toPlainText().strip().lower().replace("'", "''")
+                new_transmittal_comments = self.updatetransmittaldlg.transmittalCommentsPlainTextEdit.toPlainText().strip().lower().replace("'", "''")
+                new_transmittal_scan_link = self.updatetransmittaldlg.transmittalScanLinkLineEdit.text().strip().lower().replace("'", "''")
+                fields_to_update = ['transmittal_type_id', 'number', 'datestamp', 'from_company_id', 'to_company_id']
+                values_to_insert = [str(selected_transmittal_type_id)
+                    , f"'{new_transmittal_number}'"
+                    , f"'{new_transmittal_date.toString('yyyy-MM-dd')}'"
+                    , str(selected_transmittal_from_company_id)
+                    , str(selected_transmittal_to_company_id)]
+                fields_to_update.append('name')
+                if new_transmittal_name:
+                    values_to_insert.append(f"'{new_transmittal_name}'")
+                else:
+                    values_to_insert.append('NULL')
+                fields_to_update.append('description')
+                if new_transmittal_desc:
+                    values_to_insert.append(f"'{new_transmittal_desc}'")
+                else:
+                    values_to_insert.append('NULL')
+                fields_to_update.append('comments')
+                if new_transmittal_comments:
+                    values_to_insert.append(f"'{new_transmittal_comments}'")
+                else:
+                    values_to_insert.append('NULL')
+                fields_to_update.append('scan_link')
+                if new_transmittal_scan_link:
+                    values_to_insert.append(f"'{new_transmittal_scan_link}'")
+                else:
+                    values_to_insert.append('NULL')
+                self.sql = f"update {self.transmittals}" \
+                           f" set {', '.join([x[0] + ' = ' + x[1] for x in zip(fields_to_update, values_to_insert)])}" \
+                           f" where transmittal_id = {str(self.updatetransmittaldlg.selected_transmittal['transmittal_id'])};"
+                mwidget = self.iface.messageBar().createMessage(f"Изменить акт {str(new_transmittal_number)}?")
+                mbutton = QPushButton(mwidget)
+                mbutton.setText('Подтвердить')
+                mbutton.pressed.connect(self.execute_sql)
+                mwidget.layout().addWidget(mbutton)
+                self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=5)
+                self.updatetransmittaldlg.accept()
+            else:
+                self.iface.messageBar().pushMessage('Ошибка',
+                                                    'Нужно указать Тип, Номер, Дату, Отправителя и Получателя акта',
+                                                    level=Qgis.Warning,
+                                                    duration=3)
+
+        get_selected_transmittal()
+        if self.updatetransmittaldlg.selected_transmittal:
+            reload_transmittal_types()
+            reload_transmittal_number()
+            reload_transmittal_date()
+            reload_from_companies()
+            reload_to_companies()
+            reload_transmittal_name()
+            reload_transmittal_desc()
+            reload_transmittal_comments()
+            reload_transmittal_link()
+            self.updatetransmittaldlg.transmittalFromCompanyFilterLineEdit.textEdited.connect(reload_from_companies)
+            self.updatetransmittaldlg.transmittalToCompanyFilterLineEdit.textEdited.connect(reload_to_companies)
+            self.updatetransmittaldlg.transmittalNewCompanyPushButton.clicked.connect(self.add_company)
+            self.updatetransmittaldlg.transmittalRefreshFromCompaniesPushButton.clicked.connect(reload_from_companies)
+            self.updatetransmittaldlg.transmittalRefreshToCompaniesPushButton.clicked.connect(reload_to_companies)
+            self.updatetransmittaldlg.insertTransmittalPushButton.clicked.connect(generate_and_execute_sql)
+            self.updatetransmittaldlg.show()
+        else:
+            self.iface.messageBar().pushMessage('Ошибка',
+                                                'Нужно выбрать один акт',
+                                                level=Qgis.Warning,
+                                                duration=3)
+    
 
     def add_transmittal(self):
         self.addtransmittaldlg = AddTransmittalDialog()
-        self.addtransmittaldlg.transmittalRefreshCompaniesPushButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.addtransmittaldlg.transmittalRefreshFromCompaniesPushButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.addtransmittaldlg.transmittalRefreshToCompaniesPushButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
         self.addtransmittaldlg.transmittal_types_list = None
         self.addtransmittaldlg.from_companies_list = None
         self.addtransmittaldlg.to_companies_list = None
@@ -5633,8 +6142,8 @@ class GeoDM:
         self.addtransmittaldlg.transmittalFromCompanyFilterLineEdit.textEdited.connect(reload_from_companies)
         self.addtransmittaldlg.transmittalToCompanyFilterLineEdit.textEdited.connect(reload_to_companies)
         self.addtransmittaldlg.transmittalNewCompanyPushButton.clicked.connect(self.add_company)
-        self.addtransmittaldlg.transmittalRefreshCompaniesPushButton.clicked.connect(reload_from_companies)
-        self.addtransmittaldlg.transmittalRefreshCompaniesPushButton.clicked.connect(reload_to_companies)
+        self.addtransmittaldlg.transmittalRefreshFromCompaniesPushButton.clicked.connect(reload_from_companies)
+        self.addtransmittaldlg.transmittalRefreshToCompaniesPushButton.clicked.connect(reload_to_companies)
         self.addtransmittaldlg.insertTransmittalPushButton.clicked.connect(generate_and_execute_sql)
         self.addtransmittaldlg.show()
 
@@ -6385,10 +6894,34 @@ class GeoDM:
                 self.update_project()
             elif self.aux_docs_dict['doc_type'] == 'reports':
                 self.update_report()
+            elif self.aux_docs_dict['doc_type'] == 'transmittals':
+                self.update_transmittal()
 
 
     def delete_aux_doc(self):
-        pass
+        if self.aux_docs_dict:
+            if self.aux_docs_dict['doc_type'] == 'companies':
+                self.delete_company()
+            elif self.aux_docs_dict['doc_type'] == 'contracts':
+                self.delete_contract()
+            elif self.aux_docs_dict['doc_type'] == 'conf':
+                self.delete_conf()
+            elif self.aux_docs_dict['doc_type'] == 'data_quality':
+                self.delete_data_quality()
+            elif self.aux_docs_dict['doc_type'] == 'drives':
+                self.delete_drive()
+            elif self.aux_docs_dict['doc_type'] == 'formats':
+                self.delete_format()
+            elif self.aux_docs_dict['doc_type'] == 'links':
+                self.delete_link()
+            elif self.aux_docs_dict['doc_type'] == 'nda':
+                self.delete_nda()
+            elif self.aux_docs_dict['doc_type'] == 'projects':
+                self.delete_project()
+            elif self.aux_docs_dict['doc_type'] == 'reports':
+                self.delete_report()
+            elif self.aux_docs_dict['doc_type'] == 'transmittals':
+                self.delete_transmittal()
 
 
     def run_mps(self):
@@ -6603,6 +7136,7 @@ class GeoDM:
         self.wind.auxFilterLineEdit.textEdited.connect(self.reload_aux_docs)
         self.wind.auxRefreshButton.clicked.connect(self.reload_aux_docs)
         self.wind.auxUpdateDocButton.clicked.connect(self.update_aux_doc)
+        self.wind.auxDeleteDocButton.clicked.connect(self.delete_aux_doc)
 
         self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.wind)
         self.wind.adjustSize()

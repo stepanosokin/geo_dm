@@ -305,7 +305,7 @@
      <x>490</x>
      <y>300</y>
      <width>81</width>
-     <height>41</height>
+     <height>71</height>
     </rect>
    </property>
    <property name="text">
@@ -313,13 +313,13 @@
 организация</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="transmittalRefreshCompaniesPushButton">
+  <widget class="QPushButton" name="transmittalRefreshFromCompaniesPushButton">
    <property name="geometry">
     <rect>
      <x>460</x>
      <y>300</y>
-     <width>31</width>
-     <height>41</height>
+     <width>21</width>
+     <height>21</height>
     </rect>
    </property>
    <property name="text">
@@ -339,6 +339,19 @@
     <font>
      <kerning>true</kerning>
     </font>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="transmittalRefreshToCompaniesPushButton">
+   <property name="geometry">
+    <rect>
+     <x>460</x>
+     <y>350</y>
+     <width>21</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
    </property>
   </widget>
  </widget>

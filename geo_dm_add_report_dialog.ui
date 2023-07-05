@@ -299,9 +299,9 @@
   <widget class="QPushButton" name="insertReportButton">
    <property name="geometry">
     <rect>
-     <x>40</x>
+     <x>10</x>
      <y>330</y>
-     <width>441</width>
+     <width>501</width>
      <height>41</height>
     </rect>
    </property>
