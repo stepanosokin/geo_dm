@@ -2,6 +2,12 @@
 <ui version="4.0">
  <class>AddNdaDialog</class>
  <widget class="QDialog" name="AddNdaDialog">
+  <property name="windowModality">
+   <enum>Qt::ApplicationModal</enum>
+  </property>
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -10,8 +16,14 @@
     <height>720</height>
    </rect>
   </property>
+  <property name="tabletTracking">
+   <bool>false</bool>
+  </property>
   <property name="windowTitle">
    <string>Добавить NDA</string>
+  </property>
+  <property name="modal">
+   <bool>false</bool>
   </property>
   <widget class="QLabel" name="ndaNameLabel">
    <property name="geometry">

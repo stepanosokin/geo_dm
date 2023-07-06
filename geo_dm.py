@@ -38,6 +38,7 @@ from qgis.core import \
 import psycopg2
 from psycopg2.extras import *
 from datetime import datetime, date
+import time
 
 
 # Initialize Qt resources from file resources.py
@@ -1052,6 +1053,7 @@ class GeoDM:
         self.updatecontractdlg.customer_companies = None
         self.updatecontractdlg.contractor_companies = None
         self.updatecontractdlg.contracts = None
+        self.updatecontractdlg.pgconn = None
 
         def get_selected_contract():
             selected_contract_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
@@ -1077,16 +1079,24 @@ class GeoDM:
         def reload_contract_types():
             self.updatecontractdlg.contractTypeInput.clear()
             sql = f"select * from {self.contract_types};"
+            self.updatecontractdlg.pgconn = None
             try:
-                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                    with pgconn.cursor() as cur:
+                self.updatecontractdlg.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+            except:
+                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось подключиться к базе', level=Qgis.Critical, duration=3)
+            if self.updatecontractdlg.pgconn:
+                with self.updatecontractdlg.pgconn.cursor() as cur:
+                    try:
                         cur.execute(sql)
-                        self.updatecontractdlg.contract_types = list(cur.fetchall())
+                    except:
+                        self.iface.messageBar().pushMessage('Ошибка',
+                                                            'Не удалось загрузить список типов договоров из базы',
+                                                            level=Qgis.Critical, duration=3)
+                    self.updatecontractdlg.contract_types = list(cur.fetchall())
                 self.updatecontractdlg.contractTypeInput.addItems([row['name'] for row in self.updatecontractdlg.contract_types])
                 if self.updatecontractdlg.selected_contract['contract_type_id']:
                     self.updatecontractdlg.contractTypeInput.setCurrentText(self.updatecontractdlg.selected_contract['contract_type'])
-            except:
-                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список типов договоров из базы', level=Qgis.Critical, duration=3)
+                self.updatecontractdlg.pgconn.close()
 
         def reload_contract_date():
             contract_date = self.updatecontractdlg.selected_contract['date']
@@ -1101,18 +1111,24 @@ class GeoDM:
                 sql += f" where LOWER(name) like '%{filter_str}%'" \
                        f" or LOWER(shortname) like '%{filter_str}%'"
             sql += ' order by name;'
+            self.updatecontractdlg.pgconn = None
             try:
-                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                    with pgconn.cursor() as cur:
+                self.updatecontractdlg.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+            except:
+                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось подключиться к базе', level=Qgis.Critical, duration=3)
+            if self.updatecontractdlg.pgconn:
+                with self.updatecontractdlg.pgconn.cursor() as cur:
+                    try:
                         cur.execute(sql)
-                        self.updatecontractdlg.customer_companies = list(cur.fetchall())
+                    except:
+                        self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список организаций из базы',
+                                                            level=Qgis.Critical, duration=3)
+                    self.updatecontractdlg.customer_companies = list(cur.fetchall())
                 self.updatecontractdlg.contractCustomerInput.addItem('')
                 self.updatecontractdlg.contractCustomerInput.addItems([row['name'] for row in self.updatecontractdlg.customer_companies])
                 if self.updatecontractdlg.selected_contract['customer_id']:
                     self.updatecontractdlg.contractCustomerInput.setCurrentText(self.updatecontractdlg.selected_contract['customer'])
-            except:
-                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список организаций из базы',
-                                                    level=Qgis.Critical, duration=3)
+                self.updatecontractdlg.pgconn.close()
 
         def reload_contractors():
             self.updatecontractdlg.contractContractorInput.clear()
@@ -1122,18 +1138,24 @@ class GeoDM:
                 sql += f" where LOWER(name) like '%{filter_str}%'" \
                        f" or LOWER(shortname) like '%{filter_str}%'"
             sql += ' order by name;'
+            self.updatecontractdlg.pgconn = None
             try:
-                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                    with pgconn.cursor() as cur:
+                self.updatecontractdlg.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+            except:
+                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось подключиться к базе', level=Qgis.Critical, duration=3)
+            if self.updatecontractdlg.pgconn:
+                with self.updatecontractdlg.pgconn.cursor() as cur:
+                    try:
                         cur.execute(sql)
-                        self.updatecontractdlg.contractor_companies = list(cur.fetchall())
+                    except:
+                        self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список организаций из базы',
+                                                            level=Qgis.Critical, duration=3)
+                    self.updatecontractdlg.contractor_companies = list(cur.fetchall())
                 self.updatecontractdlg.contractContractorInput.addItem('')
                 self.updatecontractdlg.contractContractorInput.addItems([row['name'] for row in self.updatecontractdlg.contractor_companies])
                 if self.updatecontractdlg.selected_contract['contractor_id']:
                     self.updatecontractdlg.contractContractorInput.setCurrentText(self.updatecontractdlg.selected_contract['contractor'])
-            except:
-                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список организаций из базы',
-                                                    level=Qgis.Critical, duration=3)
+                self.updatecontractdlg.pgconn.close()
 
         def reload_link():
             if self.updatecontractdlg.selected_contract['link']:
@@ -1152,20 +1174,25 @@ class GeoDM:
                        f" or LOWER(contractor) like '%{filter_str}%'" \
                        f" or LOWER(contractor_short) like '%{filter_str}%'"
             sql += ' order by date DESC;'
+            self.updatecontractdlg.pgconn = None
             try:
-                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                    with pgconn.cursor() as cur:
+                self.updatecontractdlg.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+            except:
+                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось подключиться к базе', level=Qgis.Critical, duration=3)
+            if self.updatecontractdlg.pgconn:
+                with self.updatecontractdlg.pgconn.cursor() as cur:
+                    try:
                         cur.execute(sql)
-                        self.updatecontractdlg.contracts = list(cur.fetchall())
+                    except:
+                        self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список договоров из базы',
+                                                            level=Qgis.Critical, duration=3)
+                    self.updatecontractdlg.contracts = list(cur.fetchall())
                 self.updatecontractdlg.contractParentContractInput.addItem('')
                 self.updatecontractdlg.contractParentContractInput.addItems([row['number'] + ' от ' + str(row['date']) for row in self.updatecontractdlg.contracts])
                 sc = self.updatecontractdlg.selected_contract['parent_contract_id']
                 if sc:
                     self.updatecontractdlg.contractParentContractInput.setCurrentText(sc['number'] + ' от ' + str(sc['date']))
-            except:
-                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список договоров из базы',
-                                                    level=Qgis.Critical, duration=3)
-
+                self.updatecontractdlg.pgconn.close()
         
         def generate_and_execute_sql():
             selected_contract_id = self.updatecontractdlg.selected_contract['contract_id']
@@ -1686,6 +1713,7 @@ class GeoDM:
         self.updatereportdlg.companies_list = None
         self.updatereportdlg.contracts_list = None
         self.updatereportdlg.conf_list = None
+        self.updatereportdlg.pgconn = None
 
         def get_selected_report():
             selected_report_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
@@ -1712,8 +1740,8 @@ class GeoDM:
             self.updatereportdlg.reportTypeInput.clear()
             sql = f"select * from {self.report_types};"
             try:
-                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                    with pgconn.cursor() as cur:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as self.updatereportdlg.pgconn:
+                    with self.updatereportdlg.pgconn.cursor() as cur:
                         cur.execute(sql)
                         self.updatereportdlg.report_types_list = list(cur.fetchall())
                         self.updatereportdlg.reportTypeInput.addItem('')
@@ -1735,8 +1763,8 @@ class GeoDM:
                        f" or LOWER(shortname) like '%{filter_str}%'"
             sql += ' order by name;'
             try:
-                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                    with pgconn.cursor() as cur:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as self.updatereportdlg.pgconn:
+                    with self.updatereportdlg.pgconn.cursor() as cur:
                         cur.execute(sql)
                         self.updatereportdlg.companies_list = list(cur.fetchall())
                         self.updatereportdlg.reportAuthorInput.addItem('')
@@ -1768,8 +1796,8 @@ class GeoDM:
                        f" or LOWER(contractor_short) like '%{filter_str}%'"
             sql += ' order by date DESC;'
             try:
-                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                    with pgconn.cursor() as cur:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as self.updatereportdlg.pgconn:
+                    with self.updatereportdlg.pgconn.cursor() as cur:
                         cur.execute(sql)
                         self.updatereportdlg.contracts_list = list(cur.fetchall())
                         self.updatereportdlg.reportContractInput.addItem('')
@@ -1792,8 +1820,8 @@ class GeoDM:
             self.updatereportdlg.reportConfInput.clear()
             sql = f"select * from {self.conf};"
             try:
-                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                    with pgconn.cursor() as cur:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as self.updatereportdlg.pgconn:
+                    with self.updatereportdlg.pgconn.cursor() as cur:
                         cur.execute(sql)
                         self.updatereportdlg.conf_list = list(cur.fetchall())
                         self.updatereportdlg.reportConfInput.addItem('')
@@ -3520,6 +3548,7 @@ class GeoDM:
         self.updatendadlg.companies_b_list = None
         self.updatendadlg.active_list = None
         self.updatendadlg.conf_list = None
+        self.updatendadlg.pgconn = None
 
         def get_selected_nda():
             selected_nda_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
@@ -3543,48 +3572,48 @@ class GeoDM:
             filter_str = self.updatendadlg.ndaCompanyAFilterLineEdit.text().strip().lower().replace("'", "''")
             sql = f"select * from {self.companies}"
             if filter_str:
-                sql += f" where (LOWER(name) like '%{filter_str}%'" \
-                       f" or LOWER(shortname) like '%{filter_str}%'" \
-                       f")"
+                sql += f" where LOWER(name) like '%{filter_str}%'" \
+                       f" or LOWER(shortname) like '%{filter_str}%'"
             sql += ' order by name;'
+            self.updatendadlg.pgconn = None
+            # self.updatendadlg.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
             try:
-                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                    with pgconn.cursor() as cur:
-                        cur.execute(sql)
-                        self.updatendadlg.companies_a_list = list(cur.fetchall())
-                self.updatendadlg.ndaCompanyAComboBox.addItem('--Выберите Компанию А--')
-                self.updatendadlg.ndaCompanyAComboBox.addItems([x['name'] for x in self.updatendadlg.companies_a_list])
+                self.updatendadlg.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+            except:
+                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось подключиться к базе', level=Qgis.Critical, duration=3)
+            if self.updatendadlg.pgconn:
+                with self.updatendadlg.pgconn.cursor() as cur:
+                    cur.execute(sql)
+                    self.updatendadlg.companies_a_list = list(cur.fetchall())
+                    self.updatendadlg.ndaCompanyAComboBox.addItem('--Выберите Компанию А--')
+                    self.updatendadlg.ndaCompanyAComboBox.addItems([x['name'] for x in self.updatendadlg.companies_a_list])
                 if self.updatendadlg.selected_nda['company_a_id']:
                     self.updatendadlg.ndaCompanyAComboBox.setCurrentText(self.updatendadlg.selected_nda['company_a_name'])
-            except:
-                self.iface.messageBar().pushMessage('Ошибка',
-                                                    'Не удалось загрузить данные о компаниях из базы ' + sql,
-                                                    level=Qgis.Critical,
-                                                    duration=3)
+                self.updatendadlg.pgconn.close()
         
         def reload_companies_b():
             self.updatendadlg.ndaCompanyBComboBox.clear()
             filter_str = self.updatendadlg.ndaCompanyBFilterLineEdit.text().strip().lower().replace("'", "''")
             sql = f"select * from {self.companies}"
             if filter_str:
-                sql += f" where (LOWER(name) like '%{filter_str}%'" \
-                       f" or LOWER(shortname) like '%{filter_str}%'" \
-                       f")"
+                sql += f" where LOWER(name) like '%{filter_str}%'" \
+                       f" or LOWER(shortname) like '%{filter_str}%'"
             sql += ' order by name;'
+            self.updatendadlg.pgconn = None
+            # self.updatendadlg.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
             try:
-                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                    with pgconn.cursor() as cur:
-                        cur.execute(sql)
-                        self.updatendadlg.companies_b_list = list(cur.fetchall())
-                self.updatendadlg.ndaCompanyBComboBox.addItem('--Выберите Компанию B--')
-                self.updatendadlg.ndaCompanyBComboBox.addItems([x['name'] for x in self.updatendadlg.companies_b_list])
+                self.updatendadlg.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+            except:
+                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось подключиться к базе', level=Qgis.Critical, duration=3)
+            if self.updatendadlg.pgconn:
+                with self.updatendadlg.pgconn.cursor() as cur:
+                    cur.execute(sql)
+                    self.updatendadlg.companies_b_list = list(cur.fetchall())
+                    self.updatendadlg.ndaCompanyBComboBox.addItem('--Выберите Компанию B--')
+                    self.updatendadlg.ndaCompanyBComboBox.addItems([x['name'] for x in self.updatendadlg.companies_b_list])
                 if self.updatendadlg.selected_nda['company_b_id']:
                     self.updatendadlg.ndaCompanyBComboBox.setCurrentText(self.updatendadlg.selected_nda['company_b_name'])
-            except:
-                self.iface.messageBar().pushMessage('Ошибка',
-                                                    'Не удалось загрузить данные о компаниях из базы ' + sql,
-                                                    level=Qgis.Critical,
-                                                    duration=3)
+                self.updatendadlg.pgconn.close()
 
         def reload_nda_subject():
             if self.updatendadlg.selected_nda['subject']:
@@ -3618,20 +3647,20 @@ class GeoDM:
         def reload_nda_conf():
             self.updatendadlg.ndaConfComboBox.clear()
             sql = f"select * from {self.conf};"
+            self.updatendadlg.pgconn = None
             try:
-                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                    with pgconn.cursor() as cur:
-                        cur.execute(sql)
-                        self.updatendadlg.conf_list = list(cur.fetchall())
-                self.updatendadlg.ndaConfComboBox.addItem('--Выберите конфиденциальность--')
-                self.updatendadlg.ndaConfComboBox.addItems([x['conf_name'] for x in self.updatendadlg.conf_list])
+                self.updatendadlg.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+            except:
+                self.iface.messageBar().pushMessage('Ошибка', 'не удалось подключиться к базе', level=Qgis.Critical, duration=3)
+            if self.updatendadlg.pgconn:
+                with self.updatendadlg.pgconn.cursor() as cur:
+                    cur.execute(sql)
+                    self.updatendadlg.conf_list = list(cur.fetchall())
+                    self.updatendadlg.ndaConfComboBox.addItem('--Выберите конфиденциальность--')
+                    self.updatendadlg.ndaConfComboBox.addItems([x['conf_name'] for x in self.updatendadlg.conf_list])
                 if self.updatendadlg.selected_nda['conf']:
                     self.updatendadlg.ndaConfComboBox.setCurrentText(self.updatendadlg.selected_nda['conf'])
-            except:
-                self.iface.messageBar().pushMessage('Ошибка',
-                                                    'Не удалось загрузить данные о конфиденциальности ' + sql,
-                                                    level=Qgis.Critical,
-                                                    duration=3)
+                self.updatendadlg.pgconn.close()
 
         def generate_and_execute_sql():
             new_nda_name = self.updatendadlg.ndaNameLineEdit.text().strip().replace("'", "''")
@@ -3700,7 +3729,6 @@ class GeoDM:
                                                     'Нужно ввести Название, выбрать Компанию А и Компанию B',
                                                     level=Qgis.Warning,
                                                     duration=5)
-
         get_selected_nda()
         if self.updatendadlg.selected_nda:
             reload_nda_name()
@@ -3719,12 +3747,10 @@ class GeoDM:
             self.updatendadlg.ndaCompanyBFilterLineEdit.textEdited.connect(reload_companies_b)
             self.updatendadlg.ndaAddCompanyButton.clicked.connect(self.add_company)
             self.updatendadlg.insertNdaButton.clicked.connect(generate_and_execute_sql)
+
             self.updatendadlg.show()
         else:
-            self.iface.messageBar().pushMessage('Ошибка',
-                                                'Нужно выьрать один NDA',
-                                                level=Qgis.Warning,
-                                                duration=5)
+            self.iface.messageBar().pushMessage('Ошибка', 'Нужно выбрать один NDA', level=Qgis.Warning, duration=5)
 
 
     def add_nda(self):
@@ -5575,6 +5601,7 @@ class GeoDM:
         self.updatedrivedlg.selected_drive = None
         self.updatedrivedlg.drive_types_list = None
         self.updatedrivedlg.conf_list = None
+        self.updatedrivedlg.pgconn = None
 
         def get_selected_drive():
             selected_drive_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
@@ -5595,18 +5622,25 @@ class GeoDM:
 
         def reload_drive_types():
             self.updatedrivedlg.driveTypeComboBox.clear()
+            self.updatedrivedlg.pgconn = None
             try:
-                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                    with pgconn.cursor() as cur:
-                        sql = f"select * from {self.drive_types};"
+                self.updatedrivedlg.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+            except:
+                self.iface.messageBar().pushMessage('Ошибка', 'Не ужалось подключиться к базе', level=Qgis.Critical, duration=3)
+            if self.updatedrivedlg.pgconn:
+                with self.updatedrivedlg.pgconn.cursor() as cur:
+                    sql = f"select * from {self.drive_types};"
+                    try:
                         cur.execute(sql)
-                        self.updatedrivedlg.drive_types_list = list(cur.fetchall())
+                    except:
+                        self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список типов носителей',
+                                                            level=Qgis.Critical,
+                                                            duration=3)
+                    self.updatedrivedlg.drive_types_list = list(cur.fetchall())
                 self.updatedrivedlg.driveTypeComboBox.addItems([row['name'] for row in self.updatedrivedlg.drive_types_list])
                 if self.updatedrivedlg.selected_drive['type_id']:
                     self.updatedrivedlg.driveTypeComboBox.setCurrentText(self.updatedrivedlg.selected_drive['drive_type'])
-            except:
-                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список типов носителей', level=Qgis.Critical,
-                                                    duration=3)
+                self.updatedrivedlg.pgconn.close()
 
         def reload_drive_label():
             if self.updatedrivedlg.selected_drive['label']:
@@ -5618,20 +5652,26 @@ class GeoDM:
 
         def reload_drive_conf():
             self.updatedrivedlg.driveConfComboBox.clear()
+            self.updatedrivedlg.pgconn = None
             try:
-                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                    with pgconn.cursor() as cur:
-                        sql = f"select * from {self.conf};"
+                self.updatedrivedlg.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+            except:
+                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось подключиться к базе', level=Qgis.Critical, duration=3)
+            if self.updatedrivedlg.pgconn:
+                with self.updatedrivedlg.pgconn.cursor() as cur:
+                    sql = f"select * from {self.conf};"
+                    try:
                         cur.execute(sql)
-                        self.updatedrivedlg.conf_list = list(cur.fetchall())
+                    except:
+                        self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список конфиденциальности',
+                                                            level=Qgis.Critical,
+                                                            duration=3)
+                    self.updatedrivedlg.conf_list = list(cur.fetchall())
                 self.updatedrivedlg.driveConfComboBox.addItem('')
                 self.updatedrivedlg.driveConfComboBox.addItems([row['conf_name'] for row in self.updatedrivedlg.conf_list])
                 if self.updatedrivedlg.selected_drive['conf_id']:
                     self.updatedrivedlg.driveConfComboBox.setCurrentText(self.updatedrivedlg.selected_drive['conf_name'])
-            except:
-                self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить список конфиденциальности',
-                                                    level=Qgis.Critical,
-                                                    duration=3)
+                self.updatedrivedlg.pgconn.close()
 
         def reload_drive_conf_limit():
             if self.updatedrivedlg.selected_drive['conf_limit']:
@@ -5851,6 +5891,7 @@ class GeoDM:
         self.updatetransmittaldlg.from_companies_list = None
         self.updatetransmittaldlg.to_companies_list = None
         self.updatetransmittaldlg.selected_transmittal = None
+        self.updatetransmittaldlg.pgconn = None
 
         def get_selected_transmittal():
             selected_transm_rows = list(set([x.row() for x in self.wind.auxDocsTableWidget.selectedItems()]))
@@ -5867,8 +5908,8 @@ class GeoDM:
         def reload_transmittal_types():
             self.updatetransmittaldlg.transmittalTypeComboBox.clear()
             try:
-                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                    with pgconn.cursor() as cur:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as self.updatetransmittaldlg.pgconn:
+                    with self.updatetransmittaldlg.pgconn.cursor() as cur:
                         sql = f"select * from {self.transmittal_types}"
                         cur.execute(sql)
                         self.updatetransmittaldlg.transmittal_types_list = cur.fetchall()
@@ -5893,8 +5934,8 @@ class GeoDM:
         def reload_from_companies():
             self.updatetransmittaldlg.transmittalFromCompanyComboBox.clear()
             try:
-                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                    with pgconn.cursor() as cur:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as self.updatetransmittaldlg.pgconn:
+                    with self.updatetransmittaldlg.pgconn.cursor() as cur:
                         sql = f"select * from {self.companies}"
                         filter_str = self.updatetransmittaldlg.transmittalFromCompanyFilterLineEdit.text().lower().strip().replace(
                             "'", "''")
@@ -5917,8 +5958,8 @@ class GeoDM:
         def reload_to_companies():
             self.updatetransmittaldlg.transmittalToCompanyComboBox.clear()
             try:
-                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                    with pgconn.cursor() as cur:
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as self.updatetransmittaldlg.pgconn:
+                    with self.updatetransmittaldlg.pgconn.cursor() as cur:
                         sql = f"select * from {self.companies}"
                         filter_str = self.updatetransmittaldlg.transmittalToCompanyFilterLineEdit.text().lower().strip().replace(
                             "'", "''")
@@ -6168,6 +6209,7 @@ class GeoDM:
 
     def reload_aux_docs(self):
         selected_doc_type_index = self.wind.auxDocTypeComboBox.currentIndex() - 1
+        self.wind.pgconn = None
         if selected_doc_type_index >= 0:
             filter_str = self.wind.auxFilterLineEdit.text().lower().strip().replace("'", "''")
             selected_doc_type = self.doc_types[self.wind.auxDocTypeComboBox.currentText()]
@@ -6179,12 +6221,21 @@ class GeoDM:
                            f")"
                 sql += ' order by name;'
                 try:
-                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                        with pgconn.cursor() as cur:
+                    self.wind.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Не удалось подключиться к базе', level=Qgis.Critical, duration=3)
+                if self.wind.pgconn:
+                    with self.wind.pgconn.cursor() as cur:
+                        try:
                             cur.execute(sql)
-                            self.aux_docs_dict = {}
-                            self.aux_docs_dict['doc_type'] = 'companies'
-                            self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                        except:
+                            self.iface.messageBar().pushMessage('Ошибка',
+                                                                'Не удалось загрузить список компаний из базы ' + sql,
+                                                                level=Qgis.Critical, duration=3)
+                        self.aux_docs_dict = {}
+                        self.aux_docs_dict['doc_type'] = 'companies'
+                        self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                    self.wind.pgconn.close()
                     self.wind.auxDocsTableWidget.clear()
                     self.wind.auxDocsTableWidget.setRowCount(0)
                     self.wind.auxDocsTableWidget.setColumnCount(2)
@@ -6202,10 +6253,6 @@ class GeoDM:
                         citem.setToolTip(str(company_row['shortname']))
                         citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                         self.wind.auxDocsTableWidget.setItem(i, 1, citem)
-                except:
-                    self.iface.messageBar().pushMessage('Ошибка',
-                                                        'Не удалось загрузить список компаний из базы ' + sql,
-                                                        level=Qgis.Critical, duration=3)
             elif selected_doc_type == 1:
                 sql = f"select * from {self.contracts_view}"
                 if filter_str:
@@ -6221,12 +6268,22 @@ class GeoDM:
                            f")"
                 sql += ' order by date DESC;'
                 try:
-                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                        with pgconn.cursor() as cur:
+                    self.wind.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Не удалось подключиться к базе', level=Qgis.Critical,
+                                                        duration=3)
+                if self.wind.pgconn:
+                    with self.wind.pgconn.cursor() as cur:
+                        try:
                             cur.execute(sql)
-                            self.aux_docs_dict = {}
-                            self.aux_docs_dict['doc_type'] = 'contracts'
-                            self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                        except:
+                            self.iface.messageBar().pushMessage('Ошибка',
+                                                                'Не удалось загрузить список договоров из базы ' + sql,
+                                                                level=Qgis.Critical, duration=3)
+                        self.aux_docs_dict = {}
+                        self.aux_docs_dict['doc_type'] = 'contracts'
+                        self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                    self.wind.pgconn.close()
                     self.wind.auxDocsTableWidget.clear()
                     self.wind.auxDocsTableWidget.setRowCount(0)
                     self.wind.auxDocsTableWidget.setColumnCount(4)
@@ -6254,10 +6311,6 @@ class GeoDM:
                         citem.setToolTip(str(contract_row['contractor']))
                         citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                         self.wind.auxDocsTableWidget.setItem(i, 3, citem)
-                except:
-                    self.iface.messageBar().pushMessage('Ошибка',
-                                                        'Не удалось загрузить список договоров из базы ' + sql,
-                                                        level=Qgis.Critical, duration=3)
             elif selected_doc_type == 2:
                 sql = f"select * from {self.conf}"
                 if filter_str:
@@ -6266,12 +6319,22 @@ class GeoDM:
                            f")"
                 sql += ' order by conf_name;'
                 try:
-                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                        with pgconn.cursor() as cur:
+                    self.wind.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Не удалось подключиться к базе', level=Qgis.Critical,
+                                                        duration=3)
+                if self.wind.pgconn:
+                    with self.wind.pgconn.cursor() as cur:
+                        try:
                             cur.execute(sql)
-                            self.aux_docs_dict = {}
-                            self.aux_docs_dict['doc_type'] = 'conf'
-                            self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                        except:
+                            self.iface.messageBar().pushMessage('Ошибка',
+                                                                'Не удалось загрузить список уровней конфиденциальности из базы ' + sql,
+                                                                level=Qgis.Critical, duration=3)
+                        self.aux_docs_dict = {}
+                        self.aux_docs_dict['doc_type'] = 'conf'
+                        self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                    self.wind.pgconn.close()
                     self.wind.auxDocsTableWidget.clear()
                     self.wind.auxDocsTableWidget.setRowCount(0)
                     self.wind.auxDocsTableWidget.setColumnCount(2)
@@ -6289,10 +6352,6 @@ class GeoDM:
                         citem.setToolTip(contract_row['conf_name_short'])
                         citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                         self.wind.auxDocsTableWidget.setItem(i, 1, citem)
-                except:
-                    self.iface.messageBar().pushMessage('Ошибка',
-                                                        'Не удалось загрузить список уровней конфиденциальности из базы ' + sql,
-                                                        level=Qgis.Critical, duration=3)
             elif selected_doc_type == 3:
                 sql = f"select * from {self.data_quality}"
                 if filter_str:
@@ -6301,12 +6360,22 @@ class GeoDM:
                            f")"
                 sql += ' order by quality_range DESC;'
                 try:
-                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                        with pgconn.cursor() as cur:
+                    self.wind.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Не удалось подключиться к базе', level=Qgis.Critical,
+                                                        duration=3)
+                if self.wind.pgconn:
+                    with self.wind.pgconn.cursor() as cur:
+                        try:
                             cur.execute(sql)
-                            self.aux_docs_dict = {}
-                            self.aux_docs_dict['doc_type'] = 'data_quality'
-                            self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                        except:
+                            self.iface.messageBar().pushMessage('Ошибка',
+                                                                'Не удалось загрузить список качества данных из базы ' + sql,
+                                                                level=Qgis.Critical, duration=3)
+                        self.aux_docs_dict = {}
+                        self.aux_docs_dict['doc_type'] = 'data_quality'
+                        self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                    self.wind.pgconn.close()
                     self.wind.auxDocsTableWidget.clear()
                     self.wind.auxDocsTableWidget.setRowCount(0)
                     self.wind.auxDocsTableWidget.setColumnCount(2)
@@ -6324,10 +6393,6 @@ class GeoDM:
                         citem.setToolTip(str(row['quality_range']))
                         citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                         self.wind.auxDocsTableWidget.setItem(i, 1, citem)
-                except:
-                    self.iface.messageBar().pushMessage('Ошибка',
-                                                        'Не удалось загрузить список качества данных из базы ' + sql,
-                                                        level=Qgis.Critical, duration=3)
             elif selected_doc_type == 4:
                 sql = f"select * from {self.drives_view}"
                 if filter_str:
@@ -6340,12 +6405,22 @@ class GeoDM:
                            f")"
                 sql += ' order by drive_number;'
                 try:
-                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                        with pgconn.cursor() as cur:
+                    self.wind.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Не удалось подключиться к базе', level=Qgis.Critical,
+                                                        duration=3)
+                if self.wind.pgconn:
+                    with self.wind.pgconn.cursor() as cur:
+                        try:
                             cur.execute(sql)
-                            self.aux_docs_dict = {}
-                            self.aux_docs_dict['doc_type'] = 'drives'
-                            self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                        except:
+                            self.iface.messageBar().pushMessage('Ошибка',
+                                                                'Не удалось загрузить список физ.носителей из базы ' + sql,
+                                                                level=Qgis.Critical, duration=3)
+                        self.aux_docs_dict = {}
+                        self.aux_docs_dict['doc_type'] = 'drives'
+                        self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                    self.wind.pgconn.close()
                     self.wind.auxDocsTableWidget.clear()
                     self.wind.auxDocsTableWidget.setRowCount(0)
                     self.wind.auxDocsTableWidget.setColumnCount(2)
@@ -6362,22 +6437,28 @@ class GeoDM:
                         citem = QTableWidgetItem(drive_row['drive_type'])
                         citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                         self.wind.auxDocsTableWidget.setItem(i, 1, citem)
-                except:
-                    self.iface.messageBar().pushMessage('Ошибка',
-                                                        'Не удалось загрузить список физ.носителей из базы ' + sql,
-                                                        level=Qgis.Critical, duration=3)
             elif selected_doc_type == 5:
                 sql = f"select * from {self.formats}"
                 if filter_str:
                     sql += f" where (LOWER(name) like '%{filter_str}%')"
                 sql += ' order by name;'
                 try:
-                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                        with pgconn.cursor() as cur:
+                    self.wind.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Не удалось подключиться к базе', level=Qgis.Critical,
+                                                        duration=3)
+                if self.wind.pgconn:
+                    with self.wind.pgconn.cursor() as cur:
+                        try:
                             cur.execute(sql)
-                            self.aux_docs_dict = {}
-                            self.aux_docs_dict['doc_type'] = 'formats'
-                            self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                        except:
+                            self.iface.messageBar().pushMessage('Ошибка',
+                                                                'Не удалось загрузить список форматов из базы ' + sql,
+                                                                level=Qgis.Critical, duration=3)
+                        self.aux_docs_dict = {}
+                        self.aux_docs_dict['doc_type'] = 'formats'
+                        self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                    self.wind.pgconn.close()
                     self.wind.auxDocsTableWidget.clear()
                     self.wind.auxDocsTableWidget.setRowCount(0)
                     self.wind.auxDocsTableWidget.setColumnCount(1)
@@ -6390,22 +6471,28 @@ class GeoDM:
                         citem.setToolTip(row['name'])
                         citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                         self.wind.auxDocsTableWidget.setItem(i, 0, citem)
-                except:
-                    self.iface.messageBar().pushMessage('Ошибка',
-                                                        'Не удалось загрузить список форматов из базы ' + sql,
-                                                        level=Qgis.Critical, duration=3)
             elif selected_doc_type == 6:
                 sql = f"select * from {self.links}"
                 if filter_str:
                     sql += f" where (LOWER(link) like '%{filter_str}%')"
                 sql += ' order by link;'
                 try:
-                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                        with pgconn.cursor() as cur:
+                    self.wind.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Не удалось подключиться к базе', level=Qgis.Critical,
+                                                        duration=3)
+                if self.wind.pgconn:
+                    with self.wind.pgconn.cursor() as cur:
+                        try:
                             cur.execute(sql)
-                            self.aux_docs_dict = {}
-                            self.aux_docs_dict['doc_type'] = 'links'
-                            self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                        except:
+                            self.iface.messageBar().pushMessage('Ошибка',
+                                                                'Не удалось загрузить список ссылок из базы ' + sql,
+                                                                level=Qgis.Critical, duration=3)
+                        self.aux_docs_dict = {}
+                        self.aux_docs_dict['doc_type'] = 'links'
+                        self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                    self.wind.pgconn.close()
                     self.wind.auxDocsTableWidget.clear()
                     self.wind.auxDocsTableWidget.setRowCount(0)
                     self.wind.auxDocsTableWidget.setColumnCount(1)
@@ -6418,10 +6505,6 @@ class GeoDM:
                         citem.setToolTip(row['link'])
                         citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                         self.wind.auxDocsTableWidget.setItem(i, 0, citem)
-                except:
-                    self.iface.messageBar().pushMessage('Ошибка',
-                                                        'Не удалось загрузить список ссылок из базы ' + sql,
-                                                        level=Qgis.Critical, duration=3)
             elif selected_doc_type == 7:
                 sql = f"select * from {self.nda_view}"
                 if filter_str:
@@ -6434,12 +6517,22 @@ class GeoDM:
                            f")"
                 sql += ' order by date_signed DESC;'
                 try:
-                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                        with pgconn.cursor() as cur:
+                    self.wind.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Не удалось подключиться к базе', level=Qgis.Critical,
+                                                        duration=3)
+                if self.wind.pgconn:
+                    with self.wind.pgconn.cursor() as cur:
+                        try:
                             cur.execute(sql)
-                            self.aux_docs_dict = {}
-                            self.aux_docs_dict['doc_type'] = 'nda'
-                            self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                        except:
+                            self.iface.messageBar().pushMessage('Ошибка',
+                                                                'Не удалось загрузить список nda из базы ' + sql,
+                                                                level=Qgis.Critical, duration=3)
+                        self.aux_docs_dict = {}
+                        self.aux_docs_dict['doc_type'] = 'nda'
+                        self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                    self.wind.pgconn.close()
                     self.wind.auxDocsTableWidget.clear()
                     self.wind.auxDocsTableWidget.setRowCount(0)
                     self.wind.auxDocsTableWidget.setColumnCount(3)
@@ -6462,10 +6555,6 @@ class GeoDM:
                         citem.setToolTip(str(row['date_signed']))
                         citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                         self.wind.auxDocsTableWidget.setItem(i, 2, citem)
-                except:
-                    self.iface.messageBar().pushMessage('Ошибка',
-                                                        'Не удалось загрузить список nda из базы ' + sql,
-                                                        level=Qgis.Critical, duration=3)
             elif selected_doc_type == 8:
                 sql = f"select * from {self.projects}"
                 if filter_str:
@@ -6474,12 +6563,22 @@ class GeoDM:
                            f")"
                 sql += ' order by name_ru;'
                 try:
-                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                        with pgconn.cursor() as cur:
+                    self.wind.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Не удалось подключиться к базе', level=Qgis.Critical,
+                                                        duration=3)
+                if self.wind.pgconn:
+                    with self.wind.pgconn.cursor() as cur:
+                        try:
                             cur.execute(sql)
-                            self.aux_docs_dict = {}
-                            self.aux_docs_dict['doc_type'] = 'projects'
-                            self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                        except:
+                            self.iface.messageBar().pushMessage('Ошибка',
+                                                                'Не удалось загрузить список проектов из базы ' + sql,
+                                                                level=Qgis.Critical, duration=3)
+                        self.aux_docs_dict = {}
+                        self.aux_docs_dict['doc_type'] = 'projects'
+                        self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                    self.wind.pgconn.close()
                     self.wind.auxDocsTableWidget.clear()
                     self.wind.auxDocsTableWidget.setRowCount(0)
                     self.wind.auxDocsTableWidget.setColumnCount(1)
@@ -6492,10 +6591,6 @@ class GeoDM:
                         citem.setToolTip(f"{row['name_ru']} - {row['name_en']}")
                         citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                         self.wind.auxDocsTableWidget.setItem(i, 0, citem)
-                except:
-                    self.iface.messageBar().pushMessage('Ошибка',
-                                                        'Не удалось загрузить список проектов из базы ' + sql,
-                                                        level=Qgis.Critical, duration=3)
             elif selected_doc_type == 9:
                 sql = f"select * from {self.reports_view}"
                 if filter_str:
@@ -6510,12 +6605,22 @@ class GeoDM:
                            f")"
                 sql += ' order by shortname;'
                 try:
-                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                        with pgconn.cursor() as cur:
+                    self.wind.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Не удалось подключиться к базе', level=Qgis.Critical,
+                                                        duration=3)
+                if self.wind.pgconn:
+                    with self.wind.pgconn.cursor() as cur:
+                        try:
                             cur.execute(sql)
-                            self.aux_docs_dict = {}
-                            self.aux_docs_dict['doc_type'] = 'reports'
-                            self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                        except:
+                            self.iface.messageBar().pushMessage('Ошибка',
+                                                                'Не удалось загрузить список отчетов из базы ' + sql,
+                                                                level=Qgis.Critical, duration=3)
+                        self.aux_docs_dict = {}
+                        self.aux_docs_dict['doc_type'] = 'reports'
+                        self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                    self.wind.pgconn.close()
                     self.wind.auxDocsTableWidget.clear()
                     self.wind.auxDocsTableWidget.setRowCount(0)
                     self.wind.auxDocsTableWidget.setColumnCount(4)
@@ -6542,10 +6647,6 @@ class GeoDM:
                         citem = QTableWidgetItem(str(row['year']))
                         citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                         self.wind.auxDocsTableWidget.setItem(i, 3, citem)
-                except:
-                    self.iface.messageBar().pushMessage('Ошибка',
-                                                        'Не удалось загрузить список отчетов из базы ' + sql,
-                                                        level=Qgis.Critical, duration=3)
             elif selected_doc_type == 10:
                 sql = f"select * from {self.transmittals_view}"
                 if filter_str:
@@ -6560,12 +6661,22 @@ class GeoDM:
                            f")"
                 sql += ' order by datestamp DESC;'
                 try:
-                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-                        with pgconn.cursor() as cur:
+                    self.wind.pgconn = psycopg2.connect(self.dsn, cursor_factory=DictCursor)
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка', 'Не удалось подключиться к базе', level=Qgis.Critical,
+                                                        duration=3)
+                if self.wind.pgconn:
+                    with self.wind.pgconn.cursor() as cur:
+                        try:
                             cur.execute(sql)
-                            self.aux_docs_dict = {}
-                            self.aux_docs_dict['doc_type'] = 'transmittals'
-                            self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                        except:
+                            self.iface.messageBar().pushMessage('Ошибка',
+                                                                'Не удалось загрузить список актов из базы ' + sql,
+                                                                level=Qgis.Critical, duration=3)
+                        self.aux_docs_dict = {}
+                        self.aux_docs_dict['doc_type'] = 'transmittals'
+                        self.aux_docs_dict['docs_list'] = list(cur.fetchall())
+                    self.wind.pgconn.close()
                     self.wind.auxDocsTableWidget.clear()
                     self.wind.auxDocsTableWidget.setRowCount(0)
                     self.wind.auxDocsTableWidget.setColumnCount(4)
@@ -6593,11 +6704,6 @@ class GeoDM:
                         citem.setToolTip(row['to_company'])
                         citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                         self.wind.auxDocsTableWidget.setItem(i, 3, citem)
-
-                except:
-                    self.iface.messageBar().pushMessage('Ошибка',
-                                                        'Не удалось загрузить список актов из базы ' + sql,
-                                                        level=Qgis.Critical, duration=3)
             self.dockwindaux.auxAddDocButton.clicked.connect(self.add_aux_doc)
             self.dockwindaux.auxUpdateDocButton.clicked.connect(self.update_aux_doc)
             self.dockwindaux.auxDeleteDocButton.clicked.connect(self.delete_aux_doc)
@@ -7124,10 +7230,10 @@ class GeoDM:
             self.dockwindaux = GeoDMDockWidgetAux()
         else:
             self.dockwindaux = GeoDMDockWidgetAux()
-
+        
         self.mode = 'aux'
         self.wind = self.dockwindaux
-
+        self.wind.pgconn = None
         self.wind.auxRefreshButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
 
         self.refresh_aux_doc_types()
