@@ -2,6 +2,9 @@
 <ui version="4.0">
  <class>AddProcDialog</class>
  <widget class="QDialog" name="AddProcDialog">
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>

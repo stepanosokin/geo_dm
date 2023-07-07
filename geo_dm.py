@@ -807,19 +807,19 @@ class GeoDM:
                     # self.pgconn.commit()
                     pgconn.commit()
 
-                    # Это чтобы обновить атрибуты выбранных объектов
-                    if self.mode == 'proc':
-                        self.set_selected_proc_features_list()
-                        self.refresh_processings()
-                        self.refresh_surveys()
-                        self.refresh_datasets()
-                    elif self.mode == 'field':
-                        self.set_selected_field_features_list()
-                        self.refresh_surveys()
-                        self.refresh_datasets()
-                    elif self.mode == 'wells':
-                        self.refresh_wells()
-                        self.refresh_well_attrs()
+                    # # Это чтобы обновить атрибуты выбранных объектов
+                    # if self.mode == 'proc':
+                    #     self.set_selected_proc_features_list()
+                    #     self.refresh_processings()
+                    #     self.refresh_surveys()
+                    #     self.refresh_datasets()
+                    # elif self.mode == 'field':
+                    #     self.set_selected_field_features_list()
+                    #     self.refresh_surveys()
+                    #     self.refresh_datasets()
+                    # elif self.mode == 'wells':
+                    #     self.refresh_wells()
+                    #     self.refresh_well_attrs()
 
                     # Это чтобы убрать лишние уведомления
                     [self.iface.messageBar().popWidget(x) for x in self.iface.messageBar().items()]
@@ -2121,11 +2121,11 @@ class GeoDM:
             values_to_insert = f"'{new_contract_number}', '{new_contract_name}', '{selected_contract_type_id}', '{selected_contract_date.toString('yyyy-MM-dd')}'"
             if selected_customer_index >= 0:
                 fields_to_update += ', customer_id'
-                selected_customer_id = self.addcontractdlg.companies[selected_customer_index]['company_id']
+                selected_customer_id = self.addcontractdlg.customer_companies[selected_customer_index]['company_id']
                 values_to_insert += f", {str(selected_customer_id)}"
             if selected_contractor_index >= 0:
                 fields_to_update += ', contractor_id'
-                selected_contractor_id = self.addcontractdlg.companies[selected_contractor_index]['company_id']
+                selected_contractor_id = self.addcontractdlg.contractor_companies[selected_contractor_index]['company_id']
                 values_to_insert += f", {str(selected_contractor_id)}"
             if len(new_contract_link) > 0:
                 fields_to_update += ', link'
@@ -3669,7 +3669,7 @@ class GeoDM:
             new_subject = self.updatendadlg.ndaSubjectPlainTextEdit.toPlainText().strip().replace("'", "''")
             new_nda_date = self.updatendadlg.ndaDateSignedCalendarWidget.selectedDate()
             new_source = self.updatendadlg.ndaSourcePlainTextEdit.toPlainText().strip().replace("'", "''")
-            new_comments = self.updatendadlg.ndaSourcePlainTextEdit.toPlainText().strip().replace("'", "''")
+            new_comments = self.updatendadlg.ndaCommentsPlainTextEdit.toPlainText().strip().replace("'", "''")
             selected_active_index = self.updatendadlg.ndaActiveComboBox.currentIndex() - 1
             new_scan_link = self.updatendadlg.ndaScalLinkPlainTextEdit.toPlainText().strip().replace("'", "''")
             selected_conf_index = self.updatendadlg.ndaConfComboBox.currentIndex() - 1
@@ -3834,7 +3834,7 @@ class GeoDM:
             new_subject = self.addndadlg.ndaSubjectPlainTextEdit.toPlainText().strip().replace("'", "''")
             new_nda_date = self.addndadlg.ndaDateSignedCalendarWidget.selectedDate()
             new_source = self.addndadlg.ndaSourcePlainTextEdit.toPlainText().strip().replace("'", "''")
-            new_comments = self.addndadlg.ndaSourcePlainTextEdit.toPlainText().strip().replace("'", "''")
+            new_comments = self.addndadlg.ndaCommentsPlainTextEdit.toPlainText().strip().replace("'", "''")
             selected_active_index = self.addndadlg.ndaActiveComboBox.currentIndex() - 1
             new_scan_link = self.addndadlg.ndaScalLinkPlainTextEdit.toPlainText().strip().replace("'", "''")
             selected_conf_index = self.addndadlg.ndaConfComboBox.currentIndex() - 1
