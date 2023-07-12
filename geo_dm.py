@@ -832,12 +832,12 @@ class GeoDM:
                                                 level=Qgis.Critical, duration=5)
 
         self.sql = ''
-        if self.mode == 'proc':
-            self.refresh_processings()
-            self.refresh_datasets()
-            self.refresh_surveys()
-        elif self.mode == 'field':
-            self.refresh_surveys()
+        # if self.mode == 'proc':
+        #     self.refresh_processings()
+        #     self.refresh_datasets()
+        #     self.refresh_surveys()
+        # elif self.mode == 'field':
+        #     self.refresh_surveys()
 
 
     def update_proc_for_selected_features(self):
@@ -2293,7 +2293,7 @@ class GeoDM:
                     mbutton = QPushButton(mwidget)
                     mbutton.setText('Подтвердить')
                     mbutton.pressed.connect(self.execute_sql)
-                    mbutton.pressed.connect(self.refresh_processings)
+                    # mbutton.pressed.connect(self.refresh_processings)
                     mwidget.layout().addWidget(mbutton)
                     self.iface.messageBar().pushWidget(mwidget, Qgis.Warning, duration=3)
                     self.addprocdlg.accept()
