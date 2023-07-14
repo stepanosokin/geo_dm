@@ -1805,7 +1805,9 @@ class GeoDM:
                             [row['number'] + ' от ' + str(row['date']) for row in self.updatereportdlg.contracts_list])
                         if self.updatereportdlg.selected_report['contract_id']:
                             sr = self.updatereportdlg.selected_report
-                            self.updatereportdlg.reportContractInput.setCurrentText(sr['contract_number'] + ' от ' + str(sr['contract_date']))
+                            # self.updatereportdlg.reportContractInput.setCurrentText(sr['contract_number'] + ' от ' + str(sr['contract_date']))
+                            selected_contract = [x for x in self.updatereportdlg.contracts_list if x['contract_id'] == sr['contract_id']][0]
+                            self.updatereportdlg.reportContractInput.setCurrentIndex(self.updatereportdlg.contracts_list.index(selected_contract) + 1)
             except:
                 self.iface.messageBar().pushMessage('Ошибка',
                                                     'Не удалось загрузить данные о договорах из базы ' + sql,
@@ -2571,7 +2573,8 @@ class GeoDM:
             selected_contract_id =  self.proc_list[self.updateprocdlg.selected_proc_row]['contract_id']
             if selected_contract_id:
                 selected_contract = [x for x in self.updateprocdlg.contracts if x['contract_id'] == selected_contract_id][0]
-                self.updateprocdlg.procContractInput.setCurrentText(f"{selected_contract['number']} от {str(selected_contract['date'])} {selected_contract['customer_id']}-{selected_contract['contractor_id']}")
+                # self.updateprocdlg.procContractInput.setCurrentText(f"{selected_contract['number']} от {str(selected_contract['date'])} {selected_contract['customer_id']}-{selected_contract['contractor_id']}")
+                self.updateprocdlg.procContractInput.setCurrentIndex(self.updateprocdlg.contracts.index(selected_contract) + 1)
 
             selected_report = self.proc_list[self.updateprocdlg.selected_proc_row]['report_shortname']
             if selected_report:
@@ -3050,7 +3053,7 @@ class GeoDM:
                         selected_survey_contracts = [x for x in self.updatesurveydlg.contracts_list if x['contract_id'] == selected_survey_contract_id]
                         if selected_survey_contracts:
                             selected_survey_contract = selected_survey_contracts[0]
-                            self.updatesurveydlg.surveyContractInput.setCurrentIndex(self.updatesurveydlg.contracts_list.index(selected_survey_contract))
+                            self.updatesurveydlg.surveyContractInput.setCurrentIndex(self.updatesurveydlg.contracts_list.index(selected_survey_contract) + 1)
 
             def reload_linked_reports():
                 self.updatesurveydlg.surveyReportsTableWidget.clear()
