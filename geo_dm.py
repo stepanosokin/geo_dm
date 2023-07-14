@@ -2189,29 +2189,35 @@ class GeoDM:
         self.addprocdlg.refreshAuthorsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
         self.addprocdlg.refreshContractsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
         self.addprocdlg.refreshReportsButton.setIcon(QIcon(':/plugins/geo_dm/refresh.png'))
+        self.addprocdlg.proc_types = None
+        self.addprocdlg.projects = None
+        self.addprocdlg.companies = None
+        self.addprocdlg.contracts = None
+
 
         try:
-            def reload_proc_data():
+            def reload_proc_types():
                 self.addprocdlg.procTypeInput.clear()
-                self.addprocdlg.projectInput.clear()
-                self.addprocdlg.procAuthorInput.clear()
-                self.addprocdlg.procContractInput.clear()
-                self.addprocdlg.procReportInput.clear()
-
-                # with open('.pgdsn', encoding='utf-8') as dsnf:
-                #     dsn = dsnf.read().replace('\n', '')
                 with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
-
-                    # with self.pgconn.cursor() as cur:
                     with pgconn.cursor() as cur:
                         sql = f"select * from {self.processing_types} order by id"
                         cur.execute(sql)
                         self.addprocdlg.proc_types = list(cur.fetchall())
                         self.addprocdlg.procTypeInput.addItems([row['name'] for row in self.addprocdlg.proc_types])
+
+            def reload_projects():
+                self.addprocdlg.projectInput.clear()
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
                         sql = f"select * from {self.projects}"
                         cur.execute(sql)
                         self.addprocdlg.projects = list(cur.fetchall())
                         self.addprocdlg.projectInput.addItems([row['name_ru'] for row in self.addprocdlg.projects])
+
+            def reload_companies():
+                self.addprocdlg.procAuthorInput.clear()
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
                         filter_str = self.addprocdlg.authorFilterInput.text().strip().lower().replace("'", "''")
                         sql = f"select * from {self.companies}"
                         if filter_str:
@@ -2222,6 +2228,11 @@ class GeoDM:
                         self.addprocdlg.companies = list(cur.fetchall())
                         self.addprocdlg.procAuthorInput.addItem('')
                         self.addprocdlg.procAuthorInput.addItems([row['name'] for row in self.addprocdlg.companies])
+
+            def reload_contracts():
+                self.addprocdlg.procContractInput.clear()
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
                         filter_str = self.addprocdlg.contractFilterInput.text().strip().lower().replace("'", "''")
                         sql = f"select * from {self.contracts_view}"
                         if filter_str:
@@ -2236,7 +2247,15 @@ class GeoDM:
                         cur.execute(sql)
                         self.addprocdlg.contracts = cur.fetchall()
                         self.addprocdlg.procContractInput.addItem('')
-                        self.addprocdlg.procContractInput.addItems([row['number'] + ' от ' + str(row['date']) + ' ' + row['customer_short'] + '-' + row['contractor_short'] for row in self.addprocdlg.contracts])
+                        self.addprocdlg.procContractInput.addItems([row['number'] + ' от ' + str(row['date']) + ' ' +
+                                                                    row['customer_short'] + '-' + row[
+                                                                        'contractor_short'] for row in
+                                                                    self.addprocdlg.contracts])
+
+            def reload_reports():
+                self.addprocdlg.procReportInput.clear()
+                with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                    with pgconn.cursor() as cur:
                         filter_string = self.addprocdlg.reportFilterInput.text().strip().lower().replace("'", "''")
                         sql = f"select * from {self.reports_view}"
                         if filter_string:
@@ -2257,7 +2276,74 @@ class GeoDM:
                         self.addprocdlg.procReportInput.addItem('')
                         self.addprocdlg.procReportInput.addItems([row['shortname'] for row in self.addprocdlg.reports])
 
-            reload_proc_data()
+            # def reload_proc_data():
+            #     self.addprocdlg.procTypeInput.clear()
+            #     self.addprocdlg.projectInput.clear()
+            #     self.addprocdlg.procAuthorInput.clear()
+            #     self.addprocdlg.procContractInput.clear()
+            #     self.addprocdlg.procReportInput.clear()
+            #     with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+            #         with pgconn.cursor() as cur:
+            #             sql = f"select * from {self.processing_types} order by id"
+            #             cur.execute(sql)
+            #             self.addprocdlg.proc_types = list(cur.fetchall())
+            #             self.addprocdlg.procTypeInput.addItems([row['name'] for row in self.addprocdlg.proc_types])
+            #             sql = f"select * from {self.projects}"
+            #             cur.execute(sql)
+            #             self.addprocdlg.projects = list(cur.fetchall())
+            #             self.addprocdlg.projectInput.addItems([row['name_ru'] for row in self.addprocdlg.projects])
+            #             filter_str = self.addprocdlg.authorFilterInput.text().strip().lower().replace("'", "''")
+            #             sql = f"select * from {self.companies}"
+            #             if filter_str:
+            #                 sql += f" where LOWER(name) like '%{filter_str}%' " \
+            #                        f"or LOWER(shortname) like '%{filter_str}%'"
+            #             sql += f" order by name;"
+            #             cur.execute(sql)
+            #             self.addprocdlg.companies = list(cur.fetchall())
+            #             self.addprocdlg.procAuthorInput.addItem('')
+            #             self.addprocdlg.procAuthorInput.addItems([row['name'] for row in self.addprocdlg.companies])
+            #             filter_str = self.addprocdlg.contractFilterInput.text().strip().lower().replace("'", "''")
+            #             sql = f"select * from {self.contracts_view}"
+            #             if filter_str:
+            #                 sql += f" where LOWER(number) like '%{filter_str}%' " \
+            #                        f"or LOWER(name) like '%{filter_str}%' " \
+            #                        f"or date::text like '%{filter_str}%' " \
+            #                        f"or LOWER(customer) like '%{filter_str}%' " \
+            #                        f"or LOWER(customer_short) like '%{filter_str}%' " \
+            #                        f"or LOWER(contractor) like '%{filter_str}%' " \
+            #                        f"or LOWER(contractor_short) like '%{filter_str}%'"
+            #             sql += f" order by date DESC"
+            #             cur.execute(sql)
+            #             self.addprocdlg.contracts = cur.fetchall()
+            #             self.addprocdlg.procContractInput.addItem('')
+            #             self.addprocdlg.procContractInput.addItems([row['number'] + ' от ' + str(row['date']) + ' ' + row['customer_short'] + '-' + row['contractor_short'] for row in self.addprocdlg.contracts])
+            #             filter_string = self.addprocdlg.reportFilterInput.text().strip().lower().replace("'", "''")
+            #             sql = f"select * from {self.reports_view}"
+            #             if filter_string:
+            #                 sql += f" where LOWER(name) like '%{filter_string}%' " \
+            #                        f"or LOWER(shortname) like '%{filter_string}%' " \
+            #                        f"or LOWER(company_name) like '%{filter_string}%' " \
+            #                        f"or LOWER(company_shortname) like '%{filter_string}%' " \
+            #                        f"or LOWER(contract_number) like '%{filter_string}%' " \
+            #                        f"or LOWER(contract_name) like '%{filter_string}%' " \
+            #                        f"or year::text like '%{filter_string}%' " \
+            #                        f"or LOWER(conf) like '%{filter_string}%' " \
+            #                        f"or LOWER(conf_shortname) like '%{filter_string}%' " \
+            #                        f"or LOWER(conf_limit) like '%{filter_string}%' " \
+            #                        f"or LOWER(report_type) like '%{filter_string}%'"
+            #             sql += ' order by shortname DESC'
+            #             cur.execute(sql)
+            #             self.addprocdlg.reports = cur.fetchall()
+            #             self.addprocdlg.procReportInput.addItem('')
+            #             self.addprocdlg.procReportInput.addItems([row['shortname'] for row in self.addprocdlg.reports])
+            #
+            # reload_proc_data()
+
+            reload_proc_types()
+            reload_projects()
+            reload_companies()
+            reload_contracts()
+            reload_reports()
 
             def generate_sql():
                 new_proc_name = self.addprocdlg.procNameInput.text().replace("'", "''")
@@ -2311,13 +2397,13 @@ class GeoDM:
             self.addprocdlg.procReportInput.activated.connect(generate_sql)
             self.addprocdlg.addProjectButton.clicked.connect(self.add_project)
             self.addprocdlg.addCompanyButton.clicked.connect(self.add_company)
-            self.addprocdlg.refreshProjButton.clicked.connect(reload_proc_data)
-            self.addprocdlg.refreshAuthorsButton.clicked.connect(reload_proc_data)
-            self.addprocdlg.refreshContractsButton.clicked.connect(reload_proc_data)
-            self.addprocdlg.refreshReportsButton.clicked.connect(reload_proc_data)
-            self.addprocdlg.authorFilterInput.textEdited.connect(reload_proc_data)
-            self.addprocdlg.contractFilterInput.textEdited.connect(reload_proc_data)
-            self.addprocdlg.reportFilterInput.textEdited.connect(reload_proc_data)
+            self.addprocdlg.refreshProjButton.clicked.connect(reload_projects)
+            self.addprocdlg.refreshAuthorsButton.clicked.connect(reload_companies)
+            self.addprocdlg.refreshContractsButton.clicked.connect(reload_contracts)
+            self.addprocdlg.refreshReportsButton.clicked.connect(reload_reports)
+            self.addprocdlg.authorFilterInput.textEdited.connect(reload_companies)
+            self.addprocdlg.contractFilterInput.textEdited.connect(reload_contracts)
+            self.addprocdlg.reportFilterInput.textEdited.connect(reload_reports)
             self.addprocdlg.addContractButton.clicked.connect(self.add_contract)
             self.addprocdlg.addReportButton.clicked.connect(self.add_report)
 
@@ -2964,10 +3050,7 @@ class GeoDM:
                         selected_survey_contracts = [x for x in self.updatesurveydlg.contracts_list if x['contract_id'] == selected_survey_contract_id]
                         if selected_survey_contracts:
                             selected_survey_contract = selected_survey_contracts[0]
-                            self.updatesurveydlg.surveyAuthorInput.setCurrentText(f"{selected_survey_contract['number']} от "
-                                                                                  f"{str(selected_survey_contract['date'])} "
-                                                                                  f"{selected_survey_contract['customer_short']}-"
-                                                                                  f"{selected_survey_contract['contractor_short']}")
+                            self.updatesurveydlg.surveyContractInput.setCurrentIndex(self.updatesurveydlg.contracts_list.index(selected_survey_contract))
 
             def reload_linked_reports():
                 self.updatesurveydlg.surveyReportsTableWidget.clear()
