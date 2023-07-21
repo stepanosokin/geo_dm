@@ -5046,7 +5046,7 @@ class GeoDM:
 
             selected_datasource_type_index = self.adddatasetdlg.datasetDataSourceTypeComboBoxInput.currentIndex()
             new_shortname = self.adddatasetdlg.datasetShortnameLineEditInput.text().strip().replace("'", "''")
-            new_name = self.adddatasetdlg.datasetNameLineEditInput.text().strip().replace("'", "''")
+            new_name = self.adddatasetdlg.datasetNamePlainTextEdit.toPlainText().strip().replace("'", "''")
             selected_type_index = self.adddatasetdlg.datasetTypeComboBoxInput.currentIndex()
             selected_format_index = self.adddatasetdlg.datasetFormatComboBoxInput.currentIndex()
             selected_quality_index = self.adddatasetdlg.datasetQualityComboBoxInput.currentIndex() - 1
@@ -5205,8 +5205,8 @@ class GeoDM:
                 self.updatedatasetdlg.datasetShortnameLineEditInput.setText(self.seismic_datasets_view_list[self.updatedatasetdlg.selected_dataset_row]['shortname'])
             
             def reload_dataset_name():
-                self.updatedatasetdlg.datasetNameLineEditInput.clear()
-                self.updatedatasetdlg.datasetNameLineEditInput.setText(self.seismic_datasets_view_list[self.updatedatasetdlg.selected_dataset_row]['name'])
+                self.updatedatasetdlg.datasetNamePlainTextEdit.clear()
+                self.updatedatasetdlg.datasetNamePlainTextEdit.setPlainText(self.seismic_datasets_view_list[self.updatedatasetdlg.selected_dataset_row]['name'])
 
             def reload_seismic_types():
                 self.updatedatasetdlg.datasetTypeComboBoxInput.clear()
@@ -5552,7 +5552,7 @@ class GeoDM:
                 selected_dataset_id = self.seismic_datasets_view_list[self.updatedatasetdlg.selected_dataset_row]['dataset_id']
                 selected_datasource_type_index = self.updatedatasetdlg.datasetDataSourceTypeComboBoxInput.currentIndex()
                 new_shortname = self.updatedatasetdlg.datasetShortnameLineEditInput.text().strip().replace("'", "''")
-                new_name = self.updatedatasetdlg.datasetNameLineEditInput.text().strip().replace("'", "''")
+                new_name = self.updatedatasetdlg.datasetNamePlainTextEdit.toPlainText().strip().replace("'", "''")
                 selected_type_index = self.updatedatasetdlg.datasetTypeComboBoxInput.currentIndex()
                 selected_format_index = self.updatedatasetdlg.datasetFormatComboBoxInput.currentIndex()
                 selected_quality_index = self.updatedatasetdlg.datasetQualityComboBoxInput.currentIndex() - 1
