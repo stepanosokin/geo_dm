@@ -3593,8 +3593,21 @@ class GeoDM:
                 citem.setToolTip(well_attr['well_attribute_name'])
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                 self.wind.wellAttrTableWidget.setItem(i, 0, citem)
-                citem = QTableWidgetItem(well_attr['well_attribute_value'])
-                citem.setToolTip(well_attr['well_attribute_value'])
+                if well_attr['type_id'] == 2:
+                    if well_attr['dec_places'] >= 0:
+                        try:
+                            val = str(round(float(well_attr['well_attribute_value']), well_attr['dec_places']))
+                        except:
+                            val = well_attr['well_attribute_value']
+                    else:
+                        val = well_attr['well_attribute_value']
+                else:
+                    val = well_attr['well_attribute_value']
+                if well_attr['type_id'] in [1, 2]:
+                    if well_attr['units']:
+                        val += f" {well_attr['units']}"
+                citem = QTableWidgetItem(val)
+                citem.setToolTip(val)
                 citem.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                 self.wind.wellAttrTableWidget.setItem(i, 1, citem)
         else:
