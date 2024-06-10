@@ -139,6 +139,7 @@ class GeoDM:
         self.well_attributes = 'dm.well_attributes'
         self.well_attributes_view = 'dm.well_attributes_view'
         self.well_attribute_names = 'dm.well_attribute_names'
+        self.well_attr_val_types = 'dm.ind_val_types'
         self.well_types = 'dm.well_types'
         self.nda = 'dm.nda'
         self.nda_view = 'dm.nda_view'
@@ -4025,7 +4026,28 @@ class GeoDM:
             self.updatewellattrdlg.links_list = None
             self.updatewellattrdlg.data_quality_list = None
             self.updatewellattrdlg.nda_view_list = None
+            self.updatewellattrdlg.well_attr_val_types_list = None
             
+
+            def reload_well_attr_val_types():
+                self.updatewellattrdlg.wellAttrValTypeComboBox.clear()
+                sql = f"select * from {self.well_attr_val_types};"
+                try:
+                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                        with pgconn.cursor() as cur:
+                            cur.execute(sql)
+                            self.updatewellattrdlg.well_attr_val_types_list = list(cur.fetchall())
+                            self.updatewellattrdlg.wellAttrValTypeComboBox.addItem('--Выберите тип значения--')
+                            self.updatewellattrdlg.wellAttrValTypeComboBox.addItems([x['name_en'] for x in self.updatewellattrdlg.well_attr_val_types_list])
+                            self.updatewellattrdlg.wellAttrValTypeComboBox.setCurrentText(
+                                selected_well_attrs[0]['ind_type'])
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Не удалось загрузить данные о типах значений атрибутов скважин из базы ' + sql,
+                                                        level=Qgis.Critical,
+                                                        duration=3)
+
+
             def reload_well_attr_types():
                 self.updatewellattrdlg.wellAttrTypeComboBox.clear()
                 filter_str = self.updatewellattrdlg.wellAttrTypeFilterLineEdit.text().strip().lower().replace("'", "''")
@@ -4052,6 +4074,16 @@ class GeoDM:
             def reload_well_attr_value():
                 if selected_well_attrs[0]['well_attribute_value']:
                     self.updatewellattrdlg.wellAttrValuePlainTextEdit.setPlainText(selected_well_attrs[0]['well_attribute_value'])
+
+
+            def reload_well_attr_units():
+                if selected_well_attrs[0]['units']:
+                    self.updatewellattrdlg.wellAttrUnitsLineEdit.setText(selected_well_attrs[0]['units'])
+
+
+            def reload_well_attr_dec_places():
+                if selected_well_attrs[0]['dec_places'] >= 0:
+                    self.updatewellattrdlg.wellAttrDecPlacesSpinBox.setValue(selected_well_attrs[0]['dec_places'])
 
             def reload_links():
                 self.updatewellattrdlg.wellAttrLinkComboBox.clear()
@@ -4157,6 +4189,12 @@ class GeoDM:
                 # selected_well_ids = [str(self.wells_view_list[x]['well_id']) for x in selected_well_rows]
                 selected_well_attr_name_index = self.updatewellattrdlg.wellAttrTypeComboBox.currentIndex() - 1
                 new_well_attr_value = self.updatewellattrdlg.wellAttrValuePlainTextEdit.toPlainText().strip().replace("'", "''")
+
+                new_well_attr_units_value = self.updatewellattrdlg.wellAttrUnitsLineEdit.text().lower().strip().replace(
+                    "'", "''")
+                selected_well_attr_val_type_index = self.updatewellattrdlg.wellAttrValTypeComboBox.currentIndex() - 1
+                new_well_attr_dec_places_value = self.updatewellattrdlg.wellAttrDecPlacesSpinBox.value()
+
                 selected_link_index = self.updatewellattrdlg.wellAttrLinkComboBox.currentIndex() - 1
                 new_source = self.updatewellattrdlg.wellAttrSourcePlainTextEdit.toPlainText().strip().replace("'", "''")
                 new_datestamp = self.updatewellattrdlg.wellAttrDateCalendarWidget.selectedDate().toString('yyyy-MM-dd')
@@ -4169,6 +4207,18 @@ class GeoDM:
                     fields_to_update = ['well_attribute_name_id', 'well_attribute_value']
                     # values_to_insert = [str(selected_well_id), str(selected_well_attr_name_id), new_well_attr_value]
                     values_to_insert = [str(selected_well_attr_name_id), f"'{new_well_attr_value}'"]
+
+                    if new_well_attr_units_value:
+                        fields_to_update.append('units')
+                        values_to_insert.append(f"'{new_well_attr_units_value}'")
+                    if 1 >= selected_well_attr_val_type_index >= 0 and new_well_attr_dec_places_value >= 0:
+                        fields_to_update.append('dec_places')
+                        values_to_insert.append(str(new_well_attr_dec_places_value))
+                    if selected_well_attr_val_type_index >= 0:
+                        selected_well_attr_val_type_id = self.updatewellattrdlg.well_attr_val_types_list[selected_well_attr_val_type_index]['id']
+                        fields_to_update.append('type_id')
+                        values_to_insert.append(str(selected_well_attr_val_type_id))
+
                     if selected_link_index >= 0:
                         selected_link_id = self.updatewellattrdlg.links_list[selected_link_index]['link_id']
                     else:
@@ -4232,6 +4282,9 @@ class GeoDM:
             reload_data_quality()
             reload_nda()
             reload_well_attr_comments()
+            reload_well_attr_val_types()
+            reload_well_attr_units()
+            reload_well_attr_dec_places()
 
             self.updatewellattrdlg.wellAttrTypeFilterLineEdit.textEdited.connect(reload_well_attr_types)
             self.updatewellattrdlg.wellAttrRefreshAttrTypesButton.clicked.connect(reload_well_attr_types)
@@ -4267,6 +4320,7 @@ class GeoDM:
             self.addwellattrdlg.links_list = None
             self.addwellattrdlg.data_quality_list = None
             self.addwellattrdlg.nda_view_list = None
+            self.addwellattrdlg.well_attr_val_types_list = None
 
             # def reload_wells():
             #     self.addwellattrdlg.wellAttrWellComboBox.clear()
@@ -4296,6 +4350,24 @@ class GeoDM:
             #     except:
             #         self.iface.messageBar().pushMessage('Ошибка', 'Не удалось загрузить данные о скважинах из базы ' + sql, level=Qgis.Critical,
             #                                             duration=3)
+
+
+            def reload_well_attr_val_types():
+                self.addwellattrdlg.wellAttrValTypeComboBox.clear()
+                sql = f"select * from {self.well_attr_val_types};"
+                try:
+                    with psycopg2.connect(self.dsn, cursor_factory=DictCursor) as pgconn:
+                        with pgconn.cursor() as cur:
+                            cur.execute(sql)
+                            self.addwellattrdlg.well_attr_val_types_list = list(cur.fetchall())
+                            self.addwellattrdlg.wellAttrValTypeComboBox.addItem('--Выберите тип значения--')
+                            self.addwellattrdlg.wellAttrValTypeComboBox.addItems([x['name_en'] for x in self.addwellattrdlg.well_attr_val_types_list])
+                except:
+                    self.iface.messageBar().pushMessage('Ошибка',
+                                                        'Не удалось загрузить данные о типах значений атрибутов скважин из базы ' + sql,
+                                                        level=Qgis.Critical,
+                                                        duration=3)
+
 
             def reload_well_attr_types():
                 self.addwellattrdlg.wellAttrTypeComboBox.clear()
@@ -4402,6 +4474,11 @@ class GeoDM:
                 selected_well_ids = [str(self.wells_view_list[x]['well_id']) for x in selected_well_rows]
                 selected_well_attr_name_index = self.addwellattrdlg.wellAttrTypeComboBox.currentIndex() - 1
                 new_well_attr_value = self.addwellattrdlg.wellAttrValuePlainTextEdit.toPlainText().strip().replace("'", "''")
+
+                new_well_attr_units_value = self.addwellattrdlg.wellAttrUnitsLineEdit.text().lower().strip().replace("'", "''")
+                selected_well_attr_val_type_index = self.addwellattrdlg.wellAttrValTypeComboBox.currentIndex() - 1
+                new_well_attr_dec_places_value = self.addwellattrdlg.wellAttrDecPlacesSpinBox.value()
+
                 selected_link_index = self.addwellattrdlg.wellAttrLinkComboBox.currentIndex() - 1
                 new_source = self.addwellattrdlg.wellAttrSourcePlainTextEdit.toPlainText().strip().replace("'", "''")
                 new_datestamp = self.addwellattrdlg.wellAttrDateCalendarWidget.selectedDate().toString('yyyy-MM-dd')
@@ -4414,6 +4491,18 @@ class GeoDM:
                     fields_to_update = ['well_attribute_name_id', 'well_attribute_value']
                     # values_to_insert = [str(selected_well_id), str(selected_well_attr_name_id), new_well_attr_value]
                     values_to_insert = [str(selected_well_attr_name_id), f"'{new_well_attr_value}'"]
+
+                    if new_well_attr_units_value:
+                        fields_to_update.append('units')
+                        values_to_insert.append(f"'{new_well_attr_units_value}'")
+                    if 1 >= selected_well_attr_val_type_index >= 0 and new_well_attr_dec_places_value >= 0:
+                        fields_to_update.append('dec_places')
+                        values_to_insert.append(str(new_well_attr_dec_places_value))
+                    if selected_well_attr_val_type_index >= 0:
+                        selected_well_attr_val_type_id = self.addwellattrdlg.well_attr_val_types_list[selected_well_attr_val_type_index]['id']
+                        fields_to_update.append('type_id')
+                        values_to_insert.append(str(selected_well_attr_val_type_id))
+
                     if selected_link_index >= 0:
                         selected_link_id = self.addwellattrdlg.links_list[selected_link_index]['link_id']
                         fields_to_update.append('link_id')
@@ -4458,6 +4547,7 @@ class GeoDM:
 
             # reload_wells()
             reload_well_attr_types()
+            reload_well_attr_val_types()
             reload_links()
             reload_data_quality()
             reload_nda()
